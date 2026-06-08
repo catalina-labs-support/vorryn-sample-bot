@@ -1,0 +1,4945 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vorryn.example.com/schemas/bot-protocol/v1.json",
+  "title": "Vorryn Bot Protocol v1",
+  "description": "Wire contract for POST /play between the vorryn-web server and a bot service. Generated from packages/core/src/wire/schemas.ts — do not edit by hand.",
+  "definitions": {
+    "BotRequest": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "protocolVersion": {
+          "type": "number",
+          "const": 1
+        },
+        "gameId": {
+          "type": "string"
+        },
+        "playerId": {
+          "type": "string"
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "version": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000
+            },
+            "phase": {
+              "type": "string",
+              "enum": [
+                "setup1",
+                "setup2",
+                "roll",
+                "event",
+                "production",
+                "action",
+                "resolveAttack",
+                "gameOver"
+              ]
+            },
+            "currentPlayerId": {
+              "type": "string"
+            },
+            "turnNumber": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000
+            },
+            "players": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "seatIndex": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 3
+                      },
+                      "color": {
+                        "type": "string"
+                      },
+                      "victoryPoints": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      "vpTokens": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      "revealedVpCards": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "instanceId": {
+                              "type": "string"
+                            },
+                            "cardId": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "instanceId",
+                            "cardId"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "roadsInSupply": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      "settlementsInSupply": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      "citiesInSupply": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      "cityWallsInSupply": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      "knightsInSupply": {
+                        "type": "object",
+                        "properties": {
+                          "basic": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 1000000
+                          },
+                          "strong": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 1000000
+                          },
+                          "mighty": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 1000000
+                          }
+                        },
+                        "required": [
+                          "basic",
+                          "strong",
+                          "mighty"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "scienceLevel": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 5
+                      },
+                      "tradeLevel": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 5
+                      },
+                      "politicsLevel": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 5
+                      },
+                      "metropolisCount": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 3
+                      },
+                      "resources": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string",
+                          "enum": [
+                            "lumber",
+                            "brick",
+                            "wool",
+                            "grain",
+                            "ore"
+                          ]
+                        },
+                        "additionalProperties": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 1000000
+                        },
+                        "required": [
+                          "lumber",
+                          "brick",
+                          "wool",
+                          "grain",
+                          "ore"
+                        ]
+                      },
+                      "commodities": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string",
+                          "enum": [
+                            "coin",
+                            "paper",
+                            "cloth"
+                          ]
+                        },
+                        "additionalProperties": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 1000000
+                        },
+                        "required": [
+                          "coin",
+                          "paper",
+                          "cloth"
+                        ]
+                      },
+                      "progressHand": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "instanceId": {
+                              "type": "string"
+                            },
+                            "cardId": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "instanceId",
+                            "cardId"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "merchantFleetType": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "freeRoadsRemaining": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      "cranePlayed": {
+                        "type": "boolean"
+                      },
+                      "medicinePlayed": {
+                        "type": "boolean"
+                      },
+                      "progressCardsPlayedThisTurn": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "knightActionsUsedThisTurn": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "knightsActivatedThisTurn": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "knightPromotionsUsedThisTurn": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "domesticTradeProposalsThisTurn": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "seatIndex",
+                      "color",
+                      "victoryPoints",
+                      "vpTokens",
+                      "revealedVpCards",
+                      "roadsInSupply",
+                      "settlementsInSupply",
+                      "citiesInSupply",
+                      "cityWallsInSupply",
+                      "knightsInSupply",
+                      "scienceLevel",
+                      "tradeLevel",
+                      "politicsLevel",
+                      "metropolisCount",
+                      "resources",
+                      "commodities",
+                      "progressHand",
+                      "merchantFleetType",
+                      "freeRoadsRemaining",
+                      "cranePlayed",
+                      "medicinePlayed",
+                      "progressCardsPlayedThisTurn",
+                      "knightActionsUsedThisTurn",
+                      "knightsActivatedThisTurn",
+                      "knightPromotionsUsedThisTurn",
+                      "domesticTradeProposalsThisTurn"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "seatIndex": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 3
+                      },
+                      "color": {
+                        "type": "string"
+                      },
+                      "victoryPoints": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      "vpTokens": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      "revealedVpCards": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "instanceId": {
+                              "type": "string"
+                            },
+                            "cardId": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "instanceId",
+                            "cardId"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "roadsInSupply": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      "settlementsInSupply": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      "citiesInSupply": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      "cityWallsInSupply": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      "knightsInSupply": {
+                        "type": "object",
+                        "properties": {
+                          "basic": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 1000000
+                          },
+                          "strong": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 1000000
+                          },
+                          "mighty": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 1000000
+                          }
+                        },
+                        "required": [
+                          "basic",
+                          "strong",
+                          "mighty"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "scienceLevel": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 5
+                      },
+                      "tradeLevel": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 5
+                      },
+                      "politicsLevel": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 5
+                      },
+                      "metropolisCount": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 3
+                      },
+                      "resourceCount": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      "commodityCount": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      "progressHandCount": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "seatIndex",
+                      "color",
+                      "victoryPoints",
+                      "vpTokens",
+                      "revealedVpCards",
+                      "roadsInSupply",
+                      "settlementsInSupply",
+                      "citiesInSupply",
+                      "cityWallsInSupply",
+                      "knightsInSupply",
+                      "scienceLevel",
+                      "tradeLevel",
+                      "politicsLevel",
+                      "metropolisCount",
+                      "resourceCount",
+                      "commodityCount",
+                      "progressHandCount"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            },
+            "board": {
+              "type": "object",
+              "properties": {
+                "hexes": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "hills",
+                          "forest",
+                          "mountains",
+                          "fields",
+                          "pasture",
+                          "desert"
+                        ]
+                      },
+                      "numberToken": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 1000000
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "robberPresent": {
+                        "type": "boolean"
+                      },
+                      "merchantPresent": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "type",
+                      "numberToken",
+                      "robberPresent",
+                      "merchantPresent"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "intersections": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "adjacentHexIds": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "adjacentEdgeIds": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "building": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "ownerPlayerId": {
+                                "type": "string"
+                              },
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "settlement",
+                                  "city"
+                                ]
+                              },
+                              "cityWallPresent": {
+                                "type": "boolean"
+                              },
+                              "metropolisType": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "science",
+                                      "trade",
+                                      "politics"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "ownerPlayerId",
+                              "type",
+                              "cityWallPresent",
+                              "metropolisType"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "knight": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "ownerPlayerId": {
+                                "type": "string"
+                              },
+                              "level": {
+                                "type": "string",
+                                "enum": [
+                                  "basic",
+                                  "strong",
+                                  "mighty"
+                                ]
+                              },
+                              "state": {
+                                "type": "string",
+                                "enum": [
+                                  "active",
+                                  "inactive"
+                                ]
+                              },
+                              "locationIntersectionId": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "ownerPlayerId",
+                              "level",
+                              "state",
+                              "locationIntersectionId"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "adjacentHexIds",
+                      "adjacentEdgeIds",
+                      "building",
+                      "knight"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "edges": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "intersectionA": {
+                        "type": "string"
+                      },
+                      "intersectionB": {
+                        "type": "string"
+                      },
+                      "roadOwnerPlayerId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "intersectionA",
+                      "intersectionB",
+                      "roadOwnerPlayerId"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "harbors": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "3:1",
+                          "brick",
+                          "lumber",
+                          "ore",
+                          "grain",
+                          "wool"
+                        ]
+                      },
+                      "intersectionIds": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "type",
+                      "intersectionIds"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "hexes",
+                "intersections",
+                "edges",
+                "harbors"
+              ],
+              "additionalProperties": false
+            },
+            "dice": {
+              "type": "object",
+              "properties": {
+                "die1": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 6
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "die2": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 6
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "sum": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 2,
+                      "maximum": 12
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "redDie": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 6
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "eventDieResult": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "alchemyPreset": {
+                  "type": "boolean"
+                },
+                "rollNumber": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                }
+              },
+              "required": [
+                "die1",
+                "die2",
+                "sum",
+                "redDie",
+                "eventDieResult",
+                "alchemyPreset",
+                "rollNumber"
+              ],
+              "additionalProperties": false
+            },
+            "berserkerTrackPosition": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 7
+            },
+            "berserkerTrackMax": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000
+            },
+            "firstBerserkerAttackResolved": {
+              "type": "boolean"
+            },
+            "robberActive": {
+              "type": "boolean"
+            },
+            "merchantHexId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "merchantOwnerPlayerId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "longestRoadHolderPlayerId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "pendingDecision": {
+              "anyOf": [
+                {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "discardResources"
+                        },
+                        "actingPlayerId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "allowedPlayerIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "payload": {
+                          "type": "object",
+                          "properties": {
+                            "required": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              }
+                            },
+                            "source": {
+                              "type": "string",
+                              "enum": [
+                                "robber",
+                                "sabotage"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "required"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "actingPlayerId",
+                        "allowedPlayerIds",
+                        "payload"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "chooseRobberHex"
+                        },
+                        "actingPlayerId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "allowedPlayerIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "payload": {
+                          "type": "object",
+                          "properties": {},
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "actingPlayerId",
+                        "allowedPlayerIds",
+                        "payload"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "chooseStealTarget"
+                        },
+                        "actingPlayerId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "allowedPlayerIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "payload": {
+                          "type": "object",
+                          "properties": {
+                            "eligiblePlayerIds": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "required": [
+                            "eligiblePlayerIds"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "actingPlayerId",
+                        "allowedPlayerIds",
+                        "payload"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "scienceLevel3Bonus"
+                        },
+                        "actingPlayerId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "allowedPlayerIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "payload": {
+                          "type": "object",
+                          "properties": {
+                            "eligibleResources": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "lumber",
+                                  "brick",
+                                  "wool",
+                                  "grain",
+                                  "ore"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "eligibleResources"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "actingPlayerId",
+                        "allowedPlayerIds",
+                        "payload"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "chooseMetropolisCity"
+                        },
+                        "actingPlayerId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "allowedPlayerIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "payload": {
+                          "type": "object",
+                          "properties": {
+                            "eligibleIntersectionIds": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "track": {
+                              "type": "string",
+                              "enum": [
+                                "science",
+                                "trade",
+                                "politics"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "track"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "actingPlayerId",
+                        "allowedPlayerIds",
+                        "payload"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "choosePillageCity"
+                        },
+                        "actingPlayerId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "allowedPlayerIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "payload": {
+                          "type": "object",
+                          "properties": {
+                            "eligibleIntersectionIds": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "required": [
+                            "eligibleIntersectionIds"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "actingPlayerId",
+                        "allowedPlayerIds",
+                        "payload"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "chooseProgressDeck"
+                        },
+                        "actingPlayerId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "allowedPlayerIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "payload": {
+                          "type": "object",
+                          "properties": {
+                            "eligibleDecks": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "science",
+                                  "trade",
+                                  "politics"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "eligibleDecks"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "actingPlayerId",
+                        "allowedPlayerIds",
+                        "payload"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "discardProgress"
+                        },
+                        "actingPlayerId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "allowedPlayerIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "payload": {
+                          "type": "object",
+                          "properties": {
+                            "requiredCount": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 1000000
+                            }
+                          },
+                          "required": [
+                            "requiredCount"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "actingPlayerId",
+                        "allowedPlayerIds",
+                        "payload"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "chooseKnightRetreat"
+                        },
+                        "actingPlayerId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "allowedPlayerIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "payload": {
+                          "type": "object",
+                          "properties": {
+                            "eligibleIntersectionIds": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "required": [
+                            "eligibleIntersectionIds"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "actingPlayerId",
+                        "allowedPlayerIds",
+                        "payload"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "chooseRobberDestination"
+                        },
+                        "actingPlayerId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "allowedPlayerIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "payload": {
+                          "type": "object",
+                          "properties": {},
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "actingPlayerId",
+                        "allowedPlayerIds",
+                        "payload"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "placeSetupRoad"
+                        },
+                        "actingPlayerId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "allowedPlayerIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "payload": {
+                          "type": "object",
+                          "properties": {
+                            "buildingIntersectionId": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "buildingIntersectionId"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "actingPlayerId",
+                        "allowedPlayerIds",
+                        "payload"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "weddingGiveCards"
+                        },
+                        "actingPlayerId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "allowedPlayerIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "payload": {
+                          "type": "object",
+                          "properties": {
+                            "requiredCount": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 1000000
+                            },
+                            "recipient": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "requiredCount",
+                            "recipient"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "actingPlayerId",
+                        "allowedPlayerIds",
+                        "payload"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "commercialHarborGive"
+                        },
+                        "actingPlayerId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "allowedPlayerIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "payload": {
+                          "type": "object",
+                          "properties": {
+                            "phase": {
+                              "type": "string",
+                              "enum": [
+                                "actorOffersResource",
+                                "targetResponds"
+                              ]
+                            },
+                            "targetPlayerId": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "phase"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "actingPlayerId",
+                        "allowedPlayerIds",
+                        "payload"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "guildDuesChooseCards"
+                        },
+                        "actingPlayerId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "allowedPlayerIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "payload": {
+                          "type": "object",
+                          "properties": {
+                            "targetPlayerId": {
+                              "type": "string"
+                            },
+                            "available": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "lumber",
+                                          "brick",
+                                          "wool",
+                                          "grain",
+                                          "ore"
+                                        ]
+                                      },
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "coin",
+                                          "paper",
+                                          "cloth"
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  "pool": {
+                                    "type": "string",
+                                    "enum": [
+                                      "resource",
+                                      "commodity"
+                                    ]
+                                  },
+                                  "available": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 1000000
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "available"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "maxCards": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 1000000
+                            }
+                          },
+                          "required": [
+                            "available",
+                            "maxCards"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "actingPlayerId",
+                        "allowedPlayerIds",
+                        "payload"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "smithingPromote"
+                        },
+                        "actingPlayerId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "allowedPlayerIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "payload": {
+                          "type": "object",
+                          "properties": {
+                            "promotionsRemaining": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 1000000
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "actingPlayerId",
+                        "allowedPlayerIds",
+                        "payload"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "treasonChooseKnight"
+                        },
+                        "actingPlayerId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "allowedPlayerIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "payload": {
+                          "type": "object",
+                          "properties": {
+                            "eligibleKnightIds": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "required": [
+                            "eligibleKnightIds"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "actingPlayerId",
+                        "allowedPlayerIds",
+                        "payload"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "treasonPlaceKnight"
+                        },
+                        "actingPlayerId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "allowedPlayerIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "payload": {
+                          "type": "object",
+                          "properties": {
+                            "maxLevel": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 1000000
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "actingPlayerId",
+                        "allowedPlayerIds",
+                        "payload"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "roadBuildingPlace"
+                        },
+                        "actingPlayerId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "allowedPlayerIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "payload": {
+                          "type": "object",
+                          "properties": {},
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "actingPlayerId",
+                        "allowedPlayerIds",
+                        "payload"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "domesticTradeResponse"
+                        },
+                        "actingPlayerId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "allowedPlayerIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "payload": {
+                          "type": "object",
+                          "properties": {
+                            "acceptedPlayerIds": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "counters": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "responderId": {
+                                    "type": "string"
+                                  },
+                                  "offer": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "enum": [
+                                                "lumber",
+                                                "brick",
+                                                "wool",
+                                                "grain",
+                                                "ore"
+                                              ]
+                                            },
+                                            {
+                                              "type": "string",
+                                              "enum": [
+                                                "coin",
+                                                "paper",
+                                                "cloth"
+                                              ]
+                                            }
+                                          ]
+                                        },
+                                        "count": {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "maximum": 1000000
+                                        }
+                                      },
+                                      "required": [
+                                        "type",
+                                        "count"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "want": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "enum": [
+                                                "lumber",
+                                                "brick",
+                                                "wool",
+                                                "grain",
+                                                "ore"
+                                              ]
+                                            },
+                                            {
+                                              "type": "string",
+                                              "enum": [
+                                                "coin",
+                                                "paper",
+                                                "cloth"
+                                              ]
+                                            }
+                                          ]
+                                        },
+                                        "count": {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "maximum": 1000000
+                                        }
+                                      },
+                                      "required": [
+                                        "type",
+                                        "count"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "responderId",
+                                  "offer",
+                                  "want"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "offer": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "lumber",
+                                          "brick",
+                                          "wool",
+                                          "grain",
+                                          "ore"
+                                        ]
+                                      },
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "coin",
+                                          "paper",
+                                          "cloth"
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  "count": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 1000000
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "count"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "targetPlayerId": {
+                              "type": "string"
+                            },
+                            "want": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "lumber",
+                                          "brick",
+                                          "wool",
+                                          "grain",
+                                          "ore"
+                                        ]
+                                      },
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "coin",
+                                          "paper",
+                                          "cloth"
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  "count": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 1000000
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "count"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "want"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "actingPlayerId",
+                        "allowedPlayerIds",
+                        "payload"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "domesticTradeConfirm"
+                        },
+                        "actingPlayerId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "allowedPlayerIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "payload": {
+                          "type": "object",
+                          "properties": {
+                            "acceptedPlayerIds": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "counters": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "responderId": {
+                                    "type": "string"
+                                  },
+                                  "offer": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "enum": [
+                                                "lumber",
+                                                "brick",
+                                                "wool",
+                                                "grain",
+                                                "ore"
+                                              ]
+                                            },
+                                            {
+                                              "type": "string",
+                                              "enum": [
+                                                "coin",
+                                                "paper",
+                                                "cloth"
+                                              ]
+                                            }
+                                          ]
+                                        },
+                                        "count": {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "maximum": 1000000
+                                        }
+                                      },
+                                      "required": [
+                                        "type",
+                                        "count"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "want": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "type": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "enum": [
+                                                "lumber",
+                                                "brick",
+                                                "wool",
+                                                "grain",
+                                                "ore"
+                                              ]
+                                            },
+                                            {
+                                              "type": "string",
+                                              "enum": [
+                                                "coin",
+                                                "paper",
+                                                "cloth"
+                                              ]
+                                            }
+                                          ]
+                                        },
+                                        "count": {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "maximum": 1000000
+                                        }
+                                      },
+                                      "required": [
+                                        "type",
+                                        "count"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "responderId",
+                                  "offer",
+                                  "want"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "offer": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "lumber",
+                                          "brick",
+                                          "wool",
+                                          "grain",
+                                          "ore"
+                                        ]
+                                      },
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "coin",
+                                          "paper",
+                                          "cloth"
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  "count": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 1000000
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "count"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "want": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "lumber",
+                                          "brick",
+                                          "wool",
+                                          "grain",
+                                          "ore"
+                                        ]
+                                      },
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "coin",
+                                          "paper",
+                                          "cloth"
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  "count": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 1000000
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "count"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "acceptedPlayerIds"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "actingPlayerId",
+                        "allowedPlayerIds",
+                        "payload"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "espionageChooseCard"
+                        },
+                        "actingPlayerId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "allowedPlayerIds": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "payload": {
+                          "type": "object",
+                          "properties": {
+                            "eligibleCards": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "instanceId": {
+                                    "type": "string"
+                                  },
+                                  "cardId": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "instanceId",
+                                  "cardId"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "eligibleCards"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "actingPlayerId",
+                        "allowedPlayerIds",
+                        "payload"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "winnerPlayerId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "lastBerserkerAttack": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "string",
+                      "enum": [
+                        "repelled",
+                        "victory"
+                      ]
+                    },
+                    "berserkerStrength": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 1000000
+                    },
+                    "defenderStrength": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 1000000
+                    },
+                    "defenderPlayerId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "tiedDefenderIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "autoPillagedPlayerIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "choicePillagedPlayerIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "supplyDepletedPlayerIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "defenderContributions": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      }
+                    },
+                    "attackedAtVersion": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 1000000
+                    }
+                  },
+                  "required": [
+                    "result",
+                    "berserkerStrength",
+                    "defenderStrength",
+                    "attackedAtVersion"
+                  ],
+                  "additionalProperties": {}
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "lastVpAwards": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "playerId": {
+                    "type": "string"
+                  },
+                  "deck": {
+                    "type": "string",
+                    "enum": [
+                      "science",
+                      "trade",
+                      "politics"
+                    ]
+                  },
+                  "cardId": {
+                    "type": "string"
+                  },
+                  "awardedAtVersion": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1000000
+                  }
+                },
+                "required": [
+                  "playerId",
+                  "deck",
+                  "cardId",
+                  "awardedAtVersion"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "scienceDeckCount": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000
+            },
+            "tradeDeckCount": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000
+            },
+            "politicsDeckCount": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000
+            },
+            "progressDiscardScience": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "instanceId": {
+                    "type": "string"
+                  },
+                  "cardId": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "instanceId",
+                  "cardId"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "progressDiscardTrade": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "instanceId": {
+                    "type": "string"
+                  },
+                  "cardId": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "instanceId",
+                  "cardId"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "progressDiscardPolitics": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "instanceId": {
+                    "type": "string"
+                  },
+                  "cardId": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "instanceId",
+                  "cardId"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "bankResources": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string",
+                "enum": [
+                  "lumber",
+                  "brick",
+                  "wool",
+                  "grain",
+                  "ore"
+                ]
+              },
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000000
+              },
+              "required": [
+                "lumber",
+                "brick",
+                "wool",
+                "grain",
+                "ore"
+              ]
+            },
+            "bankCommodities": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string",
+                "enum": [
+                  "coin",
+                  "paper",
+                  "cloth"
+                ]
+              },
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000000
+              },
+              "required": [
+                "coin",
+                "paper",
+                "cloth"
+              ]
+            },
+            "opponentMaterialTypes": {
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "lumber",
+                      "brick",
+                      "wool",
+                      "grain",
+                      "ore"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "coin",
+                      "paper",
+                      "cloth"
+                    ]
+                  }
+                ]
+              }
+            },
+            "domesticTradeDeclinesThisTurn": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "proposerId": {
+                    "type": "string"
+                  },
+                  "targetPlayerId": {
+                    "type": "string"
+                  },
+                  "offer": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "lumber",
+                                "brick",
+                                "wool",
+                                "grain",
+                                "ore"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "coin",
+                                "paper",
+                                "cloth"
+                              ]
+                            }
+                          ]
+                        },
+                        "count": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 1000000
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "count"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "want": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "lumber",
+                                "brick",
+                                "wool",
+                                "grain",
+                                "ore"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "coin",
+                                "paper",
+                                "cloth"
+                              ]
+                            }
+                          ]
+                        },
+                        "count": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 1000000
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "count"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "proposerId",
+                  "offer",
+                  "want"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "id",
+            "version",
+            "phase",
+            "currentPlayerId",
+            "turnNumber",
+            "players",
+            "board",
+            "dice",
+            "berserkerTrackPosition",
+            "berserkerTrackMax",
+            "firstBerserkerAttackResolved",
+            "robberActive",
+            "merchantHexId",
+            "merchantOwnerPlayerId",
+            "longestRoadHolderPlayerId",
+            "pendingDecision",
+            "winnerPlayerId",
+            "lastBerserkerAttack",
+            "lastVpAwards",
+            "scienceDeckCount",
+            "tradeDeckCount",
+            "politicsDeckCount",
+            "progressDiscardScience",
+            "progressDiscardTrade",
+            "progressDiscardPolitics",
+            "bankResources",
+            "bankCommodities",
+            "opponentMaterialTypes",
+            "domesticTradeDeclinesThisTurn"
+          ],
+          "additionalProperties": false
+        },
+        "validActions": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "rollDice"
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "endTurn"
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "placeSetupBuilding"
+                  },
+                  "intersectionId": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "intersectionId",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "placeSetupRoad"
+                  },
+                  "edgeId": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "edgeId",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "skipRoadBuilding"
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "chooseRobberHex"
+                  },
+                  "hexId": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "hexId",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "buildRoad"
+                  },
+                  "edgeId": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "edgeId",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "buildSettlement"
+                  },
+                  "intersectionId": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "intersectionId",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "buildCity"
+                  },
+                  "intersectionId": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "intersectionId",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "buildCityWall"
+                  },
+                  "intersectionId": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "intersectionId",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "recruitKnight"
+                  },
+                  "intersectionId": {
+                    "type": "string"
+                  },
+                  "level": {
+                    "type": "string",
+                    "enum": [
+                      "basic",
+                      "strong",
+                      "mighty"
+                    ]
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "intersectionId",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "activateKnight"
+                  },
+                  "knightId": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "knightId",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "promoteKnight"
+                  },
+                  "knightId": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "knightId",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "moveKnight"
+                  },
+                  "knightId": {
+                    "type": "string"
+                  },
+                  "intersectionId": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "knightId",
+                  "intersectionId",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "displaceKnight"
+                  },
+                  "knightId": {
+                    "type": "string"
+                  },
+                  "intersectionId": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "intersectionId",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "chaseRobber"
+                  },
+                  "knightId": {
+                    "type": "string"
+                  },
+                  "hexId": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "improveCity"
+                  },
+                  "track": {
+                    "type": "string",
+                    "enum": [
+                      "science",
+                      "trade",
+                      "politics"
+                    ]
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "track",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "playProgressCard"
+                  },
+                  "instanceId": {
+                    "type": "string"
+                  },
+                  "cardName": {
+                    "type": "string"
+                  },
+                  "chosenType": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "lumber",
+                          "brick",
+                          "wool",
+                          "grain",
+                          "ore"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "coin",
+                          "paper",
+                          "cloth"
+                        ]
+                      }
+                    ]
+                  },
+                  "commodityType": {
+                    "type": "string",
+                    "enum": [
+                      "coin",
+                      "paper",
+                      "cloth"
+                    ]
+                  },
+                  "die1": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 6
+                  },
+                  "die2": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 6
+                  },
+                  "edgeId": {
+                    "type": "string"
+                  },
+                  "hexAId": {
+                    "type": "string"
+                  },
+                  "hexBId": {
+                    "type": "string"
+                  },
+                  "hexId": {
+                    "type": "string"
+                  },
+                  "intersectionId": {
+                    "type": "string"
+                  },
+                  "resourceType": {
+                    "type": "string",
+                    "enum": [
+                      "lumber",
+                      "brick",
+                      "wool",
+                      "grain",
+                      "ore"
+                    ]
+                  },
+                  "targetKnightId": {
+                    "type": "string"
+                  },
+                  "targetPlayerId": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "instanceId",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "maritimeTrade"
+                  },
+                  "offer": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "lumber",
+                              "brick",
+                              "wool",
+                              "grain",
+                              "ore"
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "enum": [
+                              "coin",
+                              "paper",
+                              "cloth"
+                            ]
+                          }
+                        ]
+                      },
+                      "count": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1000000
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "count"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "want": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "lumber",
+                              "brick",
+                              "wool",
+                              "grain",
+                              "ore"
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "enum": [
+                              "coin",
+                              "paper",
+                              "cloth"
+                            ]
+                          }
+                        ]
+                      },
+                      "count": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1000000
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "count"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "offer",
+                  "want",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "domesticTradePropose"
+                  },
+                  "targetPlayerId": {
+                    "type": "string"
+                  },
+                  "offer": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "lumber",
+                                "brick",
+                                "wool",
+                                "grain",
+                                "ore"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "coin",
+                                "paper",
+                                "cloth"
+                              ]
+                            }
+                          ]
+                        },
+                        "count": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 1000000
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "count"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "want": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "lumber",
+                                "brick",
+                                "wool",
+                                "grain",
+                                "ore"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "coin",
+                                "paper",
+                                "cloth"
+                              ]
+                            }
+                          ]
+                        },
+                        "count": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 1000000
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "count"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "offer",
+                  "want",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "domesticTradeAccept"
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "domesticTradeDecline"
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "domesticTradeConfirm"
+                  },
+                  "accepterId": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "accepterId",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "domesticTradeCancel"
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "domesticTradeCounter"
+                  },
+                  "offer": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "lumber",
+                                "brick",
+                                "wool",
+                                "grain",
+                                "ore"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "coin",
+                                "paper",
+                                "cloth"
+                              ]
+                            }
+                          ]
+                        },
+                        "count": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 1000000
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "count"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "want": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "lumber",
+                                "brick",
+                                "wool",
+                                "grain",
+                                "ore"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "coin",
+                                "paper",
+                                "cloth"
+                              ]
+                            }
+                          ]
+                        },
+                        "count": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 1000000
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "count"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "offer",
+                  "want",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "domesticTradeTakeCounter"
+                  },
+                  "responderId": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "responderId",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "chooseProgressDeck"
+                  },
+                  "deck": {
+                    "type": "string",
+                    "enum": [
+                      "science",
+                      "trade",
+                      "politics"
+                    ]
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "deck",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "chooseStealTarget"
+                  },
+                  "targetPlayerId": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "targetPlayerId",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "chooseScienceBonusResource"
+                  },
+                  "resource": {
+                    "type": "string",
+                    "enum": [
+                      "lumber",
+                      "brick",
+                      "wool",
+                      "grain",
+                      "ore"
+                    ]
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "resource",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "chooseMetropolisCity"
+                  },
+                  "intersectionId": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "intersectionId",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "choosePillageCity"
+                  },
+                  "intersectionId": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "intersectionId",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "discardHalf"
+                  },
+                  "cards": {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "lumber",
+                            "brick",
+                            "wool",
+                            "grain",
+                            "ore"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "coin",
+                            "paper",
+                            "cloth"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "cards",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "discardProgress"
+                  },
+                  "instanceIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "instanceIds",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "resolveOptionalCardEffect"
+                  },
+                  "cards": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "lumber",
+                                "brick",
+                                "wool",
+                                "grain",
+                                "ore"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "coin",
+                                "paper",
+                                "cloth"
+                              ]
+                            }
+                          ]
+                        },
+                        "count": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 1000000
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "count"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "commodityType": {
+                    "type": "string",
+                    "enum": [
+                      "coin",
+                      "paper",
+                      "cloth"
+                    ]
+                  },
+                  "giveResourceType": {
+                    "type": "string",
+                    "enum": [
+                      "lumber",
+                      "brick",
+                      "wool",
+                      "grain",
+                      "ore"
+                    ]
+                  },
+                  "intersectionId": {
+                    "type": "string"
+                  },
+                  "knightId": {
+                    "type": "string"
+                  },
+                  "level": {
+                    "type": "string",
+                    "enum": [
+                      "basic",
+                      "strong",
+                      "mighty"
+                    ]
+                  },
+                  "skip": {
+                    "type": "boolean",
+                    "const": true
+                  },
+                  "targetInstanceId": {
+                    "type": "string"
+                  },
+                  "targetKnightId": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "resign"
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "id"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "validActionsTruncated": {
+          "type": "boolean"
+        },
+        "truncatedFamilies": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "maritimeTrade",
+              "domesticTradePropose",
+              "playProgressCard",
+              "discardResources",
+              "discardProgress",
+              "weddingGiveCards",
+              "guildDuesChooseCards",
+              "treasonPlaceKnight"
+            ]
+          }
+        },
+        "diceHistogram": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          }
+        },
+        "recentEvents": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "sequence": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1000000
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "actionApplied"
+                  },
+                  "actingPlayerId": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "turnAfter": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "payload": {
+                    "type": "object",
+                    "properties": {
+                      "isBot": {
+                        "type": "boolean"
+                      },
+                      "actingPlayerId": {
+                        "type": "string"
+                      },
+                      "action": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "rollDice",
+                              "playProgressCard",
+                              "domesticTradePropose",
+                              "domesticTradeAccept",
+                              "domesticTradeDecline",
+                              "domesticTradeConfirm",
+                              "domesticTradeCancel",
+                              "domesticTradeCounter",
+                              "domesticTradeTakeCounter",
+                              "maritimeTrade",
+                              "buildRoad",
+                              "buildSettlement",
+                              "buildCity",
+                              "buildCityWall",
+                              "improveCity",
+                              "recruitKnight",
+                              "promoteKnight",
+                              "activateKnight",
+                              "moveKnight",
+                              "displaceKnight",
+                              "chaseRobber",
+                              "endTurn",
+                              "chooseProgressDeck",
+                              "chooseRobberHex",
+                              "chooseStealTarget",
+                              "chooseScienceBonusResource",
+                              "choosePillageCity",
+                              "chooseMetropolisCity",
+                              "discardHalf",
+                              "discardProgress",
+                              "resolveOptionalCardEffect",
+                              "placeSetupBuilding",
+                              "placeSetupRoad",
+                              "skipRoadBuilding",
+                              "resign"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "type"
+                        ],
+                        "additionalProperties": {}
+                      },
+                      "phaseBefore": {
+                        "type": "string",
+                        "enum": [
+                          "setup1",
+                          "setup2",
+                          "roll",
+                          "event",
+                          "production",
+                          "action",
+                          "resolveAttack",
+                          "gameOver"
+                        ]
+                      },
+                      "phaseAfter": {
+                        "type": "string",
+                        "enum": [
+                          "setup1",
+                          "setup2",
+                          "roll",
+                          "event",
+                          "production",
+                          "action",
+                          "resolveAttack",
+                          "gameOver"
+                        ]
+                      },
+                      "turnBefore": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      "turnAfter": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      "stateVersionBefore": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      "stateVersionAfter": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      "dice": {
+                        "type": "object",
+                        "properties": {
+                          "die1": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 6
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "die2": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 6
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "sum": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": 2,
+                                "maximum": 12
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "eventDieResult": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "die1",
+                          "die2",
+                          "sum",
+                          "eventDieResult"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "production": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {}
+                      }
+                    },
+                    "required": [
+                      "actingPlayerId",
+                      "action"
+                    ],
+                    "additionalProperties": {}
+                  }
+                },
+                "required": [
+                  "sequence",
+                  "type",
+                  "actingPlayerId",
+                  "turnAfter",
+                  "payload"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "sequence": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1000000
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "diceRolled"
+                  },
+                  "actingPlayerId": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "turnAfter": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "payload": {
+                    "type": "object",
+                    "properties": {
+                      "actingPlayerId": {
+                        "type": "string"
+                      },
+                      "die1": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 6
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "die2": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 6
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "sum": {
+                        "type": "integer",
+                        "minimum": 2,
+                        "maximum": 12
+                      },
+                      "redDie": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 6
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "eventDieResult": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "turn": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      }
+                    },
+                    "required": [
+                      "actingPlayerId",
+                      "sum"
+                    ],
+                    "additionalProperties": {}
+                  }
+                },
+                "required": [
+                  "sequence",
+                  "type",
+                  "actingPlayerId",
+                  "turnAfter",
+                  "payload"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "sequence": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1000000
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "progressCardDraws"
+                  },
+                  "actingPlayerId": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "turnAfter": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "payload": {
+                    "type": "object",
+                    "properties": {
+                      "draws": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "playerId": {
+                              "type": "string"
+                            },
+                            "deck": {
+                              "type": "string",
+                              "enum": [
+                                "science",
+                                "trade",
+                                "politics"
+                              ]
+                            },
+                            "isVp": {
+                              "type": "boolean"
+                            }
+                          },
+                          "additionalProperties": {}
+                        }
+                      }
+                    },
+                    "required": [
+                      "draws"
+                    ],
+                    "additionalProperties": {}
+                  }
+                },
+                "required": [
+                  "sequence",
+                  "type",
+                  "actingPlayerId",
+                  "turnAfter",
+                  "payload"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "sequence": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1000000
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "berserkerAttack"
+                  },
+                  "actingPlayerId": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "turnAfter": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "payload": {
+                    "type": "object",
+                    "properties": {
+                      "result": {
+                        "type": "string",
+                        "enum": [
+                          "repelled",
+                          "victory"
+                        ]
+                      },
+                      "berserkerStrength": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      "defenderStrength": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      "defenderPlayerId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "tiedDefenderIds": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "autoPillagedPlayerIds": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "choicePillagedPlayerIds": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "supplyDepletedPlayerIds": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "defenderContributions": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 1000000
+                        }
+                      },
+                      "attackedAtVersion": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1000000
+                      }
+                    },
+                    "required": [
+                      "result",
+                      "berserkerStrength",
+                      "defenderStrength",
+                      "attackedAtVersion"
+                    ],
+                    "additionalProperties": {}
+                  }
+                },
+                "required": [
+                  "sequence",
+                  "type",
+                  "actingPlayerId",
+                  "turnAfter",
+                  "payload"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "sequence": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1000000
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "longestRoad"
+                  },
+                  "actingPlayerId": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "turnAfter": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "payload": {
+                    "type": "object",
+                    "properties": {
+                      "previousHolderId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "newHolderId": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "previousHolderId",
+                      "newHolderId"
+                    ],
+                    "additionalProperties": {}
+                  }
+                },
+                "required": [
+                  "sequence",
+                  "type",
+                  "actingPlayerId",
+                  "turnAfter",
+                  "payload"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "sequence": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1000000
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "steal"
+                  },
+                  "actingPlayerId": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "turnAfter": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "payload": {
+                    "type": "object",
+                    "properties": {
+                      "steals": {
+                        "type": "array",
+                        "items": {}
+                      }
+                    },
+                    "required": [
+                      "steals"
+                    ],
+                    "additionalProperties": {}
+                  }
+                },
+                "required": [
+                  "sequence",
+                  "type",
+                  "actingPlayerId",
+                  "turnAfter",
+                  "payload"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "sequence": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1000000
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "metropolisPlaced"
+                  },
+                  "actingPlayerId": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "turnAfter": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "payload": {
+                    "type": "object",
+                    "properties": {
+                      "playerId": {
+                        "type": "string"
+                      },
+                      "intersectionId": {
+                        "type": "string"
+                      },
+                      "track": {
+                        "type": "string",
+                        "enum": [
+                          "science",
+                          "trade",
+                          "politics"
+                        ]
+                      }
+                    },
+                    "additionalProperties": {}
+                  }
+                },
+                "required": [
+                  "sequence",
+                  "type",
+                  "actingPlayerId",
+                  "turnAfter",
+                  "payload"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "sequence": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1000000
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "commercialHarborExchange"
+                  },
+                  "actingPlayerId": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "turnAfter": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "payload": {
+                    "type": "object",
+                    "properties": {
+                      "initiatorId": {
+                        "type": "string"
+                      },
+                      "targetPlayerId": {
+                        "type": "string"
+                      },
+                      "takeType": {
+                        "type": "string",
+                        "enum": [
+                          "coin",
+                          "paper",
+                          "cloth"
+                        ]
+                      },
+                      "giveResourceType": {
+                        "type": "string",
+                        "enum": [
+                          "lumber",
+                          "brick",
+                          "wool",
+                          "grain",
+                          "ore"
+                        ]
+                      }
+                    },
+                    "additionalProperties": {}
+                  }
+                },
+                "required": [
+                  "sequence",
+                  "type",
+                  "actingPlayerId",
+                  "turnAfter",
+                  "payload"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "sequence": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1000000
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "knightReturnedToSupply"
+                  },
+                  "actingPlayerId": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "turnAfter": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "payload": {
+                    "type": "object",
+                    "properties": {
+                      "playerId": {
+                        "type": "string"
+                      },
+                      "knightId": {
+                        "type": "string"
+                      },
+                      "intersectionId": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": {}
+                  }
+                },
+                "required": [
+                  "sequence",
+                  "type",
+                  "actingPlayerId",
+                  "turnAfter",
+                  "payload"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "sequence": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1000000
+                  },
+                  "type": {
+                    "type": "string",
+                    "const": "gameCompleted"
+                  },
+                  "actingPlayerId": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "turnAfter": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "payload": {
+                    "type": "object",
+                    "properties": {
+                      "winnerPlayerId": {
+                        "type": "string"
+                      },
+                      "totalTurns": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      "finalVpByPlayer": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 1000000
+                        }
+                      }
+                    },
+                    "required": [
+                      "winnerPlayerId",
+                      "totalTurns",
+                      "finalVpByPlayer"
+                    ],
+                    "additionalProperties": {}
+                  }
+                },
+                "required": [
+                  "sequence",
+                  "type",
+                  "actingPlayerId",
+                  "turnAfter",
+                  "payload"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "personality": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "protocolVersion",
+        "gameId",
+        "playerId",
+        "state",
+        "validActions",
+        "validActionsTruncated",
+        "truncatedFamilies",
+        "diceHistogram",
+        "recentEvents"
+      ],
+      "additionalProperties": false
+    },
+    "BotResponse": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "protocolVersion": {
+              "type": "number",
+              "const": 1
+            },
+            "kind": {
+              "type": "string",
+              "const": "action"
+            },
+            "actionId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "decisionTrace": {
+              "type": "object",
+              "properties": {
+                "strategy": {
+                  "type": "string"
+                },
+                "chosenScore": {
+                  "type": "number"
+                },
+                "scoreGapTop1Top2": {
+                  "type": "number"
+                },
+                "candidateCount": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1000000
+                },
+                "context": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "top3": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string"
+                      },
+                      "score": {
+                        "type": "number"
+                      },
+                      "extra": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {}
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "score"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "protocolVersion",
+            "kind",
+            "actionId"
+          ],
+          "additionalProperties": {}
+        },
+        {
+          "type": "object",
+          "properties": {
+            "protocolVersion": {
+              "type": "number",
+              "const": 1
+            },
+            "kind": {
+              "type": "string",
+              "const": "abstain"
+            },
+            "reason": {
+              "type": "string",
+              "maxLength": 200
+            }
+          },
+          "required": [
+            "protocolVersion",
+            "kind"
+          ],
+          "additionalProperties": {}
+        }
+      ]
+    }
+  }
+}

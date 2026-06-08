@@ -1,0 +1,342 @@
+# vorryn-sample-bot
+
+**Build an AI that plays Vorryn — and set it loose against your friends.**
+
+A Vorryn bot is one small HTTP service. On its turn, Vorryn sends it the
+game state and a list of moves that are _already legal_; your bot picks
+one and sends back its `id`. That's the entire contract. You can have a
+working opponent seated at a real table this afternoon — then spend as
+long as you like making it ruthless.
+
+This repo is a complete, deployable starter in TypeScript: a Fastify
+handler, schema validation, a smoke test, and the full protocol docs
+([external-bot guide](docs/EXTERNAL_BOT_GUIDE.md),
+[protocol reference](docs/BOT_PROTOCOL.md),
+[JSON schema](docs/bot-protocol.schema.json),
+[complete rules reference](docs/RULES_REFERENCE.md) — every cost,
+card, and forced decision, so you never need to have played the game).
+The bundled strategy just picks the first legal move — the fun is
+replacing it.
+
+## Why build one?
+
+- **It's genuinely small.** One endpoint, one function. Every candidate
+  Vorryn offers has already been validated, so even a one-line bot can
+  never make an illegal play or stall a game.
+- **Start trivial, grow without limit.** Ship a random picker today;
+  evolve into a greedy heuristic, one-ply lookahead, or full Monte Carlo
+  search once you're hooked. The first-party bot is 25+ scoring rules —
+  you can absolutely beat it.
+- **Any language.** The TypeScript starter is here, but the wire format
+  is a documented JSON schema — generate a typed client in Go, Rust,
+  Python, or C# and skip straight to strategy.
+- **Play for real.** Register it once and invite it to games against
+  friends. Watch it win (or lose gloriously), then tune.
+
+Fork the repo, replace `pickAction`, deploy. Let's field a champion.
+
+## What's in here
+
+| File                              | Purpose                                                                  |
+| --------------------------------- | ------------------------------------------------------------------------ |
+| `src/app.ts`                      | Fastify handler: bearer-auth check, schema parse, `pickAction` dispatch. |
+| `src/index.ts`                    | Process entrypoint: env setup and HTTP listen.                           |
+| `src/strategy.ts`                 | The decision function. Replace this.                                     |
+| `src/schemas.ts`                  | Zod parsers for the request/response envelopes.                          |
+| `fixtures/play-request.json`      | A small hand-readable `BotRequest` for local testing.                    |
+| `fixtures/play-request-full.json` | A full-size `BotRequest` captured from a real self-play game.            |
+| `tests/contract.test.ts`          | Smoke test that POSTs both fixtures to `/play` and asserts a 200.        |
+
+## Setup
+
+Requires Node 22+ and pnpm.
+
+```bash
+pnpm install
+cp .env.example .env
+# Edit .env — set BOT_BEARER to a random string of 32+ chars (`openssl rand -base64 32`).
+pnpm dev
+```
+
+The dev server listens on `http://localhost:3001` and reloads on save.
+
+## Run the smoke test
+
+```bash
+pnpm test
+```
+
+The test injects `fixtures/play-request.json` through the Fastify
+handler with the expected bearer header and asserts the response is
+`{ protocolVersion: 1, kind: 'action', actionId: '...' }` with an
+`actionId` from the candidate list.
+
+## Registering with Vorryn
+
+Once deployed:
+
+1. Sign in to Vorryn.
+2. Visit **Profile → Build a Bot** (`/profile?tab=build`).
+3. Under **Enlist an Envoy**, fill in:
+   - **Name** — what other players see in the lobby.
+   - **Endpoint URL** — your deployed bot's **base** HTTPS URL, with no
+     `/play` suffix (e.g. `https://my-bot.fly.dev`) — Vorryn appends
+     `/play` itself.
+   - **Shared secret** — the value of `BOT_BEARER` you set in `.env`
+     (32+ characters).
+4. Click **Enlist Bot**.
+
+Your bot is now ready. Seat it from the seat plan in any game **you**
+create; opponents at the table play against it, but only you can deploy
+it. The shared secret is stored encrypted and never shown to anyone but you.
+
+## Where to put your strategy
+
+`src/strategy.ts` exports `pickAction(req: BotRequest): BotResponse`.
+Read the validated request, return the chosen `actionId` (must be one
+of `req.validActions[i].id`).
+
+Ideas, ordered from least to most effort:
+
+1. **Random.** `req.validActions[Math.floor(Math.random() * req.validActions.length)].id`.
+2. **Greedy heuristic.** Score each candidate with a hand-tuned
+   function over the visible state. The Vorryn first-party bot uses
+   this approach at scale (25+ score-rule modules).
+3. **One-ply lookahead.** Score each candidate's expected outcome by
+   simulating one move forward; pick the highest. Costs more time —
+   stay under 12s.
+4. **Monte Carlo tree search.** Simulate many random rollouts from
+   each candidate; pick by win-rate. Works well with a budget of a
+   few seconds.
+
+Two fixtures show what your bot will receive. The small one
+(`play-request.json`) is hand-readable: a typical action-phase turn with
+a few candidates and an `endTurn`. The full one
+(`play-request-full.json`, ~93 KB pretty-printed; ~55 KB as actually
+sent on the wire, ~6 KB gzipped) is captured from a real self-play
+game at turn 10 — three fully populated players, a complete board
+(19 hexes, 54 intersections, 72 edges, 9 harbors), 99 candidates
+dominated by trade proposals, `validActionsTruncated: true` with
+`truncatedFamilies` set, a real dice histogram, and a 60-event
+`recentEvents` window. Use it to see realistic payload sizes, opponent
+redaction (you never see opponents' hands, only `opponentMaterialTypes`),
+and the truncation flag actually firing. Your strategy must handle:
+
+- **Setup phases** (`state.phase === 'setup1'` / `'setup2'`).
+- **Roll phase** (just `rollDice`, plus any pre-roll progress cards).
+- **Pending decisions** (`state.pendingDecision !== null` — the
+  candidate list is restricted to legal answers).
+
+A trivial fallback is fine for any of these: just pick
+`validActions[0]`. Every candidate in the request has already been
+validated by Vorryn.
+
+## Deploying
+
+Any HTTPS-capable host with persistent process memory will work. The
+sample is small enough for free tiers on Fly.io, Render, or Railway:
+
+```bash
+# Fly.io example
+fly launch --no-deploy
+# Then edit fly.toml: set internal_port = 3001, copy .env into Fly secrets.
+fly secrets set BOT_BEARER="<your-secret>"
+fly deploy
+```
+
+Scale-to-zero serverless (AWS Lambda, Azure Functions on Consumption,
+Cloud Run on min-instances=0) will work but expect occasional turn
+forfeits on cold starts — the Vorryn server's per-request budget is
+12 seconds, and a Node Lambda cold start eats a noticeable chunk of
+that. For competitive play, one always-warm instance is worth it.
+
+## FAQ
+
+### Does a bot builder have everything they need to build the best possible bot?
+
+Yes — up to the information a player at the table is entitled to. The
+`state` in every request passes through the same viewer-redaction layer
+as the human browser client, so your bot sees exactly what a human
+sitting in its seat would see: the full board, its own hand, and every
+opponent's public position (points, knights, improvements, hand _sizes_,
+and the set of material types in play across opponents — never the cards
+themselves or a per-opponent type breakdown). Hidden information
+— opponents' hands, the shuffled decks, the dice seed — is hidden from
+everyone equally, including the first-party bot. So the ceiling is "the
+strongest possible player with public information," which is the same
+ceiling humans play under. Nothing a human player gets is withheld
+from your bot.
+
+You also get a few things a human has to track by hand:
+
+- `diceHistogram` — the full production-roll tally for the game so far.
+- `recentEvents` — a bounded window of public events, useful for
+  inference (who just gained which material type, who traded what).
+- `validActions` — every legal move, pre-validated, so you spend zero
+  effort on rules enforcement.
+- [`RULES_REFERENCE.md`](../../docs/RULES_REFERENCE.md) — the complete
+  implemented-rules reference, drift-tested against the engine itself.
+
+The one structural constraint: your bot _selects_ a candidate, it never
+constructs its own move payload. That isn't a strategic handicap — the
+candidate list is the enumeration of legal moves (see the next
+question).
+
+### What are the chances the "best" move is not in `validActions`?
+
+Effectively zero for everything except trade offers — and the request
+tells you explicitly when it happens.
+
+Enumeration is exhaustive per action family with one safeguard: each
+family is capped at 96 candidates (forced decisions like discards get a
+much larger 4,096 cap that real hands essentially never reach). Builds,
+card plays, piece moves, maritime trades, and pending-decision answers
+all enumerate completely in practice — every legal option is in the
+list.
+
+The only family that genuinely hits the cap is domestic trade
+proposals, whose combinatorics explode with hand size. Three things
+keep that from costing you:
+
+1. **You're told.** `validActionsTruncated: true` plus
+   `truncatedFamilies` naming the capped family — never silent.
+2. **Truncation is ordered, not random.** The enumerator emits offers
+   asking for the proposer's bottleneck resources _first_, so the
+   highest-value asks survive the cap, and multi-card bundles get a
+   reserved sub-quota so simple 1-for-1 pairs can't crowd them out.
+3. **Trades need a counterparty anyway.** A trade offer is a proposal,
+   not a resolution — a "missing" permutation of a similar surviving
+   offer rarely changes the outcome.
+
+So: if your dream move is a build, a card, or a move, it's in the list.
+If it's one of a hundred near-identical trade offers, a representative
+high-value version of it is in the list, and the flags tell you the
+family was trimmed.
+
+### Is cheating possible in this game?
+
+Not through your bot — the protocol is designed so the classic cheats
+are structurally impossible, not merely against the rules:
+
+- **Illegal moves.** Your bot never submits a move, only an `id` from
+  the list Vorryn already validated. An `actionId` outside that list is
+  rejected outright; there is no payload of your own construction to
+  smuggle anything into.
+- **Peeking at hidden information.** Redaction happens on the Vorryn
+  server _before_ the request is built. Opponents' hands, the deck
+  order, and the dice seed are never on the wire — no amount of clever
+  parsing can recover what was never sent.
+- **Rigging the dice.** Rolls happen inside the server engine. Your bot
+  can choose _to_ roll (when that's the legal move); it has no input
+  into the result.
+- **Acting out of turn.** Vorryn calls your bot only when it has a
+  decision to make, and applies exactly one chosen action per request.
+  There's nothing to replay, reorder, or flood.
+
+A slow or crashed bot can't stall a game either — see the failure
+question below.
+
+What remains is what remains at any table: soft play — a bot could
+deliberately favor one opponent. Since only you can seat your bots in
+games you create, your table always knows whose bots they're playing
+with, and that reputation is yours to keep.
+
+### Are the dice rolls fair?
+
+Yes — and unusually for an online game, you can verify it yourself.
+
+Every game gets a secret seed drawn from the platform's
+cryptographically secure RNG at creation. From then on each roll (two
+production dice plus the event die) is derived deterministically from
+that seed and the game's state version — the same path for every
+player, human or bot, with no reroll, no nudge, and no way for the
+server operator to favor a seat without it being detectable.
+
+Three properties fall out of that design:
+
+- **Nobody can predict rolls mid-game.** The seed never appears on the
+  wire while a game is active — not to players, not to bots, not in
+  the decision traces. Knowing it would mean knowing every future roll,
+  so it's treated like a credential.
+- **Everybody sees the same evidence.** The `diceHistogram` in every
+  request is the actual tally of production rolls so far. A streak of
+  8s is right there in the data for all seats equally.
+- **Completed games are auditable.** Once a game ends, the seed is
+  surfaced to its participants for offline review. Anyone at the table
+  can re-derive the full roll sequence from the seed and confirm every
+  roll the game reported is exactly what the seed dictated — fairness
+  by replay, not by trust.
+
+And yes, real dice are streaky — a fair 2d6 distribution _will_ hand
+someone three 11s in a row occasionally. The histogram converges on
+the bell curve over a game; short-run variance is the game working as
+designed, and good bots (see `diceHistogram`) plan around it rather
+than complain about it.
+
+### Does my bot only play its own turns?
+
+No — it's consulted for every decision its seat owes the table, and
+some of those happen on _other players'_ turns: responding to an
+incoming trade offer, discarding half its hand when the dice demand
+it, handing over cards an opponent's progress card forces. The good
+news is these need no special handling: when
+`state.pendingDecision !== null`, `validActions` is already restricted
+to the legal answers. One code path — score the candidates, return an
+`id` — covers all of it.
+
+### What happens if my bot crashes, times out, or returns something invalid?
+
+The game continues and your bot stays seated. Any failure — timeout
+(12s budget per attempt), connection error, malformed response, an
+`actionId` not in the list — gets one quick retry (so a hard timeout
+delays a decision by at most ~24s); if that fails too, Vorryn's
+first-party bot plays that one decision instead, and your bot is
+called again for the next one. Each
+substitution is recorded per decision (with the error text) on the
+game's bot-decisions page, so a flaky deploy shows up as a visible
+streak of fallbacks rather than a silently lost game.
+
+### Can my bot remember things between turns?
+
+The protocol won't do it for you — every request is self-contained by
+design (full redacted state, `recentEvents`, `diceHistogram`), so a
+completely stateless function is a fully competitive bot. If you want
+memory anyway (opponent modeling, plan continuity), keep your own
+store keyed by `gameId` + `playerId`. Just treat it as a cache: your
+process can restart mid-game, and the next request must be answerable
+from its own contents.
+
+### How do I debug my bot after a game?
+
+Two tools. First, return an optional `decisionTrace` (keep it ≤4KB)
+with whatever you'll want later — strategy name, chosen score, the
+runner-up gap. Vorryn persists it per decision and shows it on the
+game's bot-decisions page alongside what was picked. Second, once the
+game completes, its dice seed is revealed (see the fairness question
+above), so the entire game is deterministically replayable — you can
+reconstruct any decision point your bot faced and rerun your strategy
+against it offline.
+
+### What is `personality`?
+
+An optional preset key (`aggressive`, `builder`, `trader`, …) the game
+creator can assign per seat; the first-party bot merges it over its
+tuning baseline. Your bot is free to honor it for flavor — or ignore
+it entirely. It's the canonical example of a v1.x additive field: bots
+that never read it work fine, and your schema codegen shouldn't error
+on unknown fields generally.
+
+### How strong is the first-party bot — can I actually beat it?
+
+It's a greedy heuristic at scale: 25+ hand-tuned scoring rules over
+the current decision, plus a lightweight one-step lookahead. No game
+tree search, no rollouts, no hidden-information modeling beyond what's
+public — and it plays under exactly the same information limits you
+do. That's a real opponent, but a beatable one: a well-built MCTS bot
+with a few seconds of budget, or even a sharper heuristic tuned
+against it, can take it down. Someone's bot is going to be the
+strongest player on the platform. No reason it can't be yours.
+
+## License
+
+MIT — do whatever you want with this code.

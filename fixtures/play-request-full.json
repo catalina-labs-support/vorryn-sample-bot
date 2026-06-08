@@ -1,0 +1,4009 @@
+{
+  "protocolVersion": 1,
+  "gameId": "capture-game",
+  "playerId": "p-red",
+  "state": {
+    "id": "capture-game",
+    "version": 160,
+    "phase": "action",
+    "currentPlayerId": "p-red",
+    "turnNumber": 10,
+    "players": {
+      "p-red": {
+        "id": "p-red",
+        "seatIndex": 0,
+        "color": "red",
+        "victoryPoints": 3,
+        "vpTokens": 0,
+        "revealedVpCards": [],
+        "roadsInSupply": 13,
+        "settlementsInSupply": 4,
+        "citiesInSupply": 3,
+        "cityWallsInSupply": 3,
+        "knightsInSupply": {
+          "basic": 2,
+          "strong": 1,
+          "mighty": 2
+        },
+        "scienceLevel": 2,
+        "tradeLevel": 0,
+        "politicsLevel": 2,
+        "metropolisCount": 0,
+        "resources": {
+          "lumber": 3,
+          "ore": 1,
+          "grain": 1,
+          "wool": 0
+        },
+        "commodities": {
+          "paper": 2,
+          "coin": 0,
+          "cloth": 1
+        },
+        "progressHand": [
+          {
+            "instanceId": "sci_scienceMining_1",
+            "cardId": "scienceMining"
+          }
+        ],
+        "merchantFleetType": null,
+        "freeRoadsRemaining": 0,
+        "cranePlayed": false,
+        "medicinePlayed": false,
+        "progressCardsPlayedThisTurn": [],
+        "knightActionsUsedThisTurn": [],
+        "knightsActivatedThisTurn": [],
+        "knightPromotionsUsedThisTurn": [],
+        "domesticTradeProposalsThisTurn": 0
+      },
+      "p-blue": {
+        "id": "p-blue",
+        "seatIndex": 1,
+        "color": "blue",
+        "victoryPoints": 4,
+        "vpTokens": 0,
+        "revealedVpCards": [],
+        "roadsInSupply": 11,
+        "settlementsInSupply": 5,
+        "citiesInSupply": 2,
+        "cityWallsInSupply": 3,
+        "knightsInSupply": {
+          "basic": 1,
+          "strong": 2,
+          "mighty": 2
+        },
+        "scienceLevel": 1,
+        "tradeLevel": 0,
+        "politicsLevel": 1,
+        "metropolisCount": 0,
+        "resourceCount": 4,
+        "commodityCount": 1,
+        "progressHandCount": 0
+      },
+      "p-orange": {
+        "id": "p-orange",
+        "seatIndex": 2,
+        "color": "orange",
+        "victoryPoints": 5,
+        "vpTokens": 1,
+        "revealedVpCards": [],
+        "roadsInSupply": 12,
+        "settlementsInSupply": 5,
+        "citiesInSupply": 2,
+        "cityWallsInSupply": 3,
+        "knightsInSupply": {
+          "basic": 1,
+          "strong": 1,
+          "mighty": 2
+        },
+        "scienceLevel": 3,
+        "tradeLevel": 2,
+        "politicsLevel": 2,
+        "metropolisCount": 0,
+        "resourceCount": 5,
+        "commodityCount": 2,
+        "progressHandCount": 0
+      }
+    },
+    "board": {
+      "hexes": {
+        "0,-2": {
+          "id": "0,-2",
+          "type": "fields",
+          "numberToken": 6,
+          "robberPresent": false,
+          "merchantPresent": false
+        },
+        "1,-2": {
+          "id": "1,-2",
+          "type": "mountains",
+          "numberToken": 8,
+          "robberPresent": false,
+          "merchantPresent": false
+        },
+        "2,-2": {
+          "id": "2,-2",
+          "type": "pasture",
+          "numberToken": 8,
+          "robberPresent": true,
+          "merchantPresent": false
+        },
+        "-1,-1": {
+          "id": "-1,-1",
+          "type": "hills",
+          "numberToken": 10,
+          "robberPresent": false,
+          "merchantPresent": false
+        },
+        "0,-1": {
+          "id": "0,-1",
+          "type": "pasture",
+          "numberToken": 9,
+          "robberPresent": false,
+          "merchantPresent": false
+        },
+        "1,-1": {
+          "id": "1,-1",
+          "type": "pasture",
+          "numberToken": 2,
+          "robberPresent": false,
+          "merchantPresent": false
+        },
+        "2,-1": {
+          "id": "2,-1",
+          "type": "desert",
+          "numberToken": null,
+          "robberPresent": false,
+          "merchantPresent": false
+        },
+        "-2,0": {
+          "id": "-2,0",
+          "type": "forest",
+          "numberToken": 3,
+          "robberPresent": false,
+          "merchantPresent": false
+        },
+        "-1,0": {
+          "id": "-1,0",
+          "type": "fields",
+          "numberToken": 11,
+          "robberPresent": false,
+          "merchantPresent": false
+        },
+        "0,0": {
+          "id": "0,0",
+          "type": "forest",
+          "numberToken": 5,
+          "robberPresent": false,
+          "merchantPresent": false
+        },
+        "1,0": {
+          "id": "1,0",
+          "type": "hills",
+          "numberToken": 6,
+          "robberPresent": false,
+          "merchantPresent": false
+        },
+        "2,0": {
+          "id": "2,0",
+          "type": "hills",
+          "numberToken": 12,
+          "robberPresent": false,
+          "merchantPresent": false
+        },
+        "-2,1": {
+          "id": "-2,1",
+          "type": "forest",
+          "numberToken": 3,
+          "robberPresent": false,
+          "merchantPresent": false
+        },
+        "-1,1": {
+          "id": "-1,1",
+          "type": "forest",
+          "numberToken": 5,
+          "robberPresent": false,
+          "merchantPresent": false
+        },
+        "0,1": {
+          "id": "0,1",
+          "type": "mountains",
+          "numberToken": 10,
+          "robberPresent": false,
+          "merchantPresent": false
+        },
+        "1,1": {
+          "id": "1,1",
+          "type": "fields",
+          "numberToken": 11,
+          "robberPresent": false,
+          "merchantPresent": false
+        },
+        "-2,2": {
+          "id": "-2,2",
+          "type": "pasture",
+          "numberToken": 9,
+          "robberPresent": false,
+          "merchantPresent": false
+        },
+        "-1,2": {
+          "id": "-1,2",
+          "type": "mountains",
+          "numberToken": 4,
+          "robberPresent": false,
+          "merchantPresent": false
+        },
+        "0,2": {
+          "id": "0,2",
+          "type": "fields",
+          "numberToken": 4,
+          "robberPresent": false,
+          "merchantPresent": false
+        }
+      },
+      "intersections": {
+        "0,-2|0,-3|1,-3": {
+          "id": "0,-2|0,-3|1,-3",
+          "adjacentHexIds": ["0,-2"],
+          "adjacentEdgeIds": ["0,-2|0,-3|1,-3--0,-2|1,-2|1,-3", "-1,-2|0,-2|0,-3--0,-2|0,-3|1,-3"],
+          "building": null,
+          "knight": null
+        },
+        "0,-2|1,-2|1,-3": {
+          "id": "0,-2|1,-2|1,-3",
+          "adjacentHexIds": ["0,-2", "1,-2"],
+          "adjacentEdgeIds": [
+            "0,-2|0,-3|1,-3--0,-2|1,-2|1,-3",
+            "0,-1|0,-2|1,-2--0,-2|1,-2|1,-3",
+            "0,-2|1,-2|1,-3--1,-2|1,-3|2,-3"
+          ],
+          "building": null,
+          "knight": null
+        },
+        "0,-1|0,-2|1,-2": {
+          "id": "0,-1|0,-2|1,-2",
+          "adjacentHexIds": ["0,-2", "1,-2", "0,-1"],
+          "adjacentEdgeIds": [
+            "0,-1|0,-2|1,-2--0,-2|1,-2|1,-3",
+            "-1,-1|0,-1|0,-2--0,-1|0,-2|1,-2",
+            "0,-1|0,-2|1,-2--0,-1|1,-1|1,-2"
+          ],
+          "building": {
+            "ownerPlayerId": "p-red",
+            "type": "settlement",
+            "cityWallPresent": false,
+            "metropolisType": null
+          },
+          "knight": null
+        },
+        "-1,-1|0,-1|0,-2": {
+          "id": "-1,-1|0,-1|0,-2",
+          "adjacentHexIds": ["0,-2", "0,-1", "-1,-1"],
+          "adjacentEdgeIds": [
+            "-1,-1|0,-1|0,-2--0,-1|0,-2|1,-2",
+            "-1,-1|-1,-2|0,-2---1,-1|0,-1|0,-2",
+            "-1,-1|-1,0|0,-1---1,-1|0,-1|0,-2"
+          ],
+          "building": null,
+          "knight": null
+        },
+        "-1,-1|-1,-2|0,-2": {
+          "id": "-1,-1|-1,-2|0,-2",
+          "adjacentHexIds": ["0,-2", "-1,-1"],
+          "adjacentEdgeIds": [
+            "-1,-1|-1,-2|0,-2---1,-1|0,-1|0,-2",
+            "-1,-1|-1,-2|0,-2---1,-2|0,-2|0,-3",
+            "-1,-1|-1,-2|-2,-1---1,-1|-1,-2|0,-2"
+          ],
+          "building": null,
+          "knight": null
+        },
+        "-1,-2|0,-2|0,-3": {
+          "id": "-1,-2|0,-2|0,-3",
+          "adjacentHexIds": ["0,-2"],
+          "adjacentEdgeIds": [
+            "-1,-1|-1,-2|0,-2---1,-2|0,-2|0,-3",
+            "-1,-2|0,-2|0,-3--0,-2|0,-3|1,-3"
+          ],
+          "building": null,
+          "knight": null
+        },
+        "1,-2|1,-3|2,-3": {
+          "id": "1,-2|1,-3|2,-3",
+          "adjacentHexIds": ["1,-2"],
+          "adjacentEdgeIds": ["1,-2|1,-3|2,-3--1,-2|2,-2|2,-3", "0,-2|1,-2|1,-3--1,-2|1,-3|2,-3"],
+          "building": null,
+          "knight": null
+        },
+        "1,-2|2,-2|2,-3": {
+          "id": "1,-2|2,-2|2,-3",
+          "adjacentHexIds": ["1,-2", "2,-2"],
+          "adjacentEdgeIds": [
+            "1,-2|1,-3|2,-3--1,-2|2,-2|2,-3",
+            "1,-1|1,-2|2,-2--1,-2|2,-2|2,-3",
+            "1,-2|2,-2|2,-3--2,-2|2,-3|3,-3"
+          ],
+          "building": null,
+          "knight": null
+        },
+        "1,-1|1,-2|2,-2": {
+          "id": "1,-1|1,-2|2,-2",
+          "adjacentHexIds": ["1,-2", "2,-2", "1,-1"],
+          "adjacentEdgeIds": [
+            "1,-1|1,-2|2,-2--1,-2|2,-2|2,-3",
+            "0,-1|1,-1|1,-2--1,-1|1,-2|2,-2",
+            "1,-1|1,-2|2,-2--1,-1|2,-1|2,-2"
+          ],
+          "building": {
+            "ownerPlayerId": "p-orange",
+            "type": "city",
+            "cityWallPresent": false,
+            "metropolisType": null
+          },
+          "knight": null
+        },
+        "0,-1|1,-1|1,-2": {
+          "id": "0,-1|1,-1|1,-2",
+          "adjacentHexIds": ["1,-2", "1,-1", "0,-1"],
+          "adjacentEdgeIds": [
+            "0,-1|1,-1|1,-2--1,-1|1,-2|2,-2",
+            "0,-1|0,-2|1,-2--0,-1|1,-1|1,-2",
+            "0,-1|0,0|1,-1--0,-1|1,-1|1,-2"
+          ],
+          "building": null,
+          "knight": {
+            "id": "knight-p-orange-18",
+            "ownerPlayerId": "p-orange",
+            "level": "strong",
+            "state": "active",
+            "locationIntersectionId": "0,-1|1,-1|1,-2"
+          }
+        },
+        "2,-2|2,-3|3,-3": {
+          "id": "2,-2|2,-3|3,-3",
+          "adjacentHexIds": ["2,-2"],
+          "adjacentEdgeIds": ["2,-2|2,-3|3,-3--2,-2|3,-2|3,-3", "1,-2|2,-2|2,-3--2,-2|2,-3|3,-3"],
+          "building": null,
+          "knight": null
+        },
+        "2,-2|3,-2|3,-3": {
+          "id": "2,-2|3,-2|3,-3",
+          "adjacentHexIds": ["2,-2"],
+          "adjacentEdgeIds": ["2,-2|2,-3|3,-3--2,-2|3,-2|3,-3", "2,-1|2,-2|3,-2--2,-2|3,-2|3,-3"],
+          "building": null,
+          "knight": null
+        },
+        "2,-1|2,-2|3,-2": {
+          "id": "2,-1|2,-2|3,-2",
+          "adjacentHexIds": ["2,-2", "2,-1"],
+          "adjacentEdgeIds": [
+            "2,-1|2,-2|3,-2--2,-2|3,-2|3,-3",
+            "1,-1|2,-1|2,-2--2,-1|2,-2|3,-2",
+            "2,-1|2,-2|3,-2--2,-1|3,-1|3,-2"
+          ],
+          "building": null,
+          "knight": null
+        },
+        "1,-1|2,-1|2,-2": {
+          "id": "1,-1|2,-1|2,-2",
+          "adjacentHexIds": ["2,-2", "2,-1", "1,-1"],
+          "adjacentEdgeIds": [
+            "1,-1|2,-1|2,-2--2,-1|2,-2|3,-2",
+            "1,-1|1,-2|2,-2--1,-1|2,-1|2,-2",
+            "1,-1|1,0|2,-1--1,-1|2,-1|2,-2"
+          ],
+          "building": null,
+          "knight": null
+        },
+        "-1,-1|-1,0|0,-1": {
+          "id": "-1,-1|-1,0|0,-1",
+          "adjacentHexIds": ["-1,-1", "0,-1", "-1,0"],
+          "adjacentEdgeIds": [
+            "-1,-1|-1,0|0,-1---1,-1|0,-1|0,-2",
+            "-1,-1|-1,0|-2,0---1,-1|-1,0|0,-1",
+            "-1,-1|-1,0|0,-1---1,0|0,-1|0,0"
+          ],
+          "building": null,
+          "knight": null
+        },
+        "-1,-1|-1,0|-2,0": {
+          "id": "-1,-1|-1,0|-2,0",
+          "adjacentHexIds": ["-1,-1", "-1,0", "-2,0"],
+          "adjacentEdgeIds": [
+            "-1,-1|-1,0|-2,0---1,-1|-1,0|0,-1",
+            "-1,-1|-1,0|-2,0---1,-1|-2,-1|-2,0",
+            "-1,-1|-1,0|-2,0---1,0|-2,0|-2,1"
+          ],
+          "building": null,
+          "knight": null
+        },
+        "-1,-1|-2,-1|-2,0": {
+          "id": "-1,-1|-2,-1|-2,0",
+          "adjacentHexIds": ["-1,-1", "-2,0"],
+          "adjacentEdgeIds": [
+            "-1,-1|-1,0|-2,0---1,-1|-2,-1|-2,0",
+            "-1,-1|-1,-2|-2,-1---1,-1|-2,-1|-2,0",
+            "-1,-1|-2,-1|-2,0---2,-1|-2,0|-3,0"
+          ],
+          "building": null,
+          "knight": null
+        },
+        "-1,-1|-1,-2|-2,-1": {
+          "id": "-1,-1|-1,-2|-2,-1",
+          "adjacentHexIds": ["-1,-1"],
+          "adjacentEdgeIds": [
+            "-1,-1|-1,-2|-2,-1---1,-1|-2,-1|-2,0",
+            "-1,-1|-1,-2|-2,-1---1,-1|-1,-2|0,-2"
+          ],
+          "building": null,
+          "knight": null
+        },
+        "0,-1|0,0|1,-1": {
+          "id": "0,-1|0,0|1,-1",
+          "adjacentHexIds": ["0,-1", "1,-1", "0,0"],
+          "adjacentEdgeIds": [
+            "0,-1|0,0|1,-1--0,-1|1,-1|1,-2",
+            "-1,0|0,-1|0,0--0,-1|0,0|1,-1",
+            "0,-1|0,0|1,-1--0,0|1,-1|1,0"
+          ],
+          "building": null,
+          "knight": null
+        },
+        "-1,0|0,-1|0,0": {
+          "id": "-1,0|0,-1|0,0",
+          "adjacentHexIds": ["0,-1", "0,0", "-1,0"],
+          "adjacentEdgeIds": [
+            "-1,0|0,-1|0,0--0,-1|0,0|1,-1",
+            "-1,-1|-1,0|0,-1---1,0|0,-1|0,0",
+            "-1,0|-1,1|0,0---1,0|0,-1|0,0"
+          ],
+          "building": null,
+          "knight": {
+            "id": "knight-p-orange-128",
+            "ownerPlayerId": "p-orange",
+            "level": "basic",
+            "state": "active",
+            "locationIntersectionId": "-1,0|0,-1|0,0"
+          }
+        },
+        "1,-1|1,0|2,-1": {
+          "id": "1,-1|1,0|2,-1",
+          "adjacentHexIds": ["1,-1", "2,-1", "1,0"],
+          "adjacentEdgeIds": [
+            "1,-1|1,0|2,-1--1,-1|2,-1|2,-2",
+            "0,0|1,-1|1,0--1,-1|1,0|2,-1",
+            "1,-1|1,0|2,-1--1,0|2,-1|2,0"
+          ],
+          "building": null,
+          "knight": null
+        },
+        "0,0|1,-1|1,0": {
+          "id": "0,0|1,-1|1,0",
+          "adjacentHexIds": ["1,-1", "1,0", "0,0"],
+          "adjacentEdgeIds": [
+            "0,0|1,-1|1,0--1,-1|1,0|2,-1",
+            "0,-1|0,0|1,-1--0,0|1,-1|1,0",
+            "0,0|0,1|1,0--0,0|1,-1|1,0"
+          ],
+          "building": null,
+          "knight": null
+        },
+        "2,-1|3,-1|3,-2": {
+          "id": "2,-1|3,-1|3,-2",
+          "adjacentHexIds": ["2,-1"],
+          "adjacentEdgeIds": ["2,-1|2,-2|3,-2--2,-1|3,-1|3,-2", "2,-1|2,0|3,-1--2,-1|3,-1|3,-2"],
+          "building": null,
+          "knight": null
+        },
+        "2,-1|2,0|3,-1": {
+          "id": "2,-1|2,0|3,-1",
+          "adjacentHexIds": ["2,-1", "2,0"],
+          "adjacentEdgeIds": [
+            "2,-1|2,0|3,-1--2,-1|3,-1|3,-2",
+            "1,0|2,-1|2,0--2,-1|2,0|3,-1",
+            "2,-1|2,0|3,-1--2,0|3,-1|3,0"
+          ],
+          "building": null,
+          "knight": null
+        },
+        "1,0|2,-1|2,0": {
+          "id": "1,0|2,-1|2,0",
+          "adjacentHexIds": ["2,-1", "2,0", "1,0"],
+          "adjacentEdgeIds": [
+            "1,0|2,-1|2,0--2,-1|2,0|3,-1",
+            "1,-1|1,0|2,-1--1,0|2,-1|2,0",
+            "1,0|1,1|2,0--1,0|2,-1|2,0"
+          ],
+          "building": null,
+          "knight": null
+        },
+        "-1,0|-2,0|-2,1": {
+          "id": "-1,0|-2,0|-2,1",
+          "adjacentHexIds": ["-2,0", "-1,0", "-2,1"],
+          "adjacentEdgeIds": [
+            "-1,-1|-1,0|-2,0---1,0|-2,0|-2,1",
+            "-1,0|-2,0|-2,1---2,0|-2,1|-3,1",
+            "-1,0|-1,1|-2,1---1,0|-2,0|-2,1"
+          ],
+          "building": null,
+          "knight": null
+        },
+        "-2,0|-2,1|-3,1": {
+          "id": "-2,0|-2,1|-3,1",
+          "adjacentHexIds": ["-2,0", "-2,1"],
+          "adjacentEdgeIds": [
+            "-1,0|-2,0|-2,1---2,0|-2,1|-3,1",
+            "-2,0|-2,1|-3,1---2,0|-3,0|-3,1",
+            "-2,0|-2,1|-3,1---2,1|-3,1|-3,2"
+          ],
+          "building": null,
+          "knight": null
+        },
+        "-2,0|-3,0|-3,1": {
+          "id": "-2,0|-3,0|-3,1",
+          "adjacentHexIds": ["-2,0"],
+          "adjacentEdgeIds": ["-2,0|-2,1|-3,1---2,0|-3,0|-3,1", "-2,-1|-2,0|-3,0---2,0|-3,0|-3,1"],
+          "building": null,
+          "knight": null
+        },
+        "-2,-1|-2,0|-3,0": {
+          "id": "-2,-1|-2,0|-3,0",
+          "adjacentHexIds": ["-2,0"],
+          "adjacentEdgeIds": [
+            "-2,-1|-2,0|-3,0---2,0|-3,0|-3,1",
+            "-1,-1|-2,-1|-2,0---2,-1|-2,0|-3,0"
+          ],
+          "building": null,
+          "knight": null
+        },
+        "-1,0|-1,1|0,0": {
+          "id": "-1,0|-1,1|0,0",
+          "adjacentHexIds": ["-1,0", "0,0", "-1,1"],
+          "adjacentEdgeIds": [
+            "-1,0|-1,1|0,0---1,0|0,-1|0,0",
+            "-1,0|-1,1|-2,1---1,0|-1,1|0,0",
+            "-1,0|-1,1|0,0---1,1|0,0|0,1"
+          ],
+          "building": {
+            "ownerPlayerId": "p-orange",
+            "type": "city",
+            "cityWallPresent": false,
+            "metropolisType": null
+          },
+          "knight": null
+        },
+        "-1,0|-1,1|-2,1": {
+          "id": "-1,0|-1,1|-2,1",
+          "adjacentHexIds": ["-1,0", "-1,1", "-2,1"],
+          "adjacentEdgeIds": [
+            "-1,0|-1,1|-2,1---1,0|-1,1|0,0",
+            "-1,0|-1,1|-2,1---1,0|-2,0|-2,1",
+            "-1,0|-1,1|-2,1---1,1|-2,1|-2,2"
+          ],
+          "building": null,
+          "knight": null
+        },
+        "0,0|0,1|1,0": {
+          "id": "0,0|0,1|1,0",
+          "adjacentHexIds": ["0,0", "1,0", "0,1"],
+          "adjacentEdgeIds": [
+            "0,0|0,1|1,0--0,0|1,-1|1,0",
+            "-1,1|0,0|0,1--0,0|0,1|1,0",
+            "0,0|0,1|1,0--0,1|1,0|1,1"
+          ],
+          "building": {
+            "ownerPlayerId": "p-blue",
+            "type": "city",
+            "cityWallPresent": false,
+            "metropolisType": null
+          },
+          "knight": null
+        },
+        "-1,1|0,0|0,1": {
+          "id": "-1,1|0,0|0,1",
+          "adjacentHexIds": ["0,0", "0,1", "-1,1"],
+          "adjacentEdgeIds": [
+            "-1,1|0,0|0,1--0,0|0,1|1,0",
+            "-1,0|-1,1|0,0---1,1|0,0|0,1",
+            "-1,1|-1,2|0,1---1,1|0,0|0,1"
+          ],
+          "building": null,
+          "knight": null
+        },
+        "1,0|1,1|2,0": {
+          "id": "1,0|1,1|2,0",
+          "adjacentHexIds": ["1,0", "2,0", "1,1"],
+          "adjacentEdgeIds": [
+            "1,0|1,1|2,0--1,0|2,-1|2,0",
+            "0,1|1,0|1,1--1,0|1,1|2,0",
+            "1,0|1,1|2,0--1,1|2,0|2,1"
+          ],
+          "building": null,
+          "knight": null
+        },
+        "0,1|1,0|1,1": {
+          "id": "0,1|1,0|1,1",
+          "adjacentHexIds": ["1,0", "1,1", "0,1"],
+          "adjacentEdgeIds": [
+            "0,1|1,0|1,1--1,0|1,1|2,0",
+            "0,0|0,1|1,0--0,1|1,0|1,1",
+            "0,1|0,2|1,1--0,1|1,0|1,1"
+          ],
+          "building": null,
+          "knight": null
+        },
+        "2,0|3,-1|3,0": {
+          "id": "2,0|3,-1|3,0",
+          "adjacentHexIds": ["2,0"],
+          "adjacentEdgeIds": ["2,-1|2,0|3,-1--2,0|3,-1|3,0", "2,0|2,1|3,0--2,0|3,-1|3,0"],
+          "building": null,
+          "knight": null
+        },
+        "2,0|2,1|3,0": {
+          "id": "2,0|2,1|3,0",
+          "adjacentHexIds": ["2,0"],
+          "adjacentEdgeIds": ["2,0|2,1|3,0--2,0|3,-1|3,0", "1,1|2,0|2,1--2,0|2,1|3,0"],
+          "building": null,
+          "knight": null
+        },
+        "1,1|2,0|2,1": {
+          "id": "1,1|2,0|2,1",
+          "adjacentHexIds": ["2,0", "1,1"],
+          "adjacentEdgeIds": [
+            "1,1|2,0|2,1--2,0|2,1|3,0",
+            "1,0|1,1|2,0--1,1|2,0|2,1",
+            "1,1|1,2|2,1--1,1|2,0|2,1"
+          ],
+          "building": null,
+          "knight": null
+        },
+        "-1,1|-2,1|-2,2": {
+          "id": "-1,1|-2,1|-2,2",
+          "adjacentHexIds": ["-2,1", "-1,1", "-2,2"],
+          "adjacentEdgeIds": [
+            "-1,0|-1,1|-2,1---1,1|-2,1|-2,2",
+            "-1,1|-2,1|-2,2---2,1|-2,2|-3,2",
+            "-1,1|-1,2|-2,2---1,1|-2,1|-2,2"
+          ],
+          "building": null,
+          "knight": null
+        },
+        "-2,1|-2,2|-3,2": {
+          "id": "-2,1|-2,2|-3,2",
+          "adjacentHexIds": ["-2,1", "-2,2"],
+          "adjacentEdgeIds": [
+            "-1,1|-2,1|-2,2---2,1|-2,2|-3,2",
+            "-2,1|-2,2|-3,2---2,1|-3,1|-3,2",
+            "-2,1|-2,2|-3,2---2,2|-3,2|-3,3"
+          ],
+          "building": null,
+          "knight": null
+        },
+        "-2,1|-3,1|-3,2": {
+          "id": "-2,1|-3,1|-3,2",
+          "adjacentHexIds": ["-2,1"],
+          "adjacentEdgeIds": ["-2,1|-2,2|-3,2---2,1|-3,1|-3,2", "-2,0|-2,1|-3,1---2,1|-3,1|-3,2"],
+          "building": null,
+          "knight": null
+        },
+        "-1,1|-1,2|0,1": {
+          "id": "-1,1|-1,2|0,1",
+          "adjacentHexIds": ["-1,1", "0,1", "-1,2"],
+          "adjacentEdgeIds": [
+            "-1,1|-1,2|0,1---1,1|0,0|0,1",
+            "-1,1|-1,2|-2,2---1,1|-1,2|0,1",
+            "-1,1|-1,2|0,1---1,2|0,1|0,2"
+          ],
+          "building": {
+            "ownerPlayerId": "p-red",
+            "type": "city",
+            "cityWallPresent": false,
+            "metropolisType": null
+          },
+          "knight": null
+        },
+        "-1,1|-1,2|-2,2": {
+          "id": "-1,1|-1,2|-2,2",
+          "adjacentHexIds": ["-1,1", "-1,2", "-2,2"],
+          "adjacentEdgeIds": [
+            "-1,1|-1,2|-2,2---1,1|-1,2|0,1",
+            "-1,1|-1,2|-2,2---1,1|-2,1|-2,2",
+            "-1,1|-1,2|-2,2---1,2|-2,2|-2,3"
+          ],
+          "building": null,
+          "knight": {
+            "id": "knight-p-red-40",
+            "ownerPlayerId": "p-red",
+            "level": "strong",
+            "state": "active",
+            "locationIntersectionId": "-1,1|-1,2|-2,2"
+          }
+        },
+        "0,1|0,2|1,1": {
+          "id": "0,1|0,2|1,1",
+          "adjacentHexIds": ["0,1", "1,1", "0,2"],
+          "adjacentEdgeIds": [
+            "0,1|0,2|1,1--0,1|1,0|1,1",
+            "-1,2|0,1|0,2--0,1|0,2|1,1",
+            "0,1|0,2|1,1--0,2|1,1|1,2"
+          ],
+          "building": {
+            "ownerPlayerId": "p-blue",
+            "type": "city",
+            "cityWallPresent": false,
+            "metropolisType": null
+          },
+          "knight": null
+        },
+        "-1,2|0,1|0,2": {
+          "id": "-1,2|0,1|0,2",
+          "adjacentHexIds": ["0,1", "0,2", "-1,2"],
+          "adjacentEdgeIds": [
+            "-1,2|0,1|0,2--0,1|0,2|1,1",
+            "-1,1|-1,2|0,1---1,2|0,1|0,2",
+            "-1,2|-1,3|0,2---1,2|0,1|0,2"
+          ],
+          "building": null,
+          "knight": {
+            "id": "knight-p-blue-91",
+            "ownerPlayerId": "p-blue",
+            "level": "basic",
+            "state": "active",
+            "locationIntersectionId": "-1,2|0,1|0,2"
+          }
+        },
+        "1,1|1,2|2,1": {
+          "id": "1,1|1,2|2,1",
+          "adjacentHexIds": ["1,1"],
+          "adjacentEdgeIds": ["1,1|1,2|2,1--1,1|2,0|2,1", "0,2|1,1|1,2--1,1|1,2|2,1"],
+          "building": null,
+          "knight": null
+        },
+        "0,2|1,1|1,2": {
+          "id": "0,2|1,1|1,2",
+          "adjacentHexIds": ["1,1", "0,2"],
+          "adjacentEdgeIds": [
+            "0,2|1,1|1,2--1,1|1,2|2,1",
+            "0,1|0,2|1,1--0,2|1,1|1,2",
+            "0,2|0,3|1,2--0,2|1,1|1,2"
+          ],
+          "building": null,
+          "knight": null
+        },
+        "-1,2|-2,2|-2,3": {
+          "id": "-1,2|-2,2|-2,3",
+          "adjacentHexIds": ["-2,2", "-1,2"],
+          "adjacentEdgeIds": [
+            "-1,1|-1,2|-2,2---1,2|-2,2|-2,3",
+            "-1,2|-2,2|-2,3---2,2|-2,3|-3,3",
+            "-1,2|-1,3|-2,3---1,2|-2,2|-2,3"
+          ],
+          "building": null,
+          "knight": null
+        },
+        "-2,2|-2,3|-3,3": {
+          "id": "-2,2|-2,3|-3,3",
+          "adjacentHexIds": ["-2,2"],
+          "adjacentEdgeIds": ["-1,2|-2,2|-2,3---2,2|-2,3|-3,3", "-2,2|-2,3|-3,3---2,2|-3,2|-3,3"],
+          "building": null,
+          "knight": null
+        },
+        "-2,2|-3,2|-3,3": {
+          "id": "-2,2|-3,2|-3,3",
+          "adjacentHexIds": ["-2,2"],
+          "adjacentEdgeIds": ["-2,2|-2,3|-3,3---2,2|-3,2|-3,3", "-2,1|-2,2|-3,2---2,2|-3,2|-3,3"],
+          "building": null,
+          "knight": null
+        },
+        "-1,2|-1,3|0,2": {
+          "id": "-1,2|-1,3|0,2",
+          "adjacentHexIds": ["-1,2", "0,2"],
+          "adjacentEdgeIds": [
+            "-1,2|-1,3|0,2---1,2|0,1|0,2",
+            "-1,2|-1,3|-2,3---1,2|-1,3|0,2",
+            "-1,2|-1,3|0,2---1,3|0,2|0,3"
+          ],
+          "building": null,
+          "knight": null
+        },
+        "-1,2|-1,3|-2,3": {
+          "id": "-1,2|-1,3|-2,3",
+          "adjacentHexIds": ["-1,2"],
+          "adjacentEdgeIds": ["-1,2|-1,3|-2,3---1,2|-1,3|0,2", "-1,2|-1,3|-2,3---1,2|-2,2|-2,3"],
+          "building": null,
+          "knight": null
+        },
+        "0,2|0,3|1,2": {
+          "id": "0,2|0,3|1,2",
+          "adjacentHexIds": ["0,2"],
+          "adjacentEdgeIds": ["0,2|0,3|1,2--0,2|1,1|1,2", "-1,3|0,2|0,3--0,2|0,3|1,2"],
+          "building": null,
+          "knight": null
+        },
+        "-1,3|0,2|0,3": {
+          "id": "-1,3|0,2|0,3",
+          "adjacentHexIds": ["0,2"],
+          "adjacentEdgeIds": ["-1,3|0,2|0,3--0,2|0,3|1,2", "-1,2|-1,3|0,2---1,3|0,2|0,3"],
+          "building": null,
+          "knight": null
+        }
+      },
+      "edges": {
+        "0,-2|0,-3|1,-3--0,-2|1,-2|1,-3": {
+          "id": "0,-2|0,-3|1,-3--0,-2|1,-2|1,-3",
+          "intersectionA": "0,-2|0,-3|1,-3",
+          "intersectionB": "0,-2|1,-2|1,-3",
+          "roadOwnerPlayerId": null
+        },
+        "0,-1|0,-2|1,-2--0,-2|1,-2|1,-3": {
+          "id": "0,-1|0,-2|1,-2--0,-2|1,-2|1,-3",
+          "intersectionA": "0,-1|0,-2|1,-2",
+          "intersectionB": "0,-2|1,-2|1,-3",
+          "roadOwnerPlayerId": null
+        },
+        "-1,-1|0,-1|0,-2--0,-1|0,-2|1,-2": {
+          "id": "-1,-1|0,-1|0,-2--0,-1|0,-2|1,-2",
+          "intersectionA": "-1,-1|0,-1|0,-2",
+          "intersectionB": "0,-1|0,-2|1,-2",
+          "roadOwnerPlayerId": null
+        },
+        "-1,-1|-1,-2|0,-2---1,-1|0,-1|0,-2": {
+          "id": "-1,-1|-1,-2|0,-2---1,-1|0,-1|0,-2",
+          "intersectionA": "-1,-1|-1,-2|0,-2",
+          "intersectionB": "-1,-1|0,-1|0,-2",
+          "roadOwnerPlayerId": null
+        },
+        "-1,-1|-1,-2|0,-2---1,-2|0,-2|0,-3": {
+          "id": "-1,-1|-1,-2|0,-2---1,-2|0,-2|0,-3",
+          "intersectionA": "-1,-1|-1,-2|0,-2",
+          "intersectionB": "-1,-2|0,-2|0,-3",
+          "roadOwnerPlayerId": null
+        },
+        "-1,-2|0,-2|0,-3--0,-2|0,-3|1,-3": {
+          "id": "-1,-2|0,-2|0,-3--0,-2|0,-3|1,-3",
+          "intersectionA": "-1,-2|0,-2|0,-3",
+          "intersectionB": "0,-2|0,-3|1,-3",
+          "roadOwnerPlayerId": null
+        },
+        "1,-2|1,-3|2,-3--1,-2|2,-2|2,-3": {
+          "id": "1,-2|1,-3|2,-3--1,-2|2,-2|2,-3",
+          "intersectionA": "1,-2|1,-3|2,-3",
+          "intersectionB": "1,-2|2,-2|2,-3",
+          "roadOwnerPlayerId": null
+        },
+        "1,-1|1,-2|2,-2--1,-2|2,-2|2,-3": {
+          "id": "1,-1|1,-2|2,-2--1,-2|2,-2|2,-3",
+          "intersectionA": "1,-1|1,-2|2,-2",
+          "intersectionB": "1,-2|2,-2|2,-3",
+          "roadOwnerPlayerId": null
+        },
+        "0,-1|1,-1|1,-2--1,-1|1,-2|2,-2": {
+          "id": "0,-1|1,-1|1,-2--1,-1|1,-2|2,-2",
+          "intersectionA": "0,-1|1,-1|1,-2",
+          "intersectionB": "1,-1|1,-2|2,-2",
+          "roadOwnerPlayerId": "p-orange"
+        },
+        "0,-1|0,-2|1,-2--0,-1|1,-1|1,-2": {
+          "id": "0,-1|0,-2|1,-2--0,-1|1,-1|1,-2",
+          "intersectionA": "0,-1|0,-2|1,-2",
+          "intersectionB": "0,-1|1,-1|1,-2",
+          "roadOwnerPlayerId": "p-red"
+        },
+        "0,-2|1,-2|1,-3--1,-2|1,-3|2,-3": {
+          "id": "0,-2|1,-2|1,-3--1,-2|1,-3|2,-3",
+          "intersectionA": "0,-2|1,-2|1,-3",
+          "intersectionB": "1,-2|1,-3|2,-3",
+          "roadOwnerPlayerId": null
+        },
+        "2,-2|2,-3|3,-3--2,-2|3,-2|3,-3": {
+          "id": "2,-2|2,-3|3,-3--2,-2|3,-2|3,-3",
+          "intersectionA": "2,-2|2,-3|3,-3",
+          "intersectionB": "2,-2|3,-2|3,-3",
+          "roadOwnerPlayerId": null
+        },
+        "2,-1|2,-2|3,-2--2,-2|3,-2|3,-3": {
+          "id": "2,-1|2,-2|3,-2--2,-2|3,-2|3,-3",
+          "intersectionA": "2,-2|3,-2|3,-3",
+          "intersectionB": "2,-1|2,-2|3,-2",
+          "roadOwnerPlayerId": null
+        },
+        "1,-1|2,-1|2,-2--2,-1|2,-2|3,-2": {
+          "id": "1,-1|2,-1|2,-2--2,-1|2,-2|3,-2",
+          "intersectionA": "1,-1|2,-1|2,-2",
+          "intersectionB": "2,-1|2,-2|3,-2",
+          "roadOwnerPlayerId": null
+        },
+        "1,-1|1,-2|2,-2--1,-1|2,-1|2,-2": {
+          "id": "1,-1|1,-2|2,-2--1,-1|2,-1|2,-2",
+          "intersectionA": "1,-1|1,-2|2,-2",
+          "intersectionB": "1,-1|2,-1|2,-2",
+          "roadOwnerPlayerId": null
+        },
+        "1,-2|2,-2|2,-3--2,-2|2,-3|3,-3": {
+          "id": "1,-2|2,-2|2,-3--2,-2|2,-3|3,-3",
+          "intersectionA": "1,-2|2,-2|2,-3",
+          "intersectionB": "2,-2|2,-3|3,-3",
+          "roadOwnerPlayerId": null
+        },
+        "-1,-1|-1,0|0,-1---1,-1|0,-1|0,-2": {
+          "id": "-1,-1|-1,0|0,-1---1,-1|0,-1|0,-2",
+          "intersectionA": "-1,-1|-1,0|0,-1",
+          "intersectionB": "-1,-1|0,-1|0,-2",
+          "roadOwnerPlayerId": null
+        },
+        "-1,-1|-1,0|-2,0---1,-1|-1,0|0,-1": {
+          "id": "-1,-1|-1,0|-2,0---1,-1|-1,0|0,-1",
+          "intersectionA": "-1,-1|-1,0|-2,0",
+          "intersectionB": "-1,-1|-1,0|0,-1",
+          "roadOwnerPlayerId": null
+        },
+        "-1,-1|-1,0|-2,0---1,-1|-2,-1|-2,0": {
+          "id": "-1,-1|-1,0|-2,0---1,-1|-2,-1|-2,0",
+          "intersectionA": "-1,-1|-2,-1|-2,0",
+          "intersectionB": "-1,-1|-1,0|-2,0",
+          "roadOwnerPlayerId": null
+        },
+        "-1,-1|-1,-2|-2,-1---1,-1|-2,-1|-2,0": {
+          "id": "-1,-1|-1,-2|-2,-1---1,-1|-2,-1|-2,0",
+          "intersectionA": "-1,-1|-2,-1|-2,0",
+          "intersectionB": "-1,-1|-1,-2|-2,-1",
+          "roadOwnerPlayerId": null
+        },
+        "-1,-1|-1,-2|-2,-1---1,-1|-1,-2|0,-2": {
+          "id": "-1,-1|-1,-2|-2,-1---1,-1|-1,-2|0,-2",
+          "intersectionA": "-1,-1|-1,-2|-2,-1",
+          "intersectionB": "-1,-1|-1,-2|0,-2",
+          "roadOwnerPlayerId": null
+        },
+        "0,-1|0,0|1,-1--0,-1|1,-1|1,-2": {
+          "id": "0,-1|0,0|1,-1--0,-1|1,-1|1,-2",
+          "intersectionA": "0,-1|0,0|1,-1",
+          "intersectionB": "0,-1|1,-1|1,-2",
+          "roadOwnerPlayerId": null
+        },
+        "-1,0|0,-1|0,0--0,-1|0,0|1,-1": {
+          "id": "-1,0|0,-1|0,0--0,-1|0,0|1,-1",
+          "intersectionA": "-1,0|0,-1|0,0",
+          "intersectionB": "0,-1|0,0|1,-1",
+          "roadOwnerPlayerId": null
+        },
+        "-1,-1|-1,0|0,-1---1,0|0,-1|0,0": {
+          "id": "-1,-1|-1,0|0,-1---1,0|0,-1|0,0",
+          "intersectionA": "-1,-1|-1,0|0,-1",
+          "intersectionB": "-1,0|0,-1|0,0",
+          "roadOwnerPlayerId": "p-orange"
+        },
+        "1,-1|1,0|2,-1--1,-1|2,-1|2,-2": {
+          "id": "1,-1|1,0|2,-1--1,-1|2,-1|2,-2",
+          "intersectionA": "1,-1|1,0|2,-1",
+          "intersectionB": "1,-1|2,-1|2,-2",
+          "roadOwnerPlayerId": null
+        },
+        "0,0|1,-1|1,0--1,-1|1,0|2,-1": {
+          "id": "0,0|1,-1|1,0--1,-1|1,0|2,-1",
+          "intersectionA": "0,0|1,-1|1,0",
+          "intersectionB": "1,-1|1,0|2,-1",
+          "roadOwnerPlayerId": "p-blue"
+        },
+        "0,-1|0,0|1,-1--0,0|1,-1|1,0": {
+          "id": "0,-1|0,0|1,-1--0,0|1,-1|1,0",
+          "intersectionA": "0,-1|0,0|1,-1",
+          "intersectionB": "0,0|1,-1|1,0",
+          "roadOwnerPlayerId": null
+        },
+        "2,-1|2,-2|3,-2--2,-1|3,-1|3,-2": {
+          "id": "2,-1|2,-2|3,-2--2,-1|3,-1|3,-2",
+          "intersectionA": "2,-1|2,-2|3,-2",
+          "intersectionB": "2,-1|3,-1|3,-2",
+          "roadOwnerPlayerId": null
+        },
+        "2,-1|2,0|3,-1--2,-1|3,-1|3,-2": {
+          "id": "2,-1|2,0|3,-1--2,-1|3,-1|3,-2",
+          "intersectionA": "2,-1|3,-1|3,-2",
+          "intersectionB": "2,-1|2,0|3,-1",
+          "roadOwnerPlayerId": null
+        },
+        "1,0|2,-1|2,0--2,-1|2,0|3,-1": {
+          "id": "1,0|2,-1|2,0--2,-1|2,0|3,-1",
+          "intersectionA": "1,0|2,-1|2,0",
+          "intersectionB": "2,-1|2,0|3,-1",
+          "roadOwnerPlayerId": null
+        },
+        "1,-1|1,0|2,-1--1,0|2,-1|2,0": {
+          "id": "1,-1|1,0|2,-1--1,0|2,-1|2,0",
+          "intersectionA": "1,-1|1,0|2,-1",
+          "intersectionB": "1,0|2,-1|2,0",
+          "roadOwnerPlayerId": null
+        },
+        "-1,-1|-1,0|-2,0---1,0|-2,0|-2,1": {
+          "id": "-1,-1|-1,0|-2,0---1,0|-2,0|-2,1",
+          "intersectionA": "-1,0|-2,0|-2,1",
+          "intersectionB": "-1,-1|-1,0|-2,0",
+          "roadOwnerPlayerId": null
+        },
+        "-1,0|-2,0|-2,1---2,0|-2,1|-3,1": {
+          "id": "-1,0|-2,0|-2,1---2,0|-2,1|-3,1",
+          "intersectionA": "-2,0|-2,1|-3,1",
+          "intersectionB": "-1,0|-2,0|-2,1",
+          "roadOwnerPlayerId": null
+        },
+        "-2,0|-2,1|-3,1---2,0|-3,0|-3,1": {
+          "id": "-2,0|-2,1|-3,1---2,0|-3,0|-3,1",
+          "intersectionA": "-2,0|-2,1|-3,1",
+          "intersectionB": "-2,0|-3,0|-3,1",
+          "roadOwnerPlayerId": null
+        },
+        "-2,-1|-2,0|-3,0---2,0|-3,0|-3,1": {
+          "id": "-2,-1|-2,0|-3,0---2,0|-3,0|-3,1",
+          "intersectionA": "-2,0|-3,0|-3,1",
+          "intersectionB": "-2,-1|-2,0|-3,0",
+          "roadOwnerPlayerId": null
+        },
+        "-1,-1|-2,-1|-2,0---2,-1|-2,0|-3,0": {
+          "id": "-1,-1|-2,-1|-2,0---2,-1|-2,0|-3,0",
+          "intersectionA": "-2,-1|-2,0|-3,0",
+          "intersectionB": "-1,-1|-2,-1|-2,0",
+          "roadOwnerPlayerId": null
+        },
+        "-1,0|-1,1|0,0---1,0|0,-1|0,0": {
+          "id": "-1,0|-1,1|0,0---1,0|0,-1|0,0",
+          "intersectionA": "-1,0|-1,1|0,0",
+          "intersectionB": "-1,0|0,-1|0,0",
+          "roadOwnerPlayerId": "p-orange"
+        },
+        "-1,0|-1,1|-2,1---1,0|-1,1|0,0": {
+          "id": "-1,0|-1,1|-2,1---1,0|-1,1|0,0",
+          "intersectionA": "-1,0|-1,1|-2,1",
+          "intersectionB": "-1,0|-1,1|0,0",
+          "roadOwnerPlayerId": null
+        },
+        "-1,0|-1,1|-2,1---1,0|-2,0|-2,1": {
+          "id": "-1,0|-1,1|-2,1---1,0|-2,0|-2,1",
+          "intersectionA": "-1,0|-2,0|-2,1",
+          "intersectionB": "-1,0|-1,1|-2,1",
+          "roadOwnerPlayerId": null
+        },
+        "0,0|0,1|1,0--0,0|1,-1|1,0": {
+          "id": "0,0|0,1|1,0--0,0|1,-1|1,0",
+          "intersectionA": "0,0|0,1|1,0",
+          "intersectionB": "0,0|1,-1|1,0",
+          "roadOwnerPlayerId": "p-blue"
+        },
+        "-1,1|0,0|0,1--0,0|0,1|1,0": {
+          "id": "-1,1|0,0|0,1--0,0|0,1|1,0",
+          "intersectionA": "-1,1|0,0|0,1",
+          "intersectionB": "0,0|0,1|1,0",
+          "roadOwnerPlayerId": "p-blue"
+        },
+        "-1,0|-1,1|0,0---1,1|0,0|0,1": {
+          "id": "-1,0|-1,1|0,0---1,1|0,0|0,1",
+          "intersectionA": "-1,0|-1,1|0,0",
+          "intersectionB": "-1,1|0,0|0,1",
+          "roadOwnerPlayerId": null
+        },
+        "1,0|1,1|2,0--1,0|2,-1|2,0": {
+          "id": "1,0|1,1|2,0--1,0|2,-1|2,0",
+          "intersectionA": "1,0|1,1|2,0",
+          "intersectionB": "1,0|2,-1|2,0",
+          "roadOwnerPlayerId": null
+        },
+        "0,1|1,0|1,1--1,0|1,1|2,0": {
+          "id": "0,1|1,0|1,1--1,0|1,1|2,0",
+          "intersectionA": "0,1|1,0|1,1",
+          "intersectionB": "1,0|1,1|2,0",
+          "roadOwnerPlayerId": null
+        },
+        "0,0|0,1|1,0--0,1|1,0|1,1": {
+          "id": "0,0|0,1|1,0--0,1|1,0|1,1",
+          "intersectionA": "0,0|0,1|1,0",
+          "intersectionB": "0,1|1,0|1,1",
+          "roadOwnerPlayerId": null
+        },
+        "2,-1|2,0|3,-1--2,0|3,-1|3,0": {
+          "id": "2,-1|2,0|3,-1--2,0|3,-1|3,0",
+          "intersectionA": "2,-1|2,0|3,-1",
+          "intersectionB": "2,0|3,-1|3,0",
+          "roadOwnerPlayerId": null
+        },
+        "2,0|2,1|3,0--2,0|3,-1|3,0": {
+          "id": "2,0|2,1|3,0--2,0|3,-1|3,0",
+          "intersectionA": "2,0|3,-1|3,0",
+          "intersectionB": "2,0|2,1|3,0",
+          "roadOwnerPlayerId": null
+        },
+        "1,1|2,0|2,1--2,0|2,1|3,0": {
+          "id": "1,1|2,0|2,1--2,0|2,1|3,0",
+          "intersectionA": "2,0|2,1|3,0",
+          "intersectionB": "1,1|2,0|2,1",
+          "roadOwnerPlayerId": null
+        },
+        "1,0|1,1|2,0--1,1|2,0|2,1": {
+          "id": "1,0|1,1|2,0--1,1|2,0|2,1",
+          "intersectionA": "1,0|1,1|2,0",
+          "intersectionB": "1,1|2,0|2,1",
+          "roadOwnerPlayerId": null
+        },
+        "-1,0|-1,1|-2,1---1,1|-2,1|-2,2": {
+          "id": "-1,0|-1,1|-2,1---1,1|-2,1|-2,2",
+          "intersectionA": "-1,1|-2,1|-2,2",
+          "intersectionB": "-1,0|-1,1|-2,1",
+          "roadOwnerPlayerId": null
+        },
+        "-1,1|-2,1|-2,2---2,1|-2,2|-3,2": {
+          "id": "-1,1|-2,1|-2,2---2,1|-2,2|-3,2",
+          "intersectionA": "-2,1|-2,2|-3,2",
+          "intersectionB": "-1,1|-2,1|-2,2",
+          "roadOwnerPlayerId": null
+        },
+        "-2,1|-2,2|-3,2---2,1|-3,1|-3,2": {
+          "id": "-2,1|-2,2|-3,2---2,1|-3,1|-3,2",
+          "intersectionA": "-2,1|-2,2|-3,2",
+          "intersectionB": "-2,1|-3,1|-3,2",
+          "roadOwnerPlayerId": null
+        },
+        "-2,0|-2,1|-3,1---2,1|-3,1|-3,2": {
+          "id": "-2,0|-2,1|-3,1---2,1|-3,1|-3,2",
+          "intersectionA": "-2,1|-3,1|-3,2",
+          "intersectionB": "-2,0|-2,1|-3,1",
+          "roadOwnerPlayerId": null
+        },
+        "-1,1|-1,2|0,1---1,1|0,0|0,1": {
+          "id": "-1,1|-1,2|0,1---1,1|0,0|0,1",
+          "intersectionA": "-1,1|-1,2|0,1",
+          "intersectionB": "-1,1|0,0|0,1",
+          "roadOwnerPlayerId": null
+        },
+        "-1,1|-1,2|-2,2---1,1|-1,2|0,1": {
+          "id": "-1,1|-1,2|-2,2---1,1|-1,2|0,1",
+          "intersectionA": "-1,1|-1,2|-2,2",
+          "intersectionB": "-1,1|-1,2|0,1",
+          "roadOwnerPlayerId": "p-red"
+        },
+        "-1,1|-1,2|-2,2---1,1|-2,1|-2,2": {
+          "id": "-1,1|-1,2|-2,2---1,1|-2,1|-2,2",
+          "intersectionA": "-1,1|-2,1|-2,2",
+          "intersectionB": "-1,1|-1,2|-2,2",
+          "roadOwnerPlayerId": null
+        },
+        "0,1|0,2|1,1--0,1|1,0|1,1": {
+          "id": "0,1|0,2|1,1--0,1|1,0|1,1",
+          "intersectionA": "0,1|0,2|1,1",
+          "intersectionB": "0,1|1,0|1,1",
+          "roadOwnerPlayerId": null
+        },
+        "-1,2|0,1|0,2--0,1|0,2|1,1": {
+          "id": "-1,2|0,1|0,2--0,1|0,2|1,1",
+          "intersectionA": "-1,2|0,1|0,2",
+          "intersectionB": "0,1|0,2|1,1",
+          "roadOwnerPlayerId": "p-blue"
+        },
+        "-1,1|-1,2|0,1---1,2|0,1|0,2": {
+          "id": "-1,1|-1,2|0,1---1,2|0,1|0,2",
+          "intersectionA": "-1,1|-1,2|0,1",
+          "intersectionB": "-1,2|0,1|0,2",
+          "roadOwnerPlayerId": null
+        },
+        "1,1|1,2|2,1--1,1|2,0|2,1": {
+          "id": "1,1|1,2|2,1--1,1|2,0|2,1",
+          "intersectionA": "1,1|2,0|2,1",
+          "intersectionB": "1,1|1,2|2,1",
+          "roadOwnerPlayerId": null
+        },
+        "0,2|1,1|1,2--1,1|1,2|2,1": {
+          "id": "0,2|1,1|1,2--1,1|1,2|2,1",
+          "intersectionA": "1,1|1,2|2,1",
+          "intersectionB": "0,2|1,1|1,2",
+          "roadOwnerPlayerId": null
+        },
+        "0,1|0,2|1,1--0,2|1,1|1,2": {
+          "id": "0,1|0,2|1,1--0,2|1,1|1,2",
+          "intersectionA": "0,1|0,2|1,1",
+          "intersectionB": "0,2|1,1|1,2",
+          "roadOwnerPlayerId": null
+        },
+        "-1,1|-1,2|-2,2---1,2|-2,2|-2,3": {
+          "id": "-1,1|-1,2|-2,2---1,2|-2,2|-2,3",
+          "intersectionA": "-1,2|-2,2|-2,3",
+          "intersectionB": "-1,1|-1,2|-2,2",
+          "roadOwnerPlayerId": null
+        },
+        "-1,2|-2,2|-2,3---2,2|-2,3|-3,3": {
+          "id": "-1,2|-2,2|-2,3---2,2|-2,3|-3,3",
+          "intersectionA": "-1,2|-2,2|-2,3",
+          "intersectionB": "-2,2|-2,3|-3,3",
+          "roadOwnerPlayerId": null
+        },
+        "-2,2|-2,3|-3,3---2,2|-3,2|-3,3": {
+          "id": "-2,2|-2,3|-3,3---2,2|-3,2|-3,3",
+          "intersectionA": "-2,2|-2,3|-3,3",
+          "intersectionB": "-2,2|-3,2|-3,3",
+          "roadOwnerPlayerId": null
+        },
+        "-2,1|-2,2|-3,2---2,2|-3,2|-3,3": {
+          "id": "-2,1|-2,2|-3,2---2,2|-3,2|-3,3",
+          "intersectionA": "-2,2|-3,2|-3,3",
+          "intersectionB": "-2,1|-2,2|-3,2",
+          "roadOwnerPlayerId": null
+        },
+        "-1,2|-1,3|0,2---1,2|0,1|0,2": {
+          "id": "-1,2|-1,3|0,2---1,2|0,1|0,2",
+          "intersectionA": "-1,2|-1,3|0,2",
+          "intersectionB": "-1,2|0,1|0,2",
+          "roadOwnerPlayerId": null
+        },
+        "-1,2|-1,3|-2,3---1,2|-1,3|0,2": {
+          "id": "-1,2|-1,3|-2,3---1,2|-1,3|0,2",
+          "intersectionA": "-1,2|-1,3|0,2",
+          "intersectionB": "-1,2|-1,3|-2,3",
+          "roadOwnerPlayerId": null
+        },
+        "-1,2|-1,3|-2,3---1,2|-2,2|-2,3": {
+          "id": "-1,2|-1,3|-2,3---1,2|-2,2|-2,3",
+          "intersectionA": "-1,2|-1,3|-2,3",
+          "intersectionB": "-1,2|-2,2|-2,3",
+          "roadOwnerPlayerId": null
+        },
+        "0,2|0,3|1,2--0,2|1,1|1,2": {
+          "id": "0,2|0,3|1,2--0,2|1,1|1,2",
+          "intersectionA": "0,2|1,1|1,2",
+          "intersectionB": "0,2|0,3|1,2",
+          "roadOwnerPlayerId": null
+        },
+        "-1,3|0,2|0,3--0,2|0,3|1,2": {
+          "id": "-1,3|0,2|0,3--0,2|0,3|1,2",
+          "intersectionA": "0,2|0,3|1,2",
+          "intersectionB": "-1,3|0,2|0,3",
+          "roadOwnerPlayerId": null
+        },
+        "-1,2|-1,3|0,2---1,3|0,2|0,3": {
+          "id": "-1,2|-1,3|0,2---1,3|0,2|0,3",
+          "intersectionA": "-1,3|0,2|0,3",
+          "intersectionB": "-1,2|-1,3|0,2",
+          "roadOwnerPlayerId": null
+        }
+      },
+      "harbors": [
+        {
+          "id": "harbor_0",
+          "type": "3:1",
+          "intersectionIds": ["-2,-1|-2,0|-3,0", "-1,-1|-2,-1|-2,0"]
+        },
+        {
+          "id": "harbor_1",
+          "type": "brick",
+          "intersectionIds": ["-1,-1|-1,-2|-2,-1", "-1,-1|-1,-2|0,-2"]
+        },
+        {
+          "id": "harbor_2",
+          "type": "3:1",
+          "intersectionIds": ["0,-2|1,-2|1,-3", "1,-2|1,-3|2,-3"]
+        },
+        {
+          "id": "harbor_3",
+          "type": "ore",
+          "intersectionIds": ["2,-2|3,-2|3,-3", "2,-1|2,-2|3,-2"]
+        },
+        {
+          "id": "harbor_4",
+          "type": "grain",
+          "intersectionIds": ["2,-1|3,-1|3,-2", "2,-1|2,0|3,-1"]
+        },
+        {
+          "id": "harbor_5",
+          "type": "3:1",
+          "intersectionIds": ["1,1|2,0|2,1", "1,1|1,2|2,1"]
+        },
+        {
+          "id": "harbor_6",
+          "type": "lumber",
+          "intersectionIds": ["-1,3|0,2|0,3", "-1,2|-1,3|0,2"]
+        },
+        {
+          "id": "harbor_7",
+          "type": "3:1",
+          "intersectionIds": ["-1,2|-1,3|-2,3", "-1,2|-2,2|-2,3"]
+        },
+        {
+          "id": "harbor_8",
+          "type": "wool",
+          "intersectionIds": ["-2,1|-2,2|-3,2", "-2,1|-3,1|-3,2"]
+        }
+      ]
+    },
+    "dice": {
+      "die1": 4,
+      "die2": 1,
+      "sum": 5,
+      "redDie": 1,
+      "eventDieResult": "ship",
+      "alchemyPreset": false,
+      "rollNumber": 28
+    },
+    "berserkerTrackPosition": 6,
+    "berserkerTrackMax": 7,
+    "firstBerserkerAttackResolved": true,
+    "robberActive": true,
+    "merchantHexId": null,
+    "merchantOwnerPlayerId": null,
+    "longestRoadHolderPlayerId": null,
+    "pendingDecision": null,
+    "winnerPlayerId": null,
+    "lastBerserkerAttack": null,
+    "lastVpAwards": [],
+    "scienceDeckCount": 16,
+    "tradeDeckCount": 16,
+    "politicsDeckCount": 18,
+    "progressDiscardScience": [
+      {
+        "instanceId": "sci_scienceGeomancer_2",
+        "cardId": "scienceGeomancer"
+      }
+    ],
+    "progressDiscardTrade": [
+      {
+        "instanceId": "trd_tradeMerchantFleet_1",
+        "cardId": "tradeMerchantFleet"
+      },
+      {
+        "instanceId": "trd_tradeTradeMonopoly_1",
+        "cardId": "tradeTradeMonopoly"
+      }
+    ],
+    "progressDiscardPolitics": [],
+    "bankResources": {
+      "lumber": 9,
+      "brick": 19,
+      "wool": 18,
+      "grain": 17,
+      "ore": 18
+    },
+    "bankCommodities": {
+      "coin": 12,
+      "paper": 7,
+      "cloth": 11
+    },
+    "opponentMaterialTypes": ["lumber", "paper", "wool", "grain"],
+    "domesticTradeDeclinesThisTurn": []
+  },
+  "validActions": [
+    {
+      "type": "endTurn",
+      "id": "action-1"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "brick",
+          "count": 1
+        }
+      ],
+      "id": "action-2"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 2
+        }
+      ],
+      "want": [
+        {
+          "type": "brick",
+          "count": 1
+        }
+      ],
+      "id": "action-3"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 3
+        }
+      ],
+      "want": [
+        {
+          "type": "brick",
+          "count": 1
+        }
+      ],
+      "id": "action-4"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "brick",
+          "count": 1
+        }
+      ],
+      "id": "action-5"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 2
+        }
+      ],
+      "want": [
+        {
+          "type": "brick",
+          "count": 1
+        }
+      ],
+      "id": "action-6"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 3
+        }
+      ],
+      "want": [
+        {
+          "type": "brick",
+          "count": 1
+        }
+      ],
+      "id": "action-7"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "wool",
+          "count": 1
+        }
+      ],
+      "id": "action-8"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 2
+        }
+      ],
+      "want": [
+        {
+          "type": "wool",
+          "count": 1
+        }
+      ],
+      "id": "action-9"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 3
+        }
+      ],
+      "want": [
+        {
+          "type": "wool",
+          "count": 1
+        }
+      ],
+      "id": "action-10"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "wool",
+          "count": 1
+        }
+      ],
+      "id": "action-11"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 2
+        }
+      ],
+      "want": [
+        {
+          "type": "wool",
+          "count": 1
+        }
+      ],
+      "id": "action-12"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 3
+        }
+      ],
+      "want": [
+        {
+          "type": "wool",
+          "count": 1
+        }
+      ],
+      "id": "action-13"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "grain",
+          "count": 1
+        }
+      ],
+      "id": "action-14"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 2
+        }
+      ],
+      "want": [
+        {
+          "type": "grain",
+          "count": 1
+        }
+      ],
+      "id": "action-15"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 3
+        }
+      ],
+      "want": [
+        {
+          "type": "grain",
+          "count": 1
+        }
+      ],
+      "id": "action-16"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "grain",
+          "count": 1
+        }
+      ],
+      "id": "action-17"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 2
+        }
+      ],
+      "want": [
+        {
+          "type": "grain",
+          "count": 1
+        }
+      ],
+      "id": "action-18"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 3
+        }
+      ],
+      "want": [
+        {
+          "type": "grain",
+          "count": 1
+        }
+      ],
+      "id": "action-19"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "ore",
+          "count": 1
+        }
+      ],
+      "id": "action-20"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 2
+        }
+      ],
+      "want": [
+        {
+          "type": "ore",
+          "count": 1
+        }
+      ],
+      "id": "action-21"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 3
+        }
+      ],
+      "want": [
+        {
+          "type": "ore",
+          "count": 1
+        }
+      ],
+      "id": "action-22"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "ore",
+          "count": 1
+        }
+      ],
+      "id": "action-23"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 2
+        }
+      ],
+      "want": [
+        {
+          "type": "ore",
+          "count": 1
+        }
+      ],
+      "id": "action-24"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 3
+        }
+      ],
+      "want": [
+        {
+          "type": "ore",
+          "count": 1
+        }
+      ],
+      "id": "action-25"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "coin",
+          "count": 1
+        }
+      ],
+      "id": "action-26"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 2
+        }
+      ],
+      "want": [
+        {
+          "type": "coin",
+          "count": 1
+        }
+      ],
+      "id": "action-27"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 3
+        }
+      ],
+      "want": [
+        {
+          "type": "coin",
+          "count": 1
+        }
+      ],
+      "id": "action-28"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "coin",
+          "count": 1
+        }
+      ],
+      "id": "action-29"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 2
+        }
+      ],
+      "want": [
+        {
+          "type": "coin",
+          "count": 1
+        }
+      ],
+      "id": "action-30"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 3
+        }
+      ],
+      "want": [
+        {
+          "type": "coin",
+          "count": 1
+        }
+      ],
+      "id": "action-31"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "paper",
+          "count": 1
+        }
+      ],
+      "id": "action-32"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 2
+        }
+      ],
+      "want": [
+        {
+          "type": "paper",
+          "count": 1
+        }
+      ],
+      "id": "action-33"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 3
+        }
+      ],
+      "want": [
+        {
+          "type": "paper",
+          "count": 1
+        }
+      ],
+      "id": "action-34"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "paper",
+          "count": 1
+        }
+      ],
+      "id": "action-35"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 2
+        }
+      ],
+      "want": [
+        {
+          "type": "paper",
+          "count": 1
+        }
+      ],
+      "id": "action-36"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 3
+        }
+      ],
+      "want": [
+        {
+          "type": "paper",
+          "count": 1
+        }
+      ],
+      "id": "action-37"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "cloth",
+          "count": 1
+        }
+      ],
+      "id": "action-38"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "lumber",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "cloth",
+          "count": 1
+        }
+      ],
+      "id": "action-39"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "grain",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "lumber",
+          "count": 1
+        }
+      ],
+      "id": "action-40"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "grain",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "lumber",
+          "count": 1
+        }
+      ],
+      "id": "action-41"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "grain",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "brick",
+          "count": 1
+        }
+      ],
+      "id": "action-42"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "grain",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "brick",
+          "count": 1
+        }
+      ],
+      "id": "action-43"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "grain",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "wool",
+          "count": 1
+        }
+      ],
+      "id": "action-44"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "grain",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "wool",
+          "count": 1
+        }
+      ],
+      "id": "action-45"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "grain",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "ore",
+          "count": 1
+        }
+      ],
+      "id": "action-46"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "grain",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "ore",
+          "count": 1
+        }
+      ],
+      "id": "action-47"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "grain",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "coin",
+          "count": 1
+        }
+      ],
+      "id": "action-48"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "grain",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "coin",
+          "count": 1
+        }
+      ],
+      "id": "action-49"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "grain",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "paper",
+          "count": 1
+        }
+      ],
+      "id": "action-50"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "grain",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "paper",
+          "count": 1
+        }
+      ],
+      "id": "action-51"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "grain",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "cloth",
+          "count": 1
+        }
+      ],
+      "id": "action-52"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "grain",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "cloth",
+          "count": 1
+        }
+      ],
+      "id": "action-53"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "ore",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "lumber",
+          "count": 1
+        }
+      ],
+      "id": "action-54"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "ore",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "lumber",
+          "count": 1
+        }
+      ],
+      "id": "action-55"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "ore",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "brick",
+          "count": 1
+        }
+      ],
+      "id": "action-56"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "ore",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "brick",
+          "count": 1
+        }
+      ],
+      "id": "action-57"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "ore",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "wool",
+          "count": 1
+        }
+      ],
+      "id": "action-58"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "ore",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "wool",
+          "count": 1
+        }
+      ],
+      "id": "action-59"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "ore",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "grain",
+          "count": 1
+        }
+      ],
+      "id": "action-60"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "ore",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "grain",
+          "count": 1
+        }
+      ],
+      "id": "action-61"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "ore",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "coin",
+          "count": 1
+        }
+      ],
+      "id": "action-62"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "ore",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "coin",
+          "count": 1
+        }
+      ],
+      "id": "action-63"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "ore",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "paper",
+          "count": 1
+        }
+      ],
+      "id": "action-64"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "ore",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "paper",
+          "count": 1
+        }
+      ],
+      "id": "action-65"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "ore",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "cloth",
+          "count": 1
+        }
+      ],
+      "id": "action-66"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "ore",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "cloth",
+          "count": 1
+        }
+      ],
+      "id": "action-67"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "paper",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "lumber",
+          "count": 1
+        }
+      ],
+      "id": "action-68"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "paper",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "lumber",
+          "count": 1
+        }
+      ],
+      "id": "action-69"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "paper",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "brick",
+          "count": 1
+        }
+      ],
+      "id": "action-70"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "paper",
+          "count": 2
+        }
+      ],
+      "want": [
+        {
+          "type": "brick",
+          "count": 1
+        }
+      ],
+      "id": "action-71"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "paper",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "brick",
+          "count": 1
+        }
+      ],
+      "id": "action-72"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "paper",
+          "count": 2
+        }
+      ],
+      "want": [
+        {
+          "type": "brick",
+          "count": 1
+        }
+      ],
+      "id": "action-73"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "paper",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "wool",
+          "count": 1
+        }
+      ],
+      "id": "action-74"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "paper",
+          "count": 2
+        }
+      ],
+      "want": [
+        {
+          "type": "wool",
+          "count": 1
+        }
+      ],
+      "id": "action-75"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "paper",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "wool",
+          "count": 1
+        }
+      ],
+      "id": "action-76"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "paper",
+          "count": 2
+        }
+      ],
+      "want": [
+        {
+          "type": "wool",
+          "count": 1
+        }
+      ],
+      "id": "action-77"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "paper",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "grain",
+          "count": 1
+        }
+      ],
+      "id": "action-78"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "paper",
+          "count": 2
+        }
+      ],
+      "want": [
+        {
+          "type": "grain",
+          "count": 1
+        }
+      ],
+      "id": "action-79"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "paper",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "grain",
+          "count": 1
+        }
+      ],
+      "id": "action-80"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "paper",
+          "count": 2
+        }
+      ],
+      "want": [
+        {
+          "type": "grain",
+          "count": 1
+        }
+      ],
+      "id": "action-81"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "paper",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "ore",
+          "count": 1
+        }
+      ],
+      "id": "action-82"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "paper",
+          "count": 2
+        }
+      ],
+      "want": [
+        {
+          "type": "ore",
+          "count": 1
+        }
+      ],
+      "id": "action-83"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "paper",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "ore",
+          "count": 1
+        }
+      ],
+      "id": "action-84"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "paper",
+          "count": 2
+        }
+      ],
+      "want": [
+        {
+          "type": "ore",
+          "count": 1
+        }
+      ],
+      "id": "action-85"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "paper",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "coin",
+          "count": 1
+        }
+      ],
+      "id": "action-86"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "paper",
+          "count": 2
+        }
+      ],
+      "want": [
+        {
+          "type": "coin",
+          "count": 1
+        }
+      ],
+      "id": "action-87"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "paper",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "coin",
+          "count": 1
+        }
+      ],
+      "id": "action-88"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "paper",
+          "count": 2
+        }
+      ],
+      "want": [
+        {
+          "type": "coin",
+          "count": 1
+        }
+      ],
+      "id": "action-89"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "paper",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "cloth",
+          "count": 1
+        }
+      ],
+      "id": "action-90"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "paper",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "cloth",
+          "count": 1
+        }
+      ],
+      "id": "action-91"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "cloth",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "lumber",
+          "count": 1
+        }
+      ],
+      "id": "action-92"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "cloth",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "lumber",
+          "count": 1
+        }
+      ],
+      "id": "action-93"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "cloth",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "brick",
+          "count": 1
+        }
+      ],
+      "id": "action-94"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "cloth",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "brick",
+          "count": 1
+        }
+      ],
+      "id": "action-95"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-blue",
+      "offer": [
+        {
+          "type": "cloth",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "wool",
+          "count": 1
+        }
+      ],
+      "id": "action-96"
+    },
+    {
+      "type": "domesticTradePropose",
+      "targetPlayerId": "p-orange",
+      "offer": [
+        {
+          "type": "cloth",
+          "count": 1
+        }
+      ],
+      "want": [
+        {
+          "type": "wool",
+          "count": 1
+        }
+      ],
+      "id": "action-97"
+    },
+    {
+      "type": "playProgressCard",
+      "instanceId": "sci_scienceMining_1",
+      "id": "action-98"
+    },
+    {
+      "type": "improveCity",
+      "track": "trade",
+      "id": "action-99"
+    }
+  ],
+  "validActionsTruncated": true,
+  "truncatedFamilies": ["domesticTradePropose"],
+  "diceHistogram": {
+    "2": 1,
+    "3": 1,
+    "4": 2,
+    "5": 7,
+    "6": 1,
+    "7": 6,
+    "8": 5,
+    "10": 1,
+    "11": 2,
+    "12": 2
+  },
+  "recentEvents": [
+    {
+      "sequence": 99,
+      "type": "actionApplied",
+      "actingPlayerId": "p-red",
+      "turnAfter": 7,
+      "payload": {
+        "actingPlayerId": "p-red",
+        "turnAfter": 7,
+        "action": {
+          "type": "domesticTradePropose",
+          "targetPlayerId": "p-blue",
+          "offer": [
+            {
+              "type": "lumber",
+              "count": 2
+            }
+          ],
+          "want": [
+            {
+              "type": "grain",
+              "count": 1
+            }
+          ],
+          "id": "action-22"
+        }
+      }
+    },
+    {
+      "sequence": 100,
+      "type": "actionApplied",
+      "actingPlayerId": "p-blue",
+      "turnAfter": 7,
+      "payload": {
+        "actingPlayerId": "p-blue",
+        "turnAfter": 7,
+        "action": {
+          "type": "domesticTradeDecline",
+          "id": "action-1"
+        }
+      }
+    },
+    {
+      "sequence": 101,
+      "type": "actionApplied",
+      "actingPlayerId": "p-red",
+      "turnAfter": 7,
+      "payload": {
+        "actingPlayerId": "p-red",
+        "turnAfter": 7,
+        "action": {
+          "type": "maritimeTrade",
+          "offer": {
+            "type": "ore",
+            "count": 4
+          },
+          "want": {
+            "type": "wool",
+            "count": 1
+          },
+          "id": "action-4"
+        }
+      }
+    },
+    {
+      "sequence": 102,
+      "type": "actionApplied",
+      "actingPlayerId": "p-red",
+      "turnAfter": 7,
+      "payload": {
+        "actingPlayerId": "p-red",
+        "turnAfter": 7,
+        "action": {
+          "type": "promoteKnight",
+          "knightId": "knight-p-red-40",
+          "id": "action-96"
+        }
+      }
+    },
+    {
+      "sequence": 103,
+      "type": "actionApplied",
+      "actingPlayerId": "p-red",
+      "turnAfter": 7,
+      "payload": {
+        "actingPlayerId": "p-red",
+        "turnAfter": 7,
+        "action": {
+          "type": "endTurn",
+          "id": "action-1"
+        }
+      }
+    },
+    {
+      "sequence": 104,
+      "type": "diceRolled",
+      "actingPlayerId": "p-blue",
+      "turnAfter": 7,
+      "payload": {
+        "actingPlayerId": "p-blue",
+        "sum": 4
+      }
+    },
+    {
+      "sequence": 105,
+      "type": "actionApplied",
+      "actingPlayerId": "p-blue",
+      "turnAfter": 7,
+      "payload": {
+        "actingPlayerId": "p-blue",
+        "turnAfter": 7,
+        "action": {
+          "type": "buildCity",
+          "intersectionId": "0,0|0,1|1,0",
+          "id": "action-90"
+        }
+      }
+    },
+    {
+      "sequence": 106,
+      "type": "actionApplied",
+      "actingPlayerId": "p-blue",
+      "turnAfter": 7,
+      "payload": {
+        "actingPlayerId": "p-blue",
+        "turnAfter": 7,
+        "action": {
+          "type": "improveCity",
+          "track": "politics",
+          "id": "action-42"
+        }
+      }
+    },
+    {
+      "sequence": 107,
+      "type": "actionApplied",
+      "actingPlayerId": "p-blue",
+      "turnAfter": 7,
+      "payload": {
+        "actingPlayerId": "p-blue",
+        "turnAfter": 7,
+        "action": {
+          "type": "domesticTradePropose",
+          "targetPlayerId": "p-orange",
+          "offer": [
+            {
+              "type": "lumber",
+              "count": 1
+            }
+          ],
+          "want": [
+            {
+              "type": "wool",
+              "count": 1
+            }
+          ],
+          "id": "action-8"
+        }
+      }
+    },
+    {
+      "sequence": 108,
+      "type": "actionApplied",
+      "actingPlayerId": "p-orange",
+      "turnAfter": 7,
+      "payload": {
+        "actingPlayerId": "p-orange",
+        "turnAfter": 7,
+        "action": {
+          "type": "domesticTradeDecline",
+          "id": "action-2"
+        }
+      }
+    },
+    {
+      "sequence": 109,
+      "type": "actionApplied",
+      "actingPlayerId": "p-blue",
+      "turnAfter": 7,
+      "payload": {
+        "actingPlayerId": "p-blue",
+        "turnAfter": 7,
+        "action": {
+          "type": "endTurn",
+          "id": "action-1"
+        }
+      }
+    },
+    {
+      "sequence": 110,
+      "type": "diceRolled",
+      "actingPlayerId": "p-orange",
+      "turnAfter": 7,
+      "payload": {
+        "actingPlayerId": "p-orange",
+        "sum": 12
+      }
+    },
+    {
+      "sequence": 111,
+      "type": "actionApplied",
+      "actingPlayerId": "p-orange",
+      "turnAfter": 7,
+      "payload": {
+        "actingPlayerId": "p-orange",
+        "turnAfter": 7,
+        "action": {
+          "type": "buildCity",
+          "intersectionId": "-1,0|-1,1|0,0",
+          "id": "action-107"
+        }
+      }
+    },
+    {
+      "sequence": 112,
+      "type": "actionApplied",
+      "actingPlayerId": "p-orange",
+      "turnAfter": 7,
+      "payload": {
+        "actingPlayerId": "p-orange",
+        "turnAfter": 7,
+        "action": {
+          "type": "playProgressCard",
+          "instanceId": "trd_tradeMerchantFleet_1",
+          "chosenType": "wool",
+          "id": "action-96"
+        }
+      }
+    },
+    {
+      "sequence": 113,
+      "type": "actionApplied",
+      "actingPlayerId": "p-orange",
+      "turnAfter": 7,
+      "payload": {
+        "actingPlayerId": "p-orange",
+        "turnAfter": 7,
+        "action": {
+          "type": "maritimeTrade",
+          "offer": {
+            "type": "wool",
+            "count": 2
+          },
+          "want": {
+            "type": "grain",
+            "count": 1
+          },
+          "id": "action-4"
+        }
+      }
+    },
+    {
+      "sequence": 114,
+      "type": "actionApplied",
+      "actingPlayerId": "p-orange",
+      "turnAfter": 7,
+      "payload": {
+        "actingPlayerId": "p-orange",
+        "turnAfter": 7,
+        "action": {
+          "type": "domesticTradePropose",
+          "targetPlayerId": "p-red",
+          "offer": [
+            {
+              "type": "lumber",
+              "count": 1
+            }
+          ],
+          "want": [
+            {
+              "type": "paper",
+              "count": 1
+            }
+          ],
+          "id": "action-18"
+        }
+      }
+    },
+    {
+      "sequence": 115,
+      "type": "actionApplied",
+      "actingPlayerId": "p-red",
+      "turnAfter": 7,
+      "payload": {
+        "actingPlayerId": "p-red",
+        "turnAfter": 7,
+        "action": {
+          "type": "domesticTradeDecline",
+          "id": "action-2"
+        }
+      }
+    },
+    {
+      "sequence": 116,
+      "type": "actionApplied",
+      "actingPlayerId": "p-orange",
+      "turnAfter": 8,
+      "payload": {
+        "actingPlayerId": "p-orange",
+        "turnAfter": 8,
+        "action": {
+          "type": "endTurn",
+          "id": "action-1"
+        }
+      }
+    },
+    {
+      "sequence": 117,
+      "type": "diceRolled",
+      "actingPlayerId": "p-red",
+      "turnAfter": 8,
+      "payload": {
+        "actingPlayerId": "p-red",
+        "sum": 11
+      }
+    },
+    {
+      "sequence": 118,
+      "type": "actionApplied",
+      "actingPlayerId": "p-red",
+      "turnAfter": 8,
+      "payload": {
+        "actingPlayerId": "p-red",
+        "turnAfter": 8,
+        "action": {
+          "type": "playProgressCard",
+          "instanceId": "sci_scienceGeomancer_2",
+          "hexAId": "-1,0",
+          "hexBId": "-1,2",
+          "id": "action-134"
+        }
+      }
+    },
+    {
+      "sequence": 119,
+      "type": "actionApplied",
+      "actingPlayerId": "p-red",
+      "turnAfter": 8,
+      "payload": {
+        "actingPlayerId": "p-red",
+        "turnAfter": 8,
+        "action": {
+          "type": "domesticTradePropose",
+          "targetPlayerId": "p-blue",
+          "offer": [
+            {
+              "type": "lumber",
+              "count": 1
+            }
+          ],
+          "want": [
+            {
+              "type": "grain",
+              "count": 1
+            }
+          ],
+          "id": "action-14"
+        }
+      }
+    },
+    {
+      "sequence": 120,
+      "type": "actionApplied",
+      "actingPlayerId": "p-blue",
+      "turnAfter": 8,
+      "payload": {
+        "actingPlayerId": "p-blue",
+        "turnAfter": 8,
+        "action": {
+          "type": "domesticTradeDecline",
+          "id": "action-2"
+        }
+      }
+    },
+    {
+      "sequence": 121,
+      "type": "actionApplied",
+      "actingPlayerId": "p-red",
+      "turnAfter": 8,
+      "payload": {
+        "actingPlayerId": "p-red",
+        "turnAfter": 8,
+        "action": {
+          "type": "endTurn",
+          "id": "action-1"
+        }
+      }
+    },
+    {
+      "sequence": 122,
+      "type": "diceRolled",
+      "actingPlayerId": "p-blue",
+      "turnAfter": 8,
+      "payload": {
+        "actingPlayerId": "p-blue",
+        "sum": 8
+      }
+    },
+    {
+      "sequence": 123,
+      "type": "actionApplied",
+      "actingPlayerId": "p-blue",
+      "turnAfter": 8,
+      "payload": {
+        "actingPlayerId": "p-blue",
+        "turnAfter": 8,
+        "action": {
+          "type": "domesticTradePropose",
+          "targetPlayerId": "p-orange",
+          "offer": [
+            {
+              "type": "lumber",
+              "count": 1
+            }
+          ],
+          "want": [
+            {
+              "type": "paper",
+              "count": 1
+            }
+          ],
+          "id": "action-22"
+        }
+      }
+    },
+    {
+      "sequence": 124,
+      "type": "actionApplied",
+      "actingPlayerId": "p-orange",
+      "turnAfter": 8,
+      "payload": {
+        "actingPlayerId": "p-orange",
+        "turnAfter": 8,
+        "action": {
+          "type": "domesticTradeDecline",
+          "id": "action-1"
+        }
+      }
+    },
+    {
+      "sequence": 125,
+      "type": "actionApplied",
+      "actingPlayerId": "p-blue",
+      "turnAfter": 8,
+      "payload": {
+        "actingPlayerId": "p-blue",
+        "turnAfter": 8,
+        "action": {
+          "type": "endTurn",
+          "id": "action-1"
+        }
+      }
+    },
+    {
+      "sequence": 126,
+      "type": "diceRolled",
+      "actingPlayerId": "p-orange",
+      "turnAfter": 8,
+      "payload": {
+        "actingPlayerId": "p-orange",
+        "sum": 11
+      }
+    },
+    {
+      "sequence": 127,
+      "type": "actionApplied",
+      "actingPlayerId": "p-orange",
+      "turnAfter": 8,
+      "payload": {
+        "actingPlayerId": "p-orange",
+        "turnAfter": 8,
+        "action": {
+          "type": "recruitKnight",
+          "intersectionId": "-1,0|0,-1|0,0",
+          "id": "action-98"
+        }
+      }
+    },
+    {
+      "sequence": 128,
+      "type": "actionApplied",
+      "actingPlayerId": "p-orange",
+      "turnAfter": 8,
+      "payload": {
+        "actingPlayerId": "p-orange",
+        "turnAfter": 8,
+        "action": {
+          "type": "activateKnight",
+          "knightId": "knight-p-orange-128",
+          "id": "action-98"
+        }
+      }
+    },
+    {
+      "sequence": 129,
+      "type": "actionApplied",
+      "actingPlayerId": "p-orange",
+      "turnAfter": 8,
+      "payload": {
+        "actingPlayerId": "p-orange",
+        "turnAfter": 8,
+        "action": {
+          "type": "domesticTradePropose",
+          "targetPlayerId": "p-blue",
+          "offer": [
+            {
+              "type": "lumber",
+              "count": 2
+            }
+          ],
+          "want": [
+            {
+              "type": "ore",
+              "count": 1
+            }
+          ],
+          "id": "action-13"
+        }
+      }
+    },
+    {
+      "sequence": 130,
+      "type": "actionApplied",
+      "actingPlayerId": "p-blue",
+      "turnAfter": 8,
+      "payload": {
+        "actingPlayerId": "p-blue",
+        "turnAfter": 8,
+        "action": {
+          "type": "domesticTradeDecline",
+          "id": "action-1"
+        }
+      }
+    },
+    {
+      "sequence": 131,
+      "type": "actionApplied",
+      "actingPlayerId": "p-orange",
+      "turnAfter": 9,
+      "payload": {
+        "actingPlayerId": "p-orange",
+        "turnAfter": 9,
+        "action": {
+          "type": "endTurn",
+          "id": "action-1"
+        }
+      }
+    },
+    {
+      "sequence": 132,
+      "type": "diceRolled",
+      "actingPlayerId": "p-red",
+      "turnAfter": 9,
+      "payload": {
+        "actingPlayerId": "p-red",
+        "sum": 7
+      }
+    },
+    {
+      "sequence": 133,
+      "type": "actionApplied",
+      "actingPlayerId": "p-red",
+      "turnAfter": 9,
+      "payload": {
+        "actingPlayerId": "p-red",
+        "turnAfter": 9,
+        "action": {
+          "type": "discardHalf",
+          "cards": ["lumber", "lumber", "ore", "paper"],
+          "id": "action-13"
+        }
+      }
+    },
+    {
+      "sequence": 134,
+      "type": "actionApplied",
+      "actingPlayerId": "p-orange",
+      "turnAfter": 9,
+      "payload": {
+        "actingPlayerId": "p-orange",
+        "turnAfter": 9,
+        "action": {
+          "type": "discardHalf",
+          "cards": ["lumber", "grain", "coin", "cloth"],
+          "id": "action-17"
+        }
+      }
+    },
+    {
+      "sequence": 135,
+      "type": "actionApplied",
+      "actingPlayerId": "p-red",
+      "turnAfter": 9,
+      "payload": {
+        "actingPlayerId": "p-red",
+        "turnAfter": 9,
+        "action": {
+          "type": "chooseRobberHex",
+          "hexId": "2,-2",
+          "id": "action-3"
+        }
+      }
+    },
+    {
+      "sequence": 136,
+      "type": "actionApplied",
+      "actingPlayerId": "p-red",
+      "turnAfter": 9,
+      "payload": {
+        "actingPlayerId": "p-red",
+        "turnAfter": 9,
+        "action": {
+          "type": "improveCity",
+          "track": "politics",
+          "id": "action-70"
+        }
+      }
+    },
+    {
+      "sequence": 137,
+      "type": "actionApplied",
+      "actingPlayerId": "p-red",
+      "turnAfter": 9,
+      "payload": {
+        "actingPlayerId": "p-red",
+        "turnAfter": 9,
+        "action": {
+          "type": "domesticTradePropose",
+          "targetPlayerId": "p-blue",
+          "offer": [
+            {
+              "type": "lumber",
+              "count": 1
+            }
+          ],
+          "want": [
+            {
+              "type": "grain",
+              "count": 1
+            }
+          ],
+          "id": "action-6"
+        }
+      }
+    },
+    {
+      "sequence": 138,
+      "type": "actionApplied",
+      "actingPlayerId": "p-blue",
+      "turnAfter": 9,
+      "payload": {
+        "actingPlayerId": "p-blue",
+        "turnAfter": 9,
+        "action": {
+          "type": "domesticTradeDecline",
+          "id": "action-2"
+        }
+      }
+    },
+    {
+      "sequence": 139,
+      "type": "actionApplied",
+      "actingPlayerId": "p-red",
+      "turnAfter": 9,
+      "payload": {
+        "actingPlayerId": "p-red",
+        "turnAfter": 9,
+        "action": {
+          "type": "endTurn",
+          "id": "action-1"
+        }
+      }
+    },
+    {
+      "sequence": 140,
+      "type": "diceRolled",
+      "actingPlayerId": "p-blue",
+      "turnAfter": 9,
+      "payload": {
+        "actingPlayerId": "p-blue",
+        "sum": 5
+      }
+    },
+    {
+      "sequence": 141,
+      "type": "actionApplied",
+      "actingPlayerId": "p-blue",
+      "turnAfter": 9,
+      "payload": {
+        "actingPlayerId": "p-blue",
+        "turnAfter": 9,
+        "action": {
+          "type": "improveCity",
+          "track": "science",
+          "id": "action-91"
+        }
+      }
+    },
+    {
+      "sequence": 142,
+      "type": "actionApplied",
+      "actingPlayerId": "p-blue",
+      "turnAfter": 9,
+      "payload": {
+        "actingPlayerId": "p-blue",
+        "turnAfter": 9,
+        "action": {
+          "type": "domesticTradePropose",
+          "targetPlayerId": "p-orange",
+          "offer": [
+            {
+              "type": "grain",
+              "count": 1
+            }
+          ],
+          "want": [
+            {
+              "type": "paper",
+              "count": 1
+            }
+          ],
+          "id": "action-76"
+        }
+      }
+    },
+    {
+      "sequence": 143,
+      "type": "actionApplied",
+      "actingPlayerId": "p-orange",
+      "turnAfter": 9,
+      "payload": {
+        "actingPlayerId": "p-orange",
+        "turnAfter": 9,
+        "action": {
+          "type": "domesticTradeDecline",
+          "id": "action-2"
+        }
+      }
+    },
+    {
+      "sequence": 144,
+      "type": "actionApplied",
+      "actingPlayerId": "p-blue",
+      "turnAfter": 9,
+      "payload": {
+        "actingPlayerId": "p-blue",
+        "turnAfter": 9,
+        "action": {
+          "type": "maritimeTrade",
+          "offer": {
+            "type": "grain",
+            "count": 4
+          },
+          "want": {
+            "type": "brick",
+            "count": 1
+          },
+          "id": "action-3"
+        }
+      }
+    },
+    {
+      "sequence": 145,
+      "type": "actionApplied",
+      "actingPlayerId": "p-blue",
+      "turnAfter": 9,
+      "payload": {
+        "actingPlayerId": "p-blue",
+        "turnAfter": 9,
+        "action": {
+          "type": "buildRoad",
+          "edgeId": "0,0|1,-1|1,0--1,-1|1,0|2,-1",
+          "id": "action-58"
+        }
+      }
+    },
+    {
+      "sequence": 146,
+      "type": "actionApplied",
+      "actingPlayerId": "p-blue",
+      "turnAfter": 9,
+      "payload": {
+        "actingPlayerId": "p-blue",
+        "turnAfter": 9,
+        "action": {
+          "type": "endTurn",
+          "id": "action-1"
+        }
+      }
+    },
+    {
+      "sequence": 147,
+      "type": "diceRolled",
+      "actingPlayerId": "p-orange",
+      "turnAfter": 9,
+      "payload": {
+        "actingPlayerId": "p-orange",
+        "sum": 5
+      }
+    },
+    {
+      "sequence": 148,
+      "type": "actionApplied",
+      "actingPlayerId": "p-orange",
+      "turnAfter": 9,
+      "payload": {
+        "actingPlayerId": "p-orange",
+        "turnAfter": 9,
+        "action": {
+          "type": "improveCity",
+          "track": "science",
+          "id": "action-115"
+        }
+      }
+    },
+    {
+      "sequence": 149,
+      "type": "actionApplied",
+      "actingPlayerId": "p-orange",
+      "turnAfter": 9,
+      "payload": {
+        "actingPlayerId": "p-orange",
+        "turnAfter": 9,
+        "action": {
+          "type": "improveCity",
+          "track": "science",
+          "id": "action-108"
+        }
+      }
+    },
+    {
+      "sequence": 150,
+      "type": "actionApplied",
+      "actingPlayerId": "p-orange",
+      "turnAfter": 9,
+      "payload": {
+        "actingPlayerId": "p-orange",
+        "turnAfter": 9,
+        "action": {
+          "type": "maritimeTrade",
+          "offer": {
+            "type": "lumber",
+            "count": 4
+          },
+          "want": {
+            "type": "brick",
+            "count": 1
+          },
+          "id": "action-2"
+        }
+      }
+    },
+    {
+      "sequence": 151,
+      "type": "actionApplied",
+      "actingPlayerId": "p-orange",
+      "turnAfter": 9,
+      "payload": {
+        "actingPlayerId": "p-orange",
+        "turnAfter": 9,
+        "action": {
+          "type": "buildRoad",
+          "edgeId": "-1,-1|-1,0|0,-1---1,0|0,-1|0,0",
+          "id": "action-93"
+        }
+      }
+    },
+    {
+      "sequence": 152,
+      "type": "actionApplied",
+      "actingPlayerId": "p-orange",
+      "turnAfter": 9,
+      "payload": {
+        "actingPlayerId": "p-orange",
+        "turnAfter": 9,
+        "action": {
+          "type": "playProgressCard",
+          "instanceId": "trd_tradeTradeMonopoly_1",
+          "commodityType": "paper",
+          "id": "action-59"
+        }
+      }
+    },
+    {
+      "sequence": 153,
+      "type": "actionApplied",
+      "actingPlayerId": "p-orange",
+      "turnAfter": 9,
+      "payload": {
+        "actingPlayerId": "p-orange",
+        "turnAfter": 9,
+        "action": {
+          "type": "improveCity",
+          "track": "science",
+          "id": "action-78"
+        }
+      }
+    },
+    {
+      "sequence": 154,
+      "type": "actionApplied",
+      "actingPlayerId": "p-orange",
+      "turnAfter": 9,
+      "payload": {
+        "actingPlayerId": "p-orange",
+        "turnAfter": 9,
+        "action": {
+          "type": "domesticTradePropose",
+          "targetPlayerId": "p-red",
+          "offer": [
+            {
+              "type": "cloth",
+              "count": 1
+            }
+          ],
+          "want": [
+            {
+              "type": "lumber",
+              "count": 1
+            }
+          ],
+          "id": "action-30"
+        }
+      }
+    },
+    {
+      "sequence": 155,
+      "type": "actionApplied",
+      "actingPlayerId": "p-red",
+      "turnAfter": 9,
+      "payload": {
+        "actingPlayerId": "p-red",
+        "turnAfter": 9,
+        "action": {
+          "type": "domesticTradeAccept",
+          "id": "action-1"
+        }
+      }
+    },
+    {
+      "sequence": 156,
+      "type": "actionApplied",
+      "actingPlayerId": "p-orange",
+      "turnAfter": 9,
+      "payload": {
+        "actingPlayerId": "p-orange",
+        "turnAfter": 9,
+        "action": {
+          "type": "domesticTradeConfirm",
+          "accepterId": "p-red",
+          "id": "action-1"
+        }
+      }
+    },
+    {
+      "sequence": 157,
+      "type": "actionApplied",
+      "actingPlayerId": "p-orange",
+      "turnAfter": 10,
+      "payload": {
+        "actingPlayerId": "p-orange",
+        "turnAfter": 10,
+        "action": {
+          "type": "endTurn",
+          "id": "action-1"
+        }
+      }
+    },
+    {
+      "sequence": 158,
+      "type": "diceRolled",
+      "actingPlayerId": "p-red",
+      "turnAfter": 10,
+      "payload": {
+        "actingPlayerId": "p-red",
+        "sum": 5
+      }
+    }
+  ]
+}

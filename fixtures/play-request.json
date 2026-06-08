@@ -1,0 +1,113 @@
+{
+  "protocolVersion": 1,
+  "gameId": "00000000-0000-0000-0000-000000000001",
+  "playerId": "p-alice",
+  "state": {
+    "id": "00000000-0000-0000-0000-000000000001",
+    "version": 42,
+    "phase": "action",
+    "currentPlayerId": "p-alice",
+    "turnNumber": 8,
+    "players": {
+      "p-alice": {
+        "id": "p-alice",
+        "seatIndex": 0,
+        "color": "red",
+        "victoryPoints": 5,
+        "vpTokens": 0,
+        "revealedVpCards": [],
+        "roadsInSupply": 12,
+        "settlementsInSupply": 3,
+        "citiesInSupply": 4,
+        "cityWallsInSupply": 3,
+        "knightsInSupply": { "basic": 2, "strong": 1, "mighty": 0 },
+        "scienceLevel": 1,
+        "tradeLevel": 0,
+        "politicsLevel": 0,
+        "metropolisCount": 0,
+        "resources": { "lumber": 2, "brick": 1, "wool": 0, "grain": 1, "ore": 0 },
+        "commodities": {},
+        "progressHand": [],
+        "merchantFleetType": null,
+        "freeRoadsRemaining": 0,
+        "cranePlayed": false,
+        "medicinePlayed": false,
+        "progressCardsPlayedThisTurn": [],
+        "knightActionsUsedThisTurn": [],
+        "knightsActivatedThisTurn": [],
+        "knightPromotionsUsedThisTurn": [],
+        "domesticTradeProposalsThisTurn": 0
+      }
+    },
+    "board": { "hexes": {}, "intersections": {}, "edges": {}, "harbors": [] },
+    "dice": {
+      "die1": 4,
+      "die2": 4,
+      "sum": 8,
+      "redDie": 3,
+      "eventDieResult": "ship",
+      "alchemyPreset": false,
+      "rollNumber": 8
+    },
+    "berserkerTrackPosition": 3,
+    "berserkerTrackMax": 7,
+    "firstBerserkerAttackResolved": true,
+    "robberActive": false,
+    "merchantHexId": null,
+    "merchantOwnerPlayerId": null,
+    "longestRoadHolderPlayerId": null,
+    "pendingDecision": null,
+    "winnerPlayerId": null,
+    "lastBerserkerAttack": null,
+    "lastVpAwards": [],
+    "scienceDeckCount": 14,
+    "tradeDeckCount": 14,
+    "politicsDeckCount": 14,
+    "progressDiscardScience": [],
+    "progressDiscardTrade": [],
+    "progressDiscardPolitics": [],
+    "bankResources": { "lumber": 17, "brick": 17, "wool": 19, "grain": 18, "ore": 19 },
+    "bankCommodities": { "coin": 12, "paper": 12, "cloth": 12 },
+    "opponentMaterialTypes": ["wool", "grain"],
+    "domesticTradeDeclinesThisTurn": []
+  },
+  "validActions": [
+    { "id": "a-001", "type": "endTurn" },
+    { "id": "a-002", "type": "buildRoad", "edgeId": "e-12-13" },
+    { "id": "a-003", "type": "buildSettlement", "intersectionId": "i-22" }
+  ],
+  "validActionsTruncated": false,
+  "truncatedFamilies": [],
+  "diceHistogram": { "2": 1, "6": 3, "7": 2, "8": 4, "10": 1 },
+  "recentEvents": [
+    {
+      "sequence": 120,
+      "type": "diceRolled",
+      "actingPlayerId": "p-bob",
+      "turnAfter": 7,
+      "payload": { "actingPlayerId": "p-bob", "sum": 7 }
+    },
+    {
+      "sequence": 121,
+      "type": "actionApplied",
+      "actingPlayerId": "p-bob",
+      "turnAfter": 7,
+      "payload": {
+        "actingPlayerId": "p-bob",
+        "turnAfter": 7,
+        "action": { "type": "discardHalf", "cardCount": 3 }
+      }
+    },
+    {
+      "sequence": 122,
+      "type": "progressCardDraws",
+      "actingPlayerId": "p-alice",
+      "turnAfter": 8,
+      "payload": {
+        "actingPlayerId": "p-alice",
+        "turnNumber": 8,
+        "draws": [{ "playerId": "p-alice", "deck": "science", "isVp": false }]
+      }
+    }
+  ]
+}
