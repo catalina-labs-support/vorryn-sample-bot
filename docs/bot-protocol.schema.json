@@ -29,6 +29,11 @@
               "minimum": 1,
               "maximum": 1000000
             },
+            "victoryPointsTarget": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000
+            },
             "phase": {
               "type": "string",
               "enum": [
@@ -1092,6 +1097,7 @@
                             }
                           },
                           "required": [
+                            "eligibleIntersectionIds",
                             "track"
                           ],
                           "additionalProperties": false
@@ -2641,6 +2647,7 @@
           "required": [
             "id",
             "version",
+            "victoryPointsTarget",
             "phase",
             "currentPlayerId",
             "turnNumber",
@@ -4800,6 +4807,16 @@
           }
         },
         "personality": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "difficulty": {
           "anyOf": [
             {
               "type": "string"
