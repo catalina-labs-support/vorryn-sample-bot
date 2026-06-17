@@ -22,7 +22,7 @@ A few ground rules about authority:
 
 ## 2. Overview & components
 
-The first player to reach **13 victory points on their own turn** wins (details §15).
+The first player to reach the **victory-point target on their own turn** wins — **13 VP** in a standard game, though a game may set a lower target (for example, 8 for short / guest games). The active target is on the wire as `state.victoryPointsTarget` (details §15).
 
 ### Resources (5 types)
 
@@ -913,7 +913,7 @@ Unplayable if no opponent has more VP, or if the only eligible opponent holds an
 
 **Window:** `actionPhase`. **Payload:** `hexId`.
 
-Places the Guildmaster marker on a land hex adjacent to at least one of the player's own buildings (settlement or city). Moves the marker from its previous position (clearing the old hex's `merchantPresent` flag silently if it still exists). The controlling player gains +1 VP from the Guildmaster while they hold it. `checkVictory` runs on placement.
+Places the Guildmaster marker on a **productive land hex** (any land hex except the Desert) adjacent to at least one of the player's own buildings (settlement or city). Moves the marker from its previous position (clearing the old hex's `merchantPresent` flag silently if it still exists). The controlling player gains +1 VP from the Guildmaster while they hold it. `checkVictory` runs on placement.
 
 No pendings triggered.
 
@@ -1079,7 +1079,7 @@ Revealed immediately when drawn into `revealedVpCards`. Awards +1 VP. Cannot be 
 
 ### 15.2 Win condition
 
-**13 VP wins.** Victory is checked only for `state.currentPlayerId` at the end of every applied action — off-turn VP gains (a Defender-of-Vorryn token from a berserker defense, a longest-road transfer away from another player, or an opponent drawing a VP card) do **not** immediately end the game. The player wins automatically when their next turn begins: `advanceTurn` calls `checkVictory` after switching `currentPlayerId`, so a player who silently crossed 13 VP during someone else's turn wins as soon as the first action of their own turn resolves (which may be as early as the phase-transition into their roll phase).
+**Reaching the VP target wins** — 13 in a standard game, but configurable per game via `state.victoryPointsTarget` (for example, 8 for short / guest games). Victory is checked only for `state.currentPlayerId` at the end of every applied action — off-turn VP gains (a Defender-of-Vorryn token from a berserker defense, a longest-road transfer away from another player, or an opponent drawing a VP card) do **not** immediately end the game. The player wins automatically when their next turn begins: `advanceTurn` calls `checkVictory` after switching `currentPlayerId`, so a player who silently crossed the target during someone else's turn wins as soon as the first action of their own turn resolves (which may be as early as the phase-transition into their roll phase).
 
 On a win: `state.phase` transitions to `'gameOver'` and `state.winnerPlayerId` is set to the winning player's id.
 
@@ -1167,6 +1167,8 @@ The 21 pending-decision types, their triggers, which player must answer, and the
 | Commodity bank stock (per type)       | 12    |
 | Improvement track maximum level       | 5     |
 | Metropolis trigger level              | 4     |
+
+_"Victory points to win" is the standard target; a game may set a lower one (e.g. 8 for short / guest games). The active value is on the wire as `state.victoryPointsTarget` (§2, §15.2)._
 
 ### Per-player piece supply
 
