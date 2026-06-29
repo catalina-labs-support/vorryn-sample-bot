@@ -1363,7 +1363,8 @@
       "cloth": 11
     },
     "opponentMaterialTypes": ["lumber", "paper", "wool", "grain"],
-    "domesticTradeDeclinesThisTurn": []
+    "domesticTradeDeclinesThisTurn": [],
+    "domesticTradeCountersThisTurn": []
   },
   "validActions": [
     {

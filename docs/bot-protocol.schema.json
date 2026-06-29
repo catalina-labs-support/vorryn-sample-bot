@@ -2642,6 +2642,25 @@
                 ],
                 "additionalProperties": false
               }
+            },
+            "domesticTradeCountersThisTurn": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "responderId": {
+                    "type": "string"
+                  },
+                  "proposerId": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "responderId",
+                  "proposerId"
+                ],
+                "additionalProperties": false
+              }
             }
           },
           "required": [
@@ -2674,7 +2693,8 @@
             "bankResources",
             "bankCommodities",
             "opponentMaterialTypes",
-            "domesticTradeDeclinesThisTurn"
+            "domesticTradeDeclinesThisTurn",
+            "domesticTradeCountersThisTurn"
           ],
           "additionalProperties": false
         },

@@ -70,7 +70,8 @@
     "bankResources": { "lumber": 17, "brick": 17, "wool": 19, "grain": 18, "ore": 19 },
     "bankCommodities": { "coin": 12, "paper": 12, "cloth": 12 },
     "opponentMaterialTypes": ["wool", "grain"],
-    "domesticTradeDeclinesThisTurn": []
+    "domesticTradeDeclinesThisTurn": [],
+    "domesticTradeCountersThisTurn": []
   },
   "validActions": [
     { "id": "a-001", "type": "endTurn" },
