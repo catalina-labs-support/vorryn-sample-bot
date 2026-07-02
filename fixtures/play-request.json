@@ -29,7 +29,7 @@
         "resources": { "lumber": 2, "brick": 1, "wool": 0, "grain": 1, "ore": 0 },
         "commodities": {},
         "progressHand": [],
-        "merchantFleetType": null,
+        "merchantFleetTypes": [],
         "freeRoadsRemaining": 0,
         "cranePlayed": false,
         "medicinePlayed": false,

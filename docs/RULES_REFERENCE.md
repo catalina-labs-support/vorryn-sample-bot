@@ -655,16 +655,16 @@ Maritime trade lets the current player exchange cards with the bank at a negotia
 
 **Rate hierarchy**:
 
-| Condition                                                                                                  | Rate |
-| ---------------------------------------------------------------------------------------------------------- | ---- |
-| Base (no applicable perk)                                                                                  | 4:1  |
-| Player has a building on a 3:1 harbor intersection                                                         | 3:1  |
-| Player has a building on a 2:1 resource-specific harbor, and `offer.type` matches                          | 2:1  |
-| Player's `tradeLevel >= 3` and `offer.type` is a commodity                                                 | 2:1  |
-| Player played Galleon (`tradeMerchantFleet`) this turn and `offer.type` matches `player.merchantFleetType` | 2:1  |
-| Player holds the Guildmaster marker (`tradeMerchant`) on a hex whose resource matches `offer.type`         | 2:1  |
+| Condition                                                                                                 | Rate |
+| --------------------------------------------------------------------------------------------------------- | ---- |
+| Base (no applicable perk)                                                                                 | 4:1  |
+| Player has a building on a 3:1 harbor intersection                                                        | 3:1  |
+| Player has a building on a 2:1 resource-specific harbor, and `offer.type` matches                         | 2:1  |
+| Player's `tradeLevel >= 3` and `offer.type` is a commodity                                                | 2:1  |
+| Player played Galleon (`tradeMerchantFleet`) this turn and `offer.type` is in `player.merchantFleetTypes` | 2:1  |
+| Player holds the Guildmaster marker (`tradeMerchant`) on a hex whose resource matches `offer.type`        | 2:1  |
 
-All applicable rates are evaluated simultaneously; the minimum applies. Harbor ownership is determined by having a building (settlement or city) on any of the harbor's `intersectionIds`. The 3:1 harbor reduces all types to 3:1; the 2:1 commodity-track perk applies only when the offered card is a commodity. The Galleon (`tradeMerchantFleet`) sets `merchantFleetType` to the chosen type for the rest of the turn; `merchantFleetType` is cleared at turn advance. The Guildmaster hex rate applies only if `state.merchantOwnerPlayerId === actingPlayerId` and `state.merchantHexId !== null` and the hex produces the offered resource type (commodity hexes that also produce a resource match on the resource, not the commodity).
+All applicable rates are evaluated simultaneously; the minimum applies. Harbor ownership is determined by having a building (settlement or city) on any of the harbor's `intersectionIds`. The 3:1 harbor reduces all types to 3:1; the 2:1 commodity-track perk applies only when the offered card is a commodity. Each Galleon (`tradeMerchantFleet`) play adds its chosen type to `merchantFleetTypes` for the rest of the turn — multiple Galleons stack, one 2:1 type each; the list is cleared at turn advance. The Guildmaster hex rate applies only if `state.merchantOwnerPlayerId === actingPlayerId` and `state.merchantHexId !== null` and the hex produces the offered resource type (commodity hexes that also produce a resource match on the resource, not the commodity).
 
 ## 13. City improvements & metropolises
 
@@ -923,7 +923,7 @@ No pendings triggered.
 
 **Window:** `actionPhase`. **Payload:** `chosenType` (a resource or commodity type string).
 
-Grants a 2:1 bank exchange rate for the chosen material type for the remainder of this turn. The rate expires at turn end (`merchantFleetType` is reset at turn advance). The card is only offered as playable while the player holds at least one resource or commodity to exchange.
+Grants a 2:1 bank exchange rate for the chosen material type for the remainder of this turn. Playing a second Galleon adds another type (`merchantFleetTypes` accumulates; both rates stay live) and the list resets at turn advance. A play is rejected as `noEffect` when the player holds none of the chosen type or when that type's 2:1 rate is already active this turn.
 
 No pendings triggered.
 

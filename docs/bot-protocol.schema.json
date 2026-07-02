@@ -236,15 +236,11 @@
                           "additionalProperties": false
                         }
                       },
-                      "merchantFleetType": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
+                      "merchantFleetTypes": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
                       },
                       "freeRoadsRemaining": {
                         "type": "integer",
@@ -306,7 +302,7 @@
                       "resources",
                       "commodities",
                       "progressHand",
-                      "merchantFleetType",
+                      "merchantFleetTypes",
                       "freeRoadsRemaining",
                       "cranePlayed",
                       "medicinePlayed",

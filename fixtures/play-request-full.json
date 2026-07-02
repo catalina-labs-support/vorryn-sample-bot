@@ -46,7 +46,7 @@
             "cardId": "scienceMining"
           }
         ],
-        "merchantFleetType": null,
+        "merchantFleetTypes": [],
         "freeRoadsRemaining": 0,
         "cranePlayed": false,
         "medicinePlayed": false,
