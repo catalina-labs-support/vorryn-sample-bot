@@ -543,7 +543,7 @@ On apply:
 
 The displaced knight is re-placed with its **original activation state** — an active knight remains active after retreating; only the attacking knight deactivates (step 1).
 
-The longest-road holder is recomputed after displacement and again after retreat resolves (§11).
+The longest-road holder is recomputed after displacement and again after retreat resolves (§11). **Victory is checked at the displacement step, before the retreat resolves.** If removing the opponent knight makes the current player's road continuous and hands them Longest Road across the target, the game ends at once (§15.2's immediate-win convention) and the pending retreat is discarded as terminal cleanup — even though a legal retreat back onto that road could have re-broken it. This is deliberate: reaching the target on your own turn wins immediately, mid-action, exactly as with Diplomacy (§14) and the berserker Defender award (§8.3). The same applies to Conspiracy (`politicsIntrigue`).
 
 ### 10.7 Other knight interactions
 
