@@ -58,7 +58,7 @@ Each player starts with the following supply:
 
 ### Dice
 
-Two **production dice** (each 1–6; their sum determines production) plus one **event die** (four outcomes: ship / science / trade / politics). The **red die** is always the randomly rolled second production die (`state.dice.redDie`); on a science/trade/politics event-die face, a player draws a progress card only if their matching city-improvement track level is at least equal to the red-die value (details §6, §13). When Augury presets the production dice the red die is still rolled randomly and is independent of the preset die2 value.
+Two **production dice** (each 1–6; their sum determines production) plus one **event die** (four outcomes: ship / science / trade / politics). The second production die is the **red die** (`state.dice.redDie`). Improvement level 1 draws on red 1–2, level 2 on 1–3, level 3 on 1–4, level 4 on 1–5, and level 5 on 1–6. Augury sets both production dice, including the red die.
 
 ## 3. The board
 
@@ -194,9 +194,9 @@ Your bot never observes the internal `event`, `production`, or `resolveAttack` p
 
 ### 6.1 The dice pool
 
-Every turn begins with a roll of four dice:
+Every turn begins with a roll of three dice:
 
-- **Two production dice** (each 1–6). Their sum (2–12) is the production number. The **red die** (`state.dice.redDie`) is always the randomly rolled second die — it equals `die2` on a normal roll. When Augury presets the production dice, the preset die2 drives the production sum, but `redDie` is the die2 value from the underlying random roll (not the preset value); it still determines progress-card draw eligibility for that turn.
+- **Two production dice** (each 1–6). Their sum (2–12) is the production number. The second die is the **red die** (`state.dice.redDie`). When Augury presets the production dice, its chosen `die2` is also the red-die result.
 - **Event die** — six faces, collapsed into four outcomes:
   - Three faces → `ship` (berserker track +1; see §8)
   - One face → `science`
@@ -209,10 +209,10 @@ The event die result is exposed on the wire as `state.dice.eventDieResult`.
 
 When the event die shows `science`, `trade`, or `politics`, the engine iterates players starting with the current player and awards a progress card from the matching deck to each player who satisfies **both** conditions:
 
-1. The player has **at least 1 city** on the board (`cityCount >= 1`). Settlements alone do not qualify.
-2. The player's city-improvement level on the matching track (`scienceLevel`, `tradeLevel`, or `politicsLevel`) is **≥ the red die value**.
+1. The matching city-improvement track is at least level 1; owning a city is not required.
+2. The red die is no greater than **track level + 1**: level 1 draws on 1–2, level 2 on 1–3, level 3 on 1–4, level 4 on 1–5, and level 5 on 1–6.
 
-Players who meet both conditions draw the top card of the matching deck. If the deck is empty, the matching discard pile is shuffled back in (deterministically, seeded by game version) and a card is drawn from the result; if both are empty, no card is awarded. VP cards (those with `isVp: true`) are revealed immediately and go to `player.revealedVpCards`; all others go to `player.progressHand`.
+Players who meet both conditions draw the top card of the matching deck. Played and discarded cards go face down beneath their matching deck, so there is no normal discard-pile reshuffle. VP cards (`isVp: true`) reveal immediately into `player.revealedVpCards`; all others enter `player.progressHand`.
 
 After all eligible players draw, any non-current player with more than 4 progress cards in hand is queued for a `discardProgress` pending decision (up to 4 cards is fine; over-limit discards are per-player, in seat order starting from the current player). The current player is exempt from the over-limit check after drawing (§5, §16).
 
@@ -252,14 +252,14 @@ Players with `scienceLevel >= 3` who receive **zero** production from a roll are
 
 ### 6.6 Wire fields
 
-| Field                                | Description                                                                                                                                |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `state.dice.die1`, `state.dice.die2` | Production die values (1–6 each)                                                                                                           |
-| `state.dice.sum`                     | Production sum (2–12)                                                                                                                      |
-| `state.dice.redDie`                  | Randomly rolled second die value; equals `die2` on a normal roll, but under Augury equals the underlying random die2 (not the preset die2) |
-| `state.dice.eventDieResult`          | `'ship'` \| `'science'` \| `'trade'` \| `'politics'`                                                                                       |
-| `state.dice.alchemyPreset`           | `true` if Augury overrode the production dice this roll                                                                                    |
-| `diceHistogram` (BotRequest)         | Cumulative `Record<number, number>` of production-sum tallies for the current game                                                         |
+| Field                                | Description                                                                        |
+| ------------------------------------ | ---------------------------------------------------------------------------------- |
+| `state.dice.die1`, `state.dice.die2` | Production die values (1–6 each)                                                   |
+| `state.dice.sum`                     | Production sum (2–12)                                                              |
+| `state.dice.redDie`                  | The second production die; equals `die2` on normal and Augury-preset rolls         |
+| `state.dice.eventDieResult`          | `'ship'` \| `'science'` \| `'trade'` \| `'politics'`                               |
+| `state.dice.alchemyPreset`           | `true` if Augury overrode the production dice this roll                            |
+| `diceHistogram` (BotRequest)         | Cumulative `Record<number, number>` of production-sum tallies for the current game |
 
 The roll outcome arrives as updated `state.dice`; the top-level `recentEvents` field of `BotRequest` carries bounded event history. There is no separate `rollDice` response payload.
 
@@ -347,26 +347,26 @@ Defense succeeds when **`defenderStrength > 0` AND `defenderStrength >= berserke
 **Tied largest contributors:** when two or more players share the highest contribution, the tie-break behavior is:
 
 - The engine does **not** grant a VP token to any tied player.
-- Instead, each tied player is queued (in seat order, starting with the current player) for a `chooseProgressDeck` pending decision: each tied defender chooses which progress deck (`science`, `trade`, or `politics`) to draw one card from. Decks with no remaining cards (draw pile and discard pile both empty) are excluded from `eligibleDecks`. If all decks are exhausted, the queue collapses with no award.
+- Instead, each tied player is queued (in seat order, starting with the current player) for a `chooseProgressDeck` pending decision. Decks with no cards are excluded; legacy snapshot discard entries also count as recoverable cards.
 
 **The code confirms this is implemented via `chooseProgressDeck` pendings**, one per tied player, not a VP token.
 
 ### 8.5 Attack resolution — defense loses
 
-Defense fails when `defenderStrength === 0` OR `defenderStrength < berserkerStrength`. The engine pillages the player(s) with the **lowest** defender contribution among **players who have at least one non-metropolis city**:
+Defense fails only when `defenderStrength < berserkerStrength`; 0 strength successfully defends against 0 barbarian strength. The engine pillages the player(s) with the **lowest** defender contribution among **players who have at least one non-metropolis city**:
 
-- Eligible players: those with `cityCount > 0` (all city types count for eligibility).
+- Eligible players: those with at least one non-metropolis city. Metropolis-only players do not establish the minimum contribution.
 - Pillaged players: among eligible players, those whose active-knight contribution equals the minimum.
 
 For each pillaged player:
 
-1. **No eligible cities** (all their cities are metropolises, or `settlementsInSupply === 0`): no downgrade; recorded as supply-depleted. (A city is pillage-eligible if it is `BuildingType.City` with `metropolisType === null` and the player has at least one settlement in supply.)
+1. **No eligible cities** means all their cities are metropolises. Settlement-piece supply does not make a normal city immune.
 2. **Exactly 1 eligible city**: the engine automatically downgrades it to a settlement.
 3. **2+ eligible cities**: a `choosePillageCity` pending decision is queued; the affected player picks which city to lose.
 
-Downgrading a city to a settlement: returns the city piece to supply, places a settlement at the intersection (consuming one from supply), and if the city had a wall, the wall piece is returned to supply too.
+Downgrading returns the wall, if any. Normally the city returns to supply and a settlement is placed. If no settlement piece is available, the city piece is turned sideways and functions as a settlement; that exact settlement must be rebuilt before any other settlement can be upgraded.
 
-**Progress hand loss:** after any downgrade, if the pillaged player now has **zero** cities on the board, their entire progress hand is returned to the **bottom of their respective draw decks** (not to the discard piles). The player retains revealed VP cards.
+Losing the last city does **not** discard or return the player's progress-card hand.
 
 If no player has any city at all when the attack resolves (`eligiblePlayerIds.length === 0`), the attack is recorded as a berserker victory with no pillage.
 
@@ -417,7 +417,7 @@ An opponent building or knight at an endpoint **does block** road-chain continua
 
 Roads cost 1 `brick` + 1 `lumber`. Supply is checked before the cost — with no roads left in supply the action is never offered. After placement the longest-road holder is always recomputed (§11).
 
-**Causeway free roads:** Playing Causeway (`scienceRoadBuilding`) sets `freeRoadsRemaining` to `min(2, roadsInSupply)` and opens a `roadBuildingPlace` pending decision — only when at least one legal road placement exists; a fully boxed-in player gets no pending. Each `buildRoad` action inside that pending decrements `freeRoadsRemaining`; the pending clears automatically when it reaches 0 or when no legal placement remains. The player may also submit `skipRoadBuilding` to forfeit remaining free roads. No resource cost is charged during the pending.
+**Causeway free roads:** Playing Causeway (`scienceRoadBuilding`) sets `freeRoadsRemaining` to `min(2, roadsInSupply)` and opens a `roadBuildingPlace` pending only when a legal road placement exists. Each `buildRoad` decrements the count; the pending clears at 0 or when no legal placement remains. A legal placement cannot be voluntarily forfeited.
 
 ### 9.3 Settlements (`buildSettlement`)
 
@@ -439,10 +439,10 @@ After placement the longest-road holder is recomputed (a new settlement may seve
 A city upgrades **your own settlement** at the target intersection in-place. Requirements:
 
 1. The intersection must hold your own settlement (`building.ownerPlayerId === actingPlayerId`, `building.type === 'settlement'`).
-2. `citiesInSupply > 0`.
-3. You can afford the cost: normally 3 `ore` + 2 `grain`; reduced to 2 `ore` + 1 `grain` if you played Apothecary (`scienceMedicine`) this turn (`medicinePlayed` is `true`).
+2. `citiesInSupply > 0`, unless this is the mandatory rebuild of a sideways pillaged city piece.
+3. You can afford the normal cost: 3 `ore` + 2 `grain`. Medicine performs its own atomic reduced-cost upgrade (§14).
 
-On apply: the settlement is returned to supply and a city piece is consumed. Any city wall or metropolis present is preserved through the upgrade. `medicinePlayed` is reset to `false`. Victory is checked; longest-road is **not** recomputed (city is an in-place upgrade at the same intersection and does not affect road topology).
+On apply, the settlement returns to supply and a city piece is consumed. A sideways city-piece settlement instead turns upright without moving either piece in supply. If one exists, it must be rebuilt before another settlement. Victory is checked; longest-road is not recomputed.
 
 ### 9.5 City walls (`buildCityWall`)
 
@@ -543,7 +543,7 @@ On apply:
 
 The displaced knight is re-placed with its **original activation state** — an active knight remains active after retreating; only the attacking knight deactivates (step 1).
 
-The longest-road holder is recomputed after displacement and again after retreat resolves (§11). **Victory is checked at the displacement step, before the retreat resolves.** If removing the opponent knight makes the current player's road continuous and hands them Longest Road across the target, the game ends at once (§15.2's immediate-win convention) and the pending retreat is discarded as terminal cleanup — even though a legal retreat back onto that road could have re-broken it. This is deliberate: reaching the target on your own turn wins immediately, mid-action, exactly as with Diplomacy (§14) and the berserker Defender award (§8.3). The same applies to Conspiracy (`politicsIntrigue`).
+The longest-road holder is recomputed after displacement and again after retreat resolves (§11). Victory waits until the displaced knight completes any mandatory retreat, because the retreat may break the route again. The same applies to Intrigue (`politicsIntrigue`).
 
 ### 10.7 Other knight interactions
 
@@ -608,7 +608,7 @@ Domestic trade lets the current player exchange cards with opponents without goi
 
 **Who may propose:** only the current player (`currentPlayerId`). Opponents may not initiate. Bank trades are maritime only (§12.2).
 
-**Proposal limit:** the enumerator stops generating `domesticTradePropose` candidates once `player.domesticTradeProposalsThisTurn >= 5`. The validate handler does not enforce this cap directly — it relies on enumerator gating.
+There is no rules-based per-turn proposal limit. Candidate generation still applies its normal per-decision truncation budget.
 
 **Proposal payload shape** (`domesticTradePropose`):
 
@@ -630,7 +630,7 @@ Both `offer` and `want` are arrays of `{ type, count }` items. `MaterialType` co
 4. The proposer resolves the trade by confirming an accepter (`domesticTradeConfirm`), executing one recorded counter (`domesticTradeTakeCounter` with the chosen `responderId`), or cancelling (`domesticTradeCancel`). For `domesticTradeConfirm`, if multiple opponents accepted the proposer picks one via `accepterId` in the payload (omitting `accepterId` uses the first accepter). Cards are transferred atomically at resolution time — both parties' holdings are re-validated at that point.
 5. `domesticTradeCancel` withdraws the open proposal at any point while a `DomesticTradeResponse` or `DomesticTradeConfirm` pending is active. Only the current player may cancel.
 
-Counter-offers do not count against the per-turn proposal limit, and an un-taken counter is not recorded as a decline.
+An un-taken counter is not recorded as a decline.
 
 Note: `domesticTradeConfirm` appears as **both** an `ActionType` and a `PendingDecisionType`. The pending is held by the proposer; `allowedPlayerIds = [proposerId]`.
 
@@ -674,7 +674,7 @@ All applicable rates are evaluated simultaneously; the minimum applies. Harbor o
 
 **Payload:** `{ "track": "science" | "trade" | "politics" }`
 
-**Cost:** `(currentLevel + 1)` commodities of the track's matching commodity, paid from hand. Mason (`scienceMason`) sets `cranePlayed` to true when played; if `cranePlayed` is true the cost is reduced by 1 (minimum 0). `cranePlayed` is consumed by the `improveCity` apply handler, so the discount applies to exactly one improvement per Mason play.
+**Cost:** `(currentLevel + 1)` commodities of the track's matching commodity, paid from hand. Crane performs one selected improvement atomically for 1 fewer commodity (minimum 0); it does not discount a later `improveCity` action.
 
 Track-to-commodity mapping:
 
@@ -733,7 +733,7 @@ Perks activate once the player reaches the listed level. They persist until the 
 
 ### 13.4 Event-die card draw and track levels
 
-The event die triggers progress-card draws. When it shows a commodity-track face (science, trade, or politics), each player who owns at least one city and whose track level on that track is ≥ the red-die value draws one card from the matching deck. See §6.2 for the complete draw flow.
+The event die triggers progress-card draws. Owning a city is not required: a positive track level draws when the red die is at most that level plus 1. See §6.2 for the complete draw flow.
 
 ## 14. Progress cards
 
@@ -741,7 +741,7 @@ Three decks of 18 (total **54 progress cards**, **18 per deck**), one deck per c
 
 ### Drawing
 
-On each roll, if the event die shows a commodity-track face (science, trade, or politics), every player who owns at least one city **and** whose improvement level on that track is ≥ the red die result draws one card from the matching deck. Cards are drawn in seat order starting from the current player.
+On each roll, if the event die shows a commodity-track face, every player with a positive matching level draws when the red die is at most that level plus 1. Cards are drawn in seat order starting from the current player.
 
 VP cards (`scienceAnnals`, `politicsCharter`) reveal immediately on draw: they go into `revealedVpCards` (not `progressHand`) and award +1 VP; `checkVictory` runs immediately.
 
@@ -752,7 +752,7 @@ VP cards (`scienceAnnals`, `politicsCharter`) reveal immediately on draw: they g
 
 ### Deck exhaustion
 
-When a deck runs empty mid-game, `drawFromDeck` reshuffles its matching discard pile (`progressDiscardScience`, `progressDiscardTrade`, `progressDiscardPolitics` on the wire) back into the deck using a deterministic RNG seeded on `state.seed + 'reshuffle' + deckName + state.version`, then draws the top card. If both deck and discard are empty the draw returns null (skip).
+Played and forcibly discarded cards go face down beneath their matching deck immediately. The `progressDiscard*` fields remain only for legacy snapshot compatibility and are not populated by current play.
 
 ### Hand limit
 
@@ -762,7 +762,7 @@ VP cards live in `revealedVpCards`, not `progressHand`, and do not count against
 
 ### Playing
 
-Play is routed through `PlayProgressCard` (action-phase or pre-roll). Every candidate in `validActions[]` already carries a full payload validated by `tryValidatePlayProgressCard`; your bot selects one without constructing payloads. After the effect runs, the card instance moves from `progressHand` to the matching discard pile.
+Play is routed through `PlayProgressCard` (action-phase or pre-roll). Every candidate in `validActions[]` already carries a full payload validated by `tryValidatePlayProgressCard`; your bot selects one without constructing payloads. A `skip: true` payload allows the card to be played with no benefit. Afterward, the card instance moves from `progressHand` beneath the matching deck.
 
 No per-turn cap: a player holding two copies of any card may play both in one turn. The one timing restriction is **Augury** — it is playable only before rolling and only once per turn (the engine checks `progressCardsPlayedThisTurn` for `'scienceAugury'` before allowing a second play).
 
@@ -776,7 +776,7 @@ Cards whose effects produce multi-step interactions install a `pendingDecision`;
 
 **Window:** roll phase, before rolling (once per turn). **Payload:** `instanceId`, `die1` (1–6), `die2` (1–6).
 
-The player chooses both production dice values; the event die and the red die are still rolled randomly. The preset die values drive the production sum; `state.dice.redDie` is the underlying random die2 (not the preset die2), so progress-card draw eligibility still depends on a random roll. The chosen production dice values are consumed by the roll and the card is discarded from `progressHand` immediately (with normal discard handling). This is the only pre-roll card.
+The player chooses both production dice values. The chosen `die2` is the red die and controls progress-card eligibility; only the event die is rolled randomly. This is the only pre-roll card.
 
 No pendings triggered. Cannot be played if `scienceAugury` already appears in `progressCardsPlayedThisTurn`.
 
@@ -786,7 +786,7 @@ No pendings triggered. Cannot be played if `scienceAugury` already appears in `p
 
 **Window:** `actionPhaseWithBuild`. **Payload:** `{}` (no payload parameters read at play time).
 
-Sets `player.cranePlayed = true` for the remainder of this turn. Any city-improvement purchase made this turn costs 1 commodity less than normal (capped at 0). The discount applies only to the next improvement built; `cranePlayed` is cleared on `improveCity` application and reset to `false` at turn advance. Can be played before building an improvement in the same action phase. The card is only offered as playable while the player owns at least one city and the discounted commodity cost is affordable on at least one unmaxed improvement track (level 0 always qualifies — its discounted cost is 0).
+The card play itself builds one selected city improvement for 1 fewer matching commodity than normal (minimum 0). It does not arm a discount for a later action.
 
 No pendings triggered.
 
@@ -818,7 +818,7 @@ No pendings triggered. The robber does not move.
 
 Grants 2 grain per distinct Fields hex adjacent to any of the player's own buildings (settlements or cities). The count is based on unique adjacent hex IDs across all own buildings. Resources are drawn from the bank (subject to bank stock).
 
-No pendings triggered. Unplayable if the player owns no buildings adjacent to any Fields hex.
+No pendings trigger. With no adjacent Fields hex, the card may still be played for no benefit.
 
 ---
 
@@ -826,7 +826,7 @@ No pendings triggered. Unplayable if the player owns no buildings adjacent to an
 
 **Window:** `actionPhaseWithBuild`. **Payload:** `{}` (no payload parameters read at play time).
 
-Sets `medicinePlayed` to true for the remainder of this turn. The next city built this turn costs 2 ore + 1 grain instead of the normal 3 ore + 2 grain. The flag is cleared when the city is built and reset at turn advance. Can be played before building a city in the same action phase. The card is only offered as playable while the player owns at least one settlement to upgrade, has a city piece remaining in supply, and holds 2 ore + 1 grain.
+The card play itself upgrades the selected settlement for 2 ore + 1 grain. It does not arm a discount for a later build. A sideways pillaged city may be rebuilt this way even with no city in supply.
 
 No pendings triggered.
 
@@ -838,7 +838,7 @@ No pendings triggered.
 
 Grants 2 ore per distinct Mountains hex adjacent to any of the player's own buildings (settlements or cities). The count is based on unique adjacent hex IDs across all own buildings. Resources are drawn from the bank (subject to bank stock).
 
-No pendings triggered. Unplayable if the player owns no buildings adjacent to any Mountains hex.
+No pendings trigger. With no adjacent Mountains hex, the card may still be played for no benefit.
 
 ---
 
@@ -850,7 +850,7 @@ Installs a `smithingPromote` pending with `promotionsRemaining: 2`. The player t
 
 **Pending:** `smithingPromote` (self; up to two resolution steps, each consuming one from `promotionsRemaining`).
 
-Unplayable if the player has no promotable knight on the board.
+With no promotable knight, the card may still be played for no benefit.
 
 ---
 
@@ -860,11 +860,11 @@ Unplayable if the player has no promotable knight on the board.
 
 Grants up to 2 free road placements. When at least one legal placement exists (an unoccupied edge connected to the player's network), sets `player.freeRoadsRemaining = min(2, roadsInSupply)` and installs a `roadBuildingPlace` pending; otherwise no pending is installed. Road placements then proceed exactly as paid `buildRoad` actions (each road must be legally connected when placed). If only 1 road remains in supply, only 1 free road is granted.
 
-The player may decline remaining road placements via `skipRoadBuilding`.
+The player must place the free roads while legal placements and pieces remain.
 
-**Pendings:** `roadBuildingPlace` (self; repeated until `freeRoadsRemaining` reaches 0, no legal placement remains, or player skips via `skipRoadBuilding`).
+**Pendings:** `roadBuildingPlace` (self; repeated until `freeRoadsRemaining` reaches 0 or no legal placement remains).
 
-Unplayable if `roadsInSupply === 0`.
+If no road can be placed, the card may still be played for no benefit.
 
 ---
 
@@ -882,18 +882,13 @@ Revealed immediately when drawn into `revealedVpCards`. Awards +1 VP. Cannot be 
 
 **Window:** `actionPhase`. **Payload:** `{}` (no parameters; the initiator chooses per-step).
 
-Lets the player offer one of their resources to each opponent who holds at least one commodity, in exchange for a commodity of the opponent's choice. The exchange chain proceeds one opponent at a time via `commercialHarborGive` pendings.
+Activates a turn-long list of opponents. At any later point that turn, the player may offer one resource to each opponent at most once. Offers are normal action-phase `resolveOptionalCardEffect` actions with `targetPlayerId` and `giveResourceType`, so other actions may occur between offers.
 
-The chain has two phases per opponent:
+If the target holds a commodity, `commercialHarborGive` asks that target which commodity to return. If the target holds none, the resource stays with the initiator and that opponent's one offer is consumed.
 
-1. `phase: actorOffersResource` — the initiator picks which resource to offer (payload key `giveResourceType`), or skips this opponent (`skip: true`).
-2. `phase: targetResponds` — the target picks which commodity to hand over (payload key `commodityType`).
+**Pending:** `commercialHarborGive` only for the target's mandatory commodity choice.
 
-If the initiator no longer holds the offered resource when the target responds, the exchange is silently skipped and the chain advances.
-
-**Pending:** `commercialHarborGive` (actor during offer phase; target during response phase). A new pending is queued for each eligible opponent in sequence.
-
-Unplayable if the actor holds no resources, or if no opponent holds any commodity.
+The card may be played with no resources or no immediately useful target; resources acquired later that turn may still be offered.
 
 ---
 
@@ -901,11 +896,11 @@ Unplayable if the actor holds no resources, or if no opponent holds any commodit
 
 **Window:** `actionPhase`. **Payload:** `targetPlayerId` (the chosen opponent). The enumerator emits one candidate per eligible opponent.
 
-Targets one opponent with strictly more VP than the actor. The actor then chooses up to 2 resource or commodity cards to take from that player's hand via a `guildDuesChooseCards` pending. The resolution payload key for the chosen cards is `cards` (an array of `{ type, count }` objects).
+Targets one opponent with strictly more VP than the actor. The actor takes exactly 2 resource and/or commodity cards, or every card if fewer than 2 are held, via a `guildDuesChooseCards` pending.
 
-**Pending:** `guildDuesChooseCards` (actor; selects up to `min(2, target.handSize())` cards from the target; payload key `cards`).
+**Pending:** `guildDuesChooseCards` (actor; `cards` must total exactly `min(2, target.handSize())`; it cannot be skipped).
 
-Unplayable if no opponent has more VP, or if the only eligible opponent holds an empty hand.
+An empty-handed higher-VP opponent is still a legal no-benefit target.
 
 ---
 
@@ -913,7 +908,7 @@ Unplayable if no opponent has more VP, or if the only eligible opponent holds an
 
 **Window:** `actionPhase`. **Payload:** `hexId`.
 
-Places the Guildmaster marker on a **productive land hex** (any land hex except the Desert) adjacent to at least one of the player's own buildings (settlement or city). Moves the marker from its previous position (clearing the old hex's `merchantPresent` flag silently if it still exists). The controlling player gains +1 VP from the Guildmaster while they hold it. `checkVictory` runs on placement.
+Places the Guildmaster marker on any **land hex**, including the desert, adjacent to at least one of the player's own buildings. Re-placing it on the same hex is legal even if that produces no benefit. The controlling player gains +1 VP while they hold it.
 
 No pendings triggered.
 
@@ -923,7 +918,7 @@ No pendings triggered.
 
 **Window:** `actionPhase`. **Payload:** `chosenType` (a resource or commodity type string).
 
-Grants a 2:1 bank exchange rate for the chosen material type for the remainder of this turn. Playing a second Galleon adds another type (`merchantFleetTypes` accumulates; both rates stay live) and the list resets at turn advance. A play is rejected as `noEffect` when the player holds none of the chosen type or when that type's 2:1 rate is already active this turn.
+Grants a 2:1 bank exchange rate for any named resource or commodity for the remainder of this turn. The type need not currently be held, and naming an already-active type is still a legal no-benefit play.
 
 No pendings triggered.
 
@@ -961,7 +956,7 @@ If the removed road belonged to the actor, the actor has roads in supply, and at
 
 **Pending:** `roadBuildingPlace` (self; only when the actor's own road was removed and a legal free placement exists).
 
-Unplayable if no open road exists on the board.
+If no open road exists, the card may still be played for no benefit.
 
 ---
 
@@ -971,7 +966,7 @@ Unplayable if no open road exists on the board.
 
 Activates all of the player's inactive knights simultaneously. Each knight transitions from `Inactive` to `Active`; its id is added to `knightsActivatedThisTurn`.
 
-No pendings triggered. Unplayable if the player has no inactive knight on the board.
+No pendings trigger. With no inactive knight, the card may still be played for no benefit.
 
 ---
 
@@ -979,13 +974,13 @@ No pendings triggered. Unplayable if the player has no inactive knight on the bo
 
 **Window:** `actionPhase`. **Payload:** `targetPlayerId` (at play time; card selection is made during the `espionageChooseCard` pending).
 
-Targets one opponent who holds at least one progress card in hand. An `espionageChooseCard` pending is installed; the actor then picks one eligible card by `targetInstanceId`.
+Targets one opponent who holds at least one progress card in hand. An `espionageChooseCard` pending is installed; the actor then picks one eligible card by `targetInstanceId`, or sends `resolveOptionalCardEffect` with `skip: true` to decline the steal.
 
 The stolen card is spliced out of the target's `progressHand` and pushed onto the actor's `progressHand`. VP cards can never be stolen — they reveal on draw and never sit in a hand.
 
 **Pending:** `espionageChooseCard` (actor; payload key `targetInstanceId`).
 
-Unplayable if no opponent holds a progress card.
+If no opponent holds a progress card, the card may still be played for no benefit.
 
 ---
 
@@ -997,7 +992,7 @@ Displaces a single opponent knight standing on an intersection adjacent to any o
 
 No additional pendings from the actor's side. (The retreating knight owner resolves their own pending if one is queued.)
 
-Unplayable if no eligible opponent knight sits adjacent to any own road.
+If no eligible opponent knight exists, the card may still be played for no benefit.
 
 ---
 
@@ -1009,7 +1004,7 @@ Forces every opponent whose VP is ≥ the actor's VP to discard half their hand 
 
 **Pending:** `discardResources` (all affected opponents simultaneously; `source: 'sabotage'`).
 
-Unplayable if no opponent satisfies the VP condition and holds enough cards to actually discard (floor(handSize/2) > 0).
+If no opponent must discard, the card may still be played for no benefit.
 
 ---
 
@@ -1051,7 +1046,7 @@ Each opponent with strictly more VP than the actor and a non-empty hand must giv
 
 **Pending:** `weddingGiveCards` (one giver at a time; payload key `cards` — array of `{ type, count }`; the giver must give exactly `requiredCount` total).
 
-Unplayable if no opponent has both more VP than the actor and a non-empty hand.
+If no higher-VP opponent can give cards, the card may still be played for no benefit.
 
 ---
 
@@ -1129,15 +1124,15 @@ The 21 pending-decision types, their triggers, which player must answer, and the
 | `chooseRobberDestination` | `chaseRobber` — an active knight chases the robber (§7.4)                                                                                                                 | The chasing player                                                                                           | `chaseRobber` with `hexId` of the destination hex                                                                               |
 | `placeSetupRoad`          | After each `placeSetupBuilding` action during setup phases (§4)                                                                                                           | The current player (setup placer)                                                                            | `placeSetupRoad` with `edgeId` adjacent to the building just placed                                                             |
 | `weddingGiveCards`        | Betrothal card (`politicsBetrothal`, §14)                                                                                                                                 | Each richer opponent in sequence (one at a time)                                                             | `resolveOptionalCardEffect` with `cards` array of `{ type, count }` to give; must total exactly `requiredCount`                 |
-| `commercialHarborGive`    | Wharfage card (`tradeCommercialHarbor`, §14); two-phase per opponent: actor offers, then target responds                                                                  | Actor during `actorOffersResource` phase; each target during `targetResponds` phase                          | `resolveOptionalCardEffect` with `giveResourceType` (actor) or `commodityType` (target); actor may also `skip: true`            |
-| `guildDuesChooseCards`    | Tribute card (`tradeTribute`, §14) — actor selects from target's hand                                                                                                     | **Actor** (the card player, not the target) chooses which of the target's cards to take                      | `resolveOptionalCardEffect` with `cards` array of `{ type, count }` totaling 1–`maxCards`; or `skip: true`                      |
+| `commercialHarborGive`    | Commercial Harbor offer to a target who holds a commodity                                                                                                                 | The target                                                                                                   | `resolveOptionalCardEffect` with the target's chosen `commodityType`                                                            |
+| `guildDuesChooseCards`    | Guild Dues card (`tradeTribute`, §14) — actor selects from target's hand                                                                                                  | **Actor** (the card player, not the target) chooses which cards to take                                      | `resolveOptionalCardEffect` with `cards` totaling exactly `maxCards`                                                            |
 | `smithingPromote`         | Tempering card (`scienceTempering`, §14)                                                                                                                                  | The card player                                                                                              | `resolveOptionalCardEffect` with `knightId` per free promotion, or `skip: true` to stop; up to 2 steps                          |
 | `treasonChooseKnight`     | Treason card (`politicsTreason`, §14) when target has **2+ knights** on the board                                                                                         | The **target player** (picks which of their own knights is removed)                                          | `resolveOptionalCardEffect` with `targetKnightId`                                                                               |
 | `treasonPlaceKnight`      | After `treasonChooseKnight` resolves (or immediately when target has 1 knight), if actor has eligible knight in supply                                                    | The **actor** (card player)                                                                                  | `resolveOptionalCardEffect` with `intersectionId` and `level`; or `skip: true` to decline placement                             |
-| `roadBuildingPlace`       | Causeway card (`scienceRoadBuilding`, §14), or Diplomacy card (`politicsDiplomacy`, §14) when actor's own road is removed — only installed while a legal placement exists | The card player                                                                                              | `buildRoad` with `edgeId`; or `skipRoadBuilding` to forfeit remaining free roads                                                |
+| `roadBuildingPlace`       | Causeway card (`scienceRoadBuilding`, §14), or Diplomacy card (`politicsDiplomacy`, §14) when actor's own road is removed — only installed while a legal placement exists | The card player                                                                                              | `buildRoad` with `edgeId`; `skipRoadBuilding` is only a defensive escape if no placement survives                               |
 | `domesticTradeResponse`   | `domesticTradePropose` (§12.1)                                                                                                                                            | Each targeted opponent (or all opponents if no target named); each may respond independently                 | `domesticTradeAccept`, `domesticTradeDecline`, `domesticTradeCounter`, or `domesticTradeCancel` (cancel is current player only) |
 | `domesticTradeConfirm`    | All opponents have responded to `domesticTradePropose` and at least one accepted or countered (§12.1)                                                                     | The proposer (current player)                                                                                | `domesticTradeConfirm` with optional `accepterId`, `domesticTradeTakeCounter` with `responderId`, or `domesticTradeCancel`      |
-| `espionageChooseCard`     | Espionage card (`politicsEspionage`, §14)                                                                                                                                 | The **actor** (card player) selects which of the target's non-VP cards to steal                              | `resolveOptionalCardEffect` with `targetInstanceId`                                                                             |
+| `espionageChooseCard`     | Espionage card (`politicsEspionage`, §14)                                                                                                                                 | The **actor** (card player) selects which of the target's non-VP cards to steal                              | `resolveOptionalCardEffect` with `targetInstanceId`; or `skip: true` to decline the steal                                       |
 
 ## 17. Appendix: quick reference
 
@@ -1160,7 +1155,6 @@ The 21 pending-decision types, their triggers, which player must answer, and the
 | Victory points to win                 | 13    |
 | Longest-road minimum                  | 5     |
 | Progress-card hand limit              | 4     |
-| Domestic trade proposals per turn     | 5     |
 | Discard threshold (base)              | 7     |
 | Discard threshold bonus per city wall | +2    |
 | Resource bank stock (per type)        | 19    |

@@ -30,6 +30,7 @@
         "commodities": {},
         "progressHand": [],
         "merchantFleetTypes": [],
+        "commercialHarborRemainingPlayerIds": [],
         "freeRoadsRemaining": 0,
         "cranePlayed": false,
         "medicinePlayed": false,

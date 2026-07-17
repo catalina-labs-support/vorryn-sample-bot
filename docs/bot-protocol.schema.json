@@ -242,6 +242,13 @@
                           "type": "string"
                         }
                       },
+                      "commercialHarborRemainingPlayerIds": {
+                        "default": [],
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
                       "freeRoadsRemaining": {
                         "type": "integer",
                         "minimum": 0,
@@ -303,6 +310,7 @@
                       "commodities",
                       "progressHand",
                       "merchantFleetTypes",
+                      "commercialHarborRemainingPlayerIds",
                       "freeRoadsRemaining",
                       "cranePlayed",
                       "medicinePlayed",
@@ -573,6 +581,9 @@
                                     "type": "null"
                                   }
                                 ]
+                              },
+                              "cityPieceAsSettlement": {
+                                "type": "boolean"
                               }
                             },
                             "required": [
@@ -1456,20 +1467,10 @@
                         "payload": {
                           "type": "object",
                           "properties": {
-                            "phase": {
-                              "type": "string",
-                              "enum": [
-                                "actorOffersResource",
-                                "targetResponds"
-                              ]
-                            },
                             "targetPlayerId": {
                               "type": "string"
                             }
                           },
-                          "required": [
-                            "phase"
-                          ],
                           "additionalProperties": false
                         }
                       },
@@ -2326,12 +2327,6 @@
                         "type": "string"
                       }
                     },
-                    "supplyDepletedPlayerIds": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    },
                     "defenderContributions": {
                       "type": "object",
                       "propertyNames": {
@@ -3109,6 +3104,14 @@
                       "cloth"
                     ]
                   },
+                  "track": {
+                    "type": "string",
+                    "enum": [
+                      "science",
+                      "trade",
+                      "politics"
+                    ]
+                  },
                   "die1": {
                     "type": "integer",
                     "minimum": 1,
@@ -3149,6 +3152,9 @@
                   },
                   "targetPlayerId": {
                     "type": "string"
+                  },
+                  "skip": {
+                    "type": "boolean"
                   },
                   "id": {
                     "type": "string"
@@ -3821,6 +3827,9 @@
                   "targetKnightId": {
                     "type": "string"
                   },
+                  "targetPlayerId": {
+                    "type": "string"
+                  },
                   "id": {
                     "type": "string"
                   }
@@ -4371,12 +4380,6 @@
                         }
                       },
                       "choicePillagedPlayerIds": {
-                        "type": "array",
-                        "items": {
-                          "type": "string"
-                        }
-                      },
-                      "supplyDepletedPlayerIds": {
                         "type": "array",
                         "items": {
                           "type": "string"
