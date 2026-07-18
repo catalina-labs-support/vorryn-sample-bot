@@ -1781,6 +1781,12 @@
                                 "type": "string"
                               }
                             },
+                            "declinedPlayerIds": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
                             "counters": {
                               "type": "array",
                               "items": {
