@@ -2452,7 +2452,8 @@
                   "type": "string",
                   "enum": [
                     "taken",
-                    "cancelled"
+                    "cancelled",
+                    "expired"
                   ]
                 },
                 "accepterId": {
@@ -2576,6 +2577,148 @@
                 "responders"
               ],
               "additionalProperties": false
+            },
+            "domesticTradeOutcomesThisTurn": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "auctionId": {
+                    "type": "string"
+                  },
+                  "proposerId": {
+                    "type": "string"
+                  },
+                  "ending": {
+                    "type": "string",
+                    "enum": [
+                      "taken",
+                      "cancelled",
+                      "expired"
+                    ]
+                  },
+                  "accepterId": {
+                    "type": "string"
+                  },
+                  "targetPlayerId": {
+                    "type": "string"
+                  },
+                  "proposerGives": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "lumber",
+                                "brick",
+                                "wool",
+                                "grain",
+                                "ore"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "coin",
+                                "paper",
+                                "cloth"
+                              ]
+                            }
+                          ]
+                        },
+                        "count": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 1000000
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "count"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "proposerReceives": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "lumber",
+                                "brick",
+                                "wool",
+                                "grain",
+                                "ore"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "coin",
+                                "paper",
+                                "cloth"
+                              ]
+                            }
+                          ]
+                        },
+                        "count": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 1000000
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "count"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "responders": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "playerId": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "accepted",
+                            "declined",
+                            "countered",
+                            "unanswered"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "playerId",
+                        "status"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "auctionId",
+                  "proposerId",
+                  "ending",
+                  "proposerGives",
+                  "proposerReceives",
+                  "responders"
+                ],
+                "additionalProperties": false
+              }
             }
           },
           "required": [
@@ -2609,7 +2752,8 @@
             "bankCommodities",
             "opponentMaterialTypes",
             "domesticTradeDeclinesThisTurn",
-            "domesticTradeCountersThisTurn"
+            "domesticTradeCountersThisTurn",
+            "domesticTradeOutcomesThisTurn"
           ],
           "additionalProperties": false
         },

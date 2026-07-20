@@ -72,7 +72,8 @@
     "bankCommodities": { "coin": 12, "paper": 12, "cloth": 12 },
     "opponentMaterialTypes": ["wool", "grain"],
     "domesticTradeDeclinesThisTurn": [],
-    "domesticTradeCountersThisTurn": []
+    "domesticTradeCountersThisTurn": [],
+    "domesticTradeOutcomesThisTurn": []
   },
   "validActions": [
     { "id": "a-001", "type": "endTurn" },
