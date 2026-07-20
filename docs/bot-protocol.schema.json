@@ -1972,6 +1972,7 @@
                             }
                           },
                           "required": [
+                            "auctionId",
                             "want"
                           ],
                           "additionalProperties": false
