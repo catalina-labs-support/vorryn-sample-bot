@@ -1775,6 +1775,9 @@
                         "payload": {
                           "type": "object",
                           "properties": {
+                            "auctionId": {
+                              "type": "string"
+                            },
                             "acceptedPlayerIds": {
                               "type": "array",
                               "items": {
@@ -2438,6 +2441,9 @@
             "lastDomesticTradeOutcome": {
               "type": "object",
               "properties": {
+                "auctionId": {
+                  "type": "string"
+                },
                 "proposerId": {
                   "type": "string"
                 },
@@ -2450,6 +2456,89 @@
                 },
                 "accepterId": {
                   "type": "string"
+                },
+                "targetPlayerId": {
+                  "type": "string"
+                },
+                "proposerGives": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "lumber",
+                              "brick",
+                              "wool",
+                              "grain",
+                              "ore"
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "enum": [
+                              "coin",
+                              "paper",
+                              "cloth"
+                            ]
+                          }
+                        ]
+                      },
+                      "count": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1000000
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "count"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "proposerReceives": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "lumber",
+                              "brick",
+                              "wool",
+                              "grain",
+                              "ore"
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "enum": [
+                              "coin",
+                              "paper",
+                              "cloth"
+                            ]
+                          }
+                        ]
+                      },
+                      "count": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1000000
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "count"
+                    ],
+                    "additionalProperties": false
+                  }
                 },
                 "responders": {
                   "type": "array",
@@ -2478,8 +2567,11 @@
                 }
               },
               "required": [
+                "auctionId",
                 "proposerId",
                 "ending",
+                "proposerGives",
+                "proposerReceives",
                 "responders"
               ],
               "additionalProperties": false
