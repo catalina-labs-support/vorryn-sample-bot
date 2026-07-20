@@ -2434,6 +2434,55 @@
                 ],
                 "additionalProperties": false
               }
+            },
+            "lastDomesticTradeOutcome": {
+              "type": "object",
+              "properties": {
+                "proposerId": {
+                  "type": "string"
+                },
+                "ending": {
+                  "type": "string",
+                  "enum": [
+                    "taken",
+                    "cancelled"
+                  ]
+                },
+                "accepterId": {
+                  "type": "string"
+                },
+                "responders": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "playerId": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "accepted",
+                          "declined",
+                          "countered",
+                          "unanswered"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "playerId",
+                      "status"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "proposerId",
+                "ending",
+                "responders"
+              ],
+              "additionalProperties": false
             }
           },
           "required": [
