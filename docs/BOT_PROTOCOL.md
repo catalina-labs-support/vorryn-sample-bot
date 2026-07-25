@@ -81,9 +81,18 @@ underlying state changed. Don't index by position across turns.
   truncatedFamilies: string[],       // which families hit the cap
   diceHistogram: { [sum: string]: number }, // production-roll tally pad
   recentEvents: RecentEvent[],       // bounded list (≤200), public redacted events
-  personality?: string | null        // optional tuning-preset key; bot
+  personality?: string | null,       // optional style tuning-preset key; bot
                                      // service merges over baseline,
                                      // unknown keys fall back to baseline
+  tableProfile?: string | null,      // optional table-context overlay; "humans"
+                                     // composes with an explicit style
+  difficulty?: string | null,        // "easy" | "normal" | "hard"
+  decisionMemory?: {                 // first-party, web-owned continuation token
+    version: 1,
+    strategy: { key: string, sinceTurn: number },
+    updatedAtTurn: number,
+    updatedAtStateVersion: number
+  } | null
 }
 ```
 
@@ -94,9 +103,16 @@ underlying state changed. Don't index by position across turns.
   protocolVersion: 1,
   kind: "action",
   actionId: string,                  // must equal one validActions[i].id
-  decisionTrace?: BotDecisionTrace   // optional — persisted for analysis
+  decisionTrace?: BotDecisionTrace,  // optional — persisted for analysis
+  decisionMemory?: { ... } | null    // optional first-party continuation update
 }
 ```
+
+`decisionMemory` on the response is optional; `null` is accepted and
+treated the same as omitting the field, so a bot that echoes the
+request's `decisionMemory: null` back verbatim still validates. The
+server **ignores** memory returned by external bots — it only
+round-trips `decisionMemory` for the first-party bot.
 
 External bots may intentionally delegate an unsupported decision:
 
@@ -124,6 +140,7 @@ hidden hands or internal bot analytics:
 | Event path                  | What bots receive                                                                                                                                                                                                         |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `actionApplied.action`      | The public action shape. `playProgressCard.instanceId`, private `resolveOptionalCardEffect` card/material fields, and raw discard card identities are removed. `discardHalf` / `discardProgress` expose only `cardCount`. |
+| `actionApplied.production`  | Exact public per-player material receipts for that production event. Bots may use these as public hand-composition evidence.                                                                                              |
 | `progressCardDraws.draws[]` | `playerId`, deck, and public flags such as `isVp`; `cardId` and `instanceId` are removed.                                                                                                                                 |
 | bot replay annotations      | `botStrategy` and `botTopCandidates` are omitted from bot requests.                                                                                                                                                       |
 

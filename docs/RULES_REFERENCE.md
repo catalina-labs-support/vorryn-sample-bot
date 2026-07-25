@@ -608,7 +608,7 @@ Domestic trade lets the current player exchange cards with opponents without goi
 
 **Who may propose:** only the current player (`currentPlayerId`). Opponents may not initiate. Bank trades are maritime only (§12.2).
 
-There is no rules-based per-turn proposal limit. Candidate generation still applies its normal per-decision truncation budget.
+A player may issue at most 5 domestic-trade proposals per turn (`MAX_DOMESTIC_TRADE_PROPOSALS_PER_TURN`); the engine rejects further proposals with a rule violation. Candidate generation additionally applies its normal per-decision truncation budget.
 
 **Proposal payload shape** (`domesticTradePropose`):
 
