@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://vorryn.example.com/schemas/bot-protocol/v1.json",
-  "title": "Vorryn Bot Protocol v1",
+  "$id": "https://vorryn.example.com/schemas/bot-protocol/v2.json",
+  "title": "Vorryn Bot Protocol v2",
   "description": "Wire contract for POST /play between the vorryn-web server and a bot service. Generated from packages/core/src/wire/schemas.ts — do not edit by hand.",
   "definitions": {
     "BotRequest": {
@@ -10,7 +10,7 @@
       "properties": {
         "protocolVersion": {
           "type": "number",
-          "const": 1
+          "const": 2
         },
         "gameId": {
           "type": "string"
@@ -1776,29 +1776,20 @@
                           "type": "object",
                           "properties": {
                             "auctionId": {
-                              "type": "string"
+                              "type": "string",
+                              "minLength": 1
                             },
-                            "acceptedPlayerIds": {
-                              "type": "array",
-                              "items": {
-                                "type": "string"
-                              }
-                            },
-                            "declinedPlayerIds": {
-                              "type": "array",
-                              "items": {
-                                "type": "string"
-                              }
-                            },
-                            "counters": {
+                            "bids": {
                               "type": "array",
                               "items": {
                                 "type": "object",
                                 "properties": {
                                   "responderId": {
-                                    "type": "string"
+                                    "type": "string",
+                                    "minLength": 1
                                   },
                                   "offer": {
+                                    "minItems": 1,
                                     "type": "array",
                                     "items": {
                                       "type": "object",
@@ -1839,6 +1830,7 @@
                                     }
                                   },
                                   "want": {
+                                    "minItems": 1,
                                     "type": "array",
                                     "items": {
                                       "type": "object",
@@ -1888,6 +1880,7 @@
                               }
                             },
                             "offer": {
+                              "minItems": 1,
                               "type": "array",
                               "items": {
                                 "type": "object",
@@ -1927,10 +1920,19 @@
                                 "additionalProperties": false
                               }
                             },
+                            "passedPlayerIds": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
                             "targetPlayerId": {
-                              "type": "string"
+                              "type": "string",
+                              "minLength": 1
                             },
                             "want": {
+                              "minItems": 1,
                               "type": "array",
                               "items": {
                                 "type": "object",
@@ -1973,6 +1975,9 @@
                           },
                           "required": [
                             "auctionId",
+                            "bids",
+                            "offer",
+                            "passedPlayerIds",
                             "want"
                           ],
                           "additionalProperties": false
@@ -3435,79 +3440,7 @@
                 "properties": {
                   "type": {
                     "type": "string",
-                    "const": "domesticTradeAccept"
-                  },
-                  "id": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "type",
-                  "id"
-                ],
-                "additionalProperties": false
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "type": {
-                    "type": "string",
-                    "const": "domesticTradeDecline"
-                  },
-                  "id": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "type",
-                  "id"
-                ],
-                "additionalProperties": false
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "type": {
-                    "type": "string",
-                    "const": "domesticTradeConfirm"
-                  },
-                  "accepterId": {
-                    "type": "string"
-                  },
-                  "id": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "type",
-                  "accepterId",
-                  "id"
-                ],
-                "additionalProperties": false
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "type": {
-                    "type": "string",
-                    "const": "domesticTradeCancel"
-                  },
-                  "id": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "type",
-                  "id"
-                ],
-                "additionalProperties": false
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "type": {
-                    "type": "string",
-                    "const": "domesticTradeCounter"
+                    "const": "domesticTradeBid"
                   },
                   "offer": {
                     "type": "array",
@@ -3606,10 +3539,7 @@
                 "properties": {
                   "type": {
                     "type": "string",
-                    "const": "domesticTradeTakeCounter"
-                  },
-                  "responderId": {
-                    "type": "string"
+                    "const": "domesticTradePass"
                   },
                   "id": {
                     "type": "string"
@@ -3617,7 +3547,126 @@
                 },
                 "required": [
                   "type",
-                  "responderId",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "domesticTradeAward"
+                  },
+                  "bidResponderId": {
+                    "type": "string"
+                  },
+                  "offer": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "lumber",
+                                "brick",
+                                "wool",
+                                "grain",
+                                "ore"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "coin",
+                                "paper",
+                                "cloth"
+                              ]
+                            }
+                          ]
+                        },
+                        "count": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 1000000
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "count"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "want": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "lumber",
+                                "brick",
+                                "wool",
+                                "grain",
+                                "ore"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "coin",
+                                "paper",
+                                "cloth"
+                              ]
+                            }
+                          ]
+                        },
+                        "count": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 1000000
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "count"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "bidResponderId",
+                  "offer",
+                  "want",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "domesticTradeCancel"
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
                   "id"
                 ],
                 "additionalProperties": false
@@ -4014,12 +4063,10 @@
                               "rollDice",
                               "playProgressCard",
                               "domesticTradePropose",
-                              "domesticTradeAccept",
-                              "domesticTradeDecline",
-                              "domesticTradeConfirm",
                               "domesticTradeCancel",
-                              "domesticTradeCounter",
-                              "domesticTradeTakeCounter",
+                              "domesticTradeBid",
+                              "domesticTradePass",
+                              "domesticTradeAward",
                               "maritimeTrade",
                               "buildRoad",
                               "buildSettlement",
@@ -4998,7 +5045,7 @@
           "properties": {
             "protocolVersion": {
               "type": "number",
-              "const": 1
+              "const": 2
             },
             "kind": {
               "type": "string",
@@ -5142,7 +5189,7 @@
           "properties": {
             "protocolVersion": {
               "type": "number",
-              "const": 1
+              "const": 2
             },
             "kind": {
               "type": "string",

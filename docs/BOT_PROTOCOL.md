@@ -1,4 +1,4 @@
-# Vorryn Bot Protocol — v1
+# Vorryn Bot Protocol — v2
 
 Wire contract between the Vorryn web server and a bot service. The
 canonical machine-readable schema is [`bot-protocol.schema.json`](./bot-protocol.schema.json) — feed it to NSwag, OpenAPI Generator, or any JSON Schema codegen tool to produce typed DTOs in your language of choice.
@@ -72,7 +72,7 @@ underlying state changed. Don't index by position across turns.
 
 ```ts
 {
-  protocolVersion: 1,
+  protocolVersion: 2,
   gameId: string,
   playerId: string,                  // the player the bot is acting as
   state: ClientGameState,            // viewer-redacted game state
@@ -100,7 +100,7 @@ underlying state changed. Don't index by position across turns.
 
 ```ts
 {
-  protocolVersion: 1,
+  protocolVersion: 2,
   kind: "action",
   actionId: string,                  // must equal one validActions[i].id
   decisionTrace?: BotDecisionTrace,  // optional — persisted for analysis
@@ -118,7 +118,7 @@ External bots may intentionally delegate an unsupported decision:
 
 ```ts
 {
-  protocolVersion: 1,
+  protocolVersion: 2,
   kind: "abstain",
   reason?: string                    // optional, max 200 chars
 }
@@ -149,16 +149,39 @@ what you do not understand.
 
 ## Versioning
 
-- **`protocolVersion: 1`** is the current and only stable version.
+- **`protocolVersion: 2`** is the current and only stable version.
+  Version 1 is no longer accepted.
 - Web rejects requests whose `protocolVersion` differs from what its
   bot supports with **HTTP 422**.
 - Additive changes (new optional fields, new action variants) ship as
-  **v1.x within `protocolVersion: 1`** — bots that ignore unknown
+  **v2.x within `protocolVersion: 2`** — bots that ignore unknown
   fields keep working. Codegen against the schema and **do not** error
-  on unknown enum members. `personality` (added in v1.1) is the
-  canonical example: bots that don't read it still function correctly.
-- Breaking changes ship as **`protocolVersion: 2`**. Web will publish
+  on unknown enum members. `personality` is the canonical example:
+  bots that don't read it still function correctly.
+- Breaking changes ship as a further version bump. Web will publish
   a new schema file and a migration note before flipping the default.
+
+### Domestic trade actions
+
+Responders choose `domesticTradeBid { offer, want }` or
+`domesticTradePass`; the proposer chooses
+`domesticTradeAward { bidResponderId, offer, want }` or
+`domesticTradeCancel`.
+An acceptance is a bid whose `offer` and `want` equal the proposal's.
+Both remain **proposer-perspective**:
+`offer` is what the proposer hands over, `want` is what the proposer
+receives, on the proposal and on every bid. The proposer closes the
+auction with `domesticTradeAward { bidResponderId, offer, want }`,
+naming the standing bid they are taking and echoing its terms. Bids are
+revisable while the auction is open, so the engine rejects an award
+whose echoed terms no longer match that responder's standing bid — a
+selection-only bot never constructs this payload and is unaffected.
+
+The pending payload always contains `auctionId`, `offer`, `want`,
+`bids`, and `passedPlayerIds` (plus optional `targetPlayerId`). A
+responder may revise their standing answer while the auction remains
+open. Selection-only bots still return one pre-validated `actionId`
+from `validActions[]`.
 
 ## Hosting guidance
 
@@ -233,7 +256,7 @@ turn, or trade. The bot picks one.
 
 ```json
 {
-  "protocolVersion": 1,
+  "protocolVersion": 2,
   "gameId": "9d9b7a6e-...",
   "playerId": "p-alice",
   "state": {
@@ -322,7 +345,7 @@ turn, or trade. The bot picks one.
 
 ```json
 {
-  "protocolVersion": 1,
+  "protocolVersion": 2,
   "kind": "action",
   "actionId": "a-002",
   "decisionTrace": {
@@ -348,7 +371,7 @@ chooses which cards to discard.
 
 ```json
 {
-  "protocolVersion": 1,
+  "protocolVersion": 2,
   "gameId": "9d9b7a6e-...",
   "playerId": "p-alice",
   "state": {
@@ -375,7 +398,7 @@ chooses which cards to discard.
 #### Response
 
 ```json
-{ "protocolVersion": 1, "kind": "action", "actionId": "d-001" }
+{ "protocolVersion": 2, "kind": "action", "actionId": "d-001" }
 ```
 
 When `pendingDecision` is non-null, every entry in `validActions[]`

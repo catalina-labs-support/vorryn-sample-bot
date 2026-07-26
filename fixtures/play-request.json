@@ -1,5 +1,5 @@
 {
-  "protocolVersion": 1,
+  "protocolVersion": 2,
   "gameId": "00000000-0000-0000-0000-000000000001",
   "playerId": "p-alice",
   "state": {

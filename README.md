@@ -68,7 +68,7 @@ pnpm test
 
 The test injects `fixtures/play-request.json` through the Fastify
 handler with the expected bearer header and asserts the response is
-`{ protocolVersion: 1, kind: 'action', actionId: '...' }` with an
+`{ protocolVersion: 2, kind: 'action', actionId: '...' }` with an
 `actionId` from the candidate list.
 
 ## Registering with Vorryn

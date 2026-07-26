@@ -16,7 +16,7 @@ export function pickAction(req: BotRequest): BotResponse {
   }
 
   return {
-    protocolVersion: 1,
+    protocolVersion: 2,
     kind: 'action',
     actionId: firstAction.id,
     decisionTrace: {

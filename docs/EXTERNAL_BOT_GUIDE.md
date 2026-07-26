@@ -155,15 +155,28 @@ If you want strictly deterministic behavior, key your decision on
 
 ## Versioning
 
-- **`protocolVersion: 1`** is the current and only stable version.
+- **`protocolVersion: 2`** is the current and only stable version.
+  Version 1 is no longer accepted.
 - The server rejects requests whose `protocolVersion` differs from
   what its bot supports with HTTP **422**.
 - **Additive changes** (new optional fields on `BotRequest`, new
-  action variants) ship as **minor v1.x** — bots that ignore unknown
+  action variants) ship as **minor v2.x** — bots that ignore unknown
   fields keep working. Generate code from the schema and **don't**
   error on unknown enum members.
-- **Breaking changes** ship as **`protocolVersion: 2`**. A new schema
+- **Breaking changes** ship as a further version bump. A new schema
   and migration note will be published before the default flips.
+
+**Domestic trade:** responders send `domesticTradeBid { offer, want }`
+(an acceptance is a bid at the proposal's own terms) or
+`domesticTradePass`; the proposer closes with
+`domesticTradeAward { bidResponderId, offer, want }` — the echoed terms
+must still match that responder's standing bid, which protects the
+proposer from a bid revised after they decided. Terms stay
+proposer-perspective throughout: `offer` is what the proposer hands
+over, `want` is what they receive. The pending always includes complete
+`bids` and `passedPlayerIds` arrays, and a responder may revise a
+standing answer while the auction remains open. Bots that only pick an
+`actionId` out of `validActions[]` need no special trade logic.
 
 ## Decision trace (optional)
 
