@@ -183,6 +183,17 @@ responder may revise their standing answer while the auction remains
 open. Selection-only bots still return one pre-validated `actionId`
 from `validActions[]`.
 
+Because `bids` is public, a responder's candidate list may include
+**sweetened bids** — the proposal's own `offer` with one extra card
+added to `want` — which exist to outbid a rival's standing bid. There
+is no new action type: a sweetened bid is an ordinary
+`domesticTradeBid`, so a bot that simply picks an `actionId` needs no
+special handling. A bot that wants to compete for contested auctions
+can compare bids on public terms alone: bid A beats bid B only when the
+proposer gives the same cards under both and A hands the proposer
+strictly more. Bids with different give sides are not comparable, and
+the server does not rank them for you.
+
 ## Hosting guidance
 
 Any HTTPS host with persistent process memory works — Fly.io, Render,
