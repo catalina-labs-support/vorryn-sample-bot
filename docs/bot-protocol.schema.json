@@ -4940,6 +4940,12 @@
             ]
           }
         },
+        "humanPlayerIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "personality": {
           "anyOf": [
             {

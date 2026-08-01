@@ -81,6 +81,11 @@ underlying state changed. Don't index by position across turns.
   truncatedFamilies: string[],       // which families hit the cap
   diceHistogram: { [sum: string]: number }, // production-roll tally pad
   recentEvents: RecentEvent[],       // bounded list (≤200), public redacted events
+  humanPlayerIds?: string[],         // seats played by humans, when known.
+                                     // ABSENT means "caller doesn't know",
+                                     // NOT "no humans" — don't read absence
+                                     // as an empty set. Seat bot-ness is
+                                     // already public in the lobby.
   personality?: string | null,       // optional style tuning-preset key; bot
                                      // service merges over baseline,
                                      // unknown keys fall back to baseline
