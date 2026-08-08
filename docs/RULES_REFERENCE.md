@@ -651,12 +651,12 @@ Maritime trade lets the current player exchange cards with the bank at a negotia
 
 ```json
 {
-  "offer": { "type": "<MaterialType>", "count": <rate> },
-  "want":  { "type": "<MaterialType>", "count": 1 }
+  "offer": { "type": "<MaterialType>", "count": <rate * quantity> },
+  "want":  { "type": "<MaterialType>", "count": <quantity> }
 }
 ```
 
-`offer.count` must equal the player's best applicable rate for `offer.type`. `want.count` is always 1. Offer and want types must differ. Both resources and commodities may be offered; both resources and commodities may be requested. Bank stock is checked: the requested type must have at least 1 in `bankResources` or `bankCommodities` (§6).
+Both counts must be positive integers. `offer.count` must equal the player's best applicable rate for `offer.type` multiplied by `want.count`; for example, receiving 2 cards at a 2:1 rate costs 4 offered cards. Offer and want types must differ. Both resources and commodities may be offered; both resources and commodities may be requested. Bank stock is checked: the requested type must have at least `want.count` in `bankResources` or `bankCommodities` (§6).
 
 **Rate hierarchy**:
 
