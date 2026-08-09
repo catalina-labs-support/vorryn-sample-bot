@@ -40,10 +40,7 @@
                 "setup1",
                 "setup2",
                 "roll",
-                "event",
-                "production",
                 "action",
-                "resolveAttack",
                 "gameOver"
               ]
             },
@@ -187,14 +184,7 @@
                           "type": "integer",
                           "minimum": 0,
                           "maximum": 1000000
-                        },
-                        "required": [
-                          "lumber",
-                          "brick",
-                          "wool",
-                          "grain",
-                          "ore"
-                        ]
+                        }
                       },
                       "commodities": {
                         "type": "object",
@@ -210,12 +200,7 @@
                           "type": "integer",
                           "minimum": 0,
                           "maximum": 1000000
-                        },
-                        "required": [
-                          "coin",
-                          "paper",
-                          "cloth"
-                        ]
+                        }
                       },
                       "progressHand": {
                         "type": "array",
@@ -243,7 +228,6 @@
                         }
                       },
                       "commercialHarborRemainingPlayerIds": {
-                        "default": [],
                         "type": "array",
                         "items": {
                           "type": "string"
@@ -2197,63 +2181,6 @@
               "minimum": 0,
               "maximum": 1000000
             },
-            "progressDiscardScience": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "instanceId": {
-                    "type": "string"
-                  },
-                  "cardId": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "instanceId",
-                  "cardId"
-                ],
-                "additionalProperties": false
-              }
-            },
-            "progressDiscardTrade": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "instanceId": {
-                    "type": "string"
-                  },
-                  "cardId": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "instanceId",
-                  "cardId"
-                ],
-                "additionalProperties": false
-              }
-            },
-            "progressDiscardPolitics": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "instanceId": {
-                    "type": "string"
-                  },
-                  "cardId": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "instanceId",
-                  "cardId"
-                ],
-                "additionalProperties": false
-              }
-            },
             "bankResources": {
               "type": "object",
               "propertyNames": {
@@ -2270,14 +2197,7 @@
                 "type": "integer",
                 "minimum": 0,
                 "maximum": 1000000
-              },
-              "required": [
-                "lumber",
-                "brick",
-                "wool",
-                "grain",
-                "ore"
-              ]
+              }
             },
             "bankCommodities": {
               "type": "object",
@@ -2293,12 +2213,7 @@
                 "type": "integer",
                 "minimum": 0,
                 "maximum": 1000000
-              },
-              "required": [
-                "coin",
-                "paper",
-                "cloth"
-              ]
+              }
             },
             "opponentMaterialTypes": {
               "type": "array",
@@ -2750,9 +2665,6 @@
             "scienceDeckCount",
             "tradeDeckCount",
             "politicsDeckCount",
-            "progressDiscardScience",
-            "progressDiscardTrade",
-            "progressDiscardPolitics",
             "bankResources",
             "bankCommodities",
             "opponentMaterialTypes",
@@ -4094,6 +4006,193 @@
                               "skipRoadBuilding",
                               "resign"
                             ]
+                          },
+                          "monopoly": {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "lumber",
+                                      "brick",
+                                      "wool",
+                                      "grain",
+                                      "ore"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "coin",
+                                      "paper",
+                                      "cloth"
+                                    ]
+                                  }
+                                ]
+                              },
+                              "total": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              },
+                              "byPlayer": {
+                                "type": "object",
+                                "propertyNames": {
+                                  "type": "string"
+                                },
+                                "additionalProperties": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 1000000
+                                }
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "total"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "cardGain": {
+                            "type": "object",
+                            "properties": {
+                              "resourceType": {
+                                "type": "string",
+                                "enum": [
+                                  "lumber",
+                                  "brick",
+                                  "wool",
+                                  "grain",
+                                  "ore"
+                                ]
+                              },
+                              "amount": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              }
+                            },
+                            "required": [
+                              "resourceType",
+                              "amount"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "tribute": {
+                            "type": "object",
+                            "properties": {
+                              "targetPlayerId": {
+                                "type": "string"
+                              },
+                              "count": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 1000000
+                              }
+                            },
+                            "required": [
+                              "targetPlayerId",
+                              "count"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "tradeDetails": {
+                            "type": "object",
+                            "properties": {
+                              "offer": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "lumber",
+                                            "brick",
+                                            "wool",
+                                            "grain",
+                                            "ore"
+                                          ]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "coin",
+                                            "paper",
+                                            "cloth"
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    "count": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 1000000
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "count"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "want": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "lumber",
+                                            "brick",
+                                            "wool",
+                                            "grain",
+                                            "ore"
+                                          ]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "coin",
+                                            "paper",
+                                            "cloth"
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    "count": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 1000000
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "count"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "proposerId": {
+                                "type": "string"
+                              },
+                              "accepterId": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "offer",
+                              "want"
+                            ],
+                            "additionalProperties": false
                           }
                         },
                         "required": [
@@ -4107,10 +4206,7 @@
                           "setup1",
                           "setup2",
                           "roll",
-                          "event",
-                          "production",
                           "action",
-                          "resolveAttack",
                           "gameOver"
                         ]
                       },
@@ -4120,10 +4216,7 @@
                           "setup1",
                           "setup2",
                           "roll",
-                          "event",
-                          "production",
                           "action",
-                          "resolveAttack",
                           "gameOver"
                         ]
                       },
