@@ -1329,9 +1329,6 @@
     "scienceDeckCount": 18,
     "tradeDeckCount": 16,
     "politicsDeckCount": 18,
-    "progressDiscardScience": [],
-    "progressDiscardTrade": [],
-    "progressDiscardPolitics": [],
     "bankResources": {
       "lumber": 16,
       "brick": 19,

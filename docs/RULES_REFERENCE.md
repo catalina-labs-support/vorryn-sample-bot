@@ -62,7 +62,7 @@ Two **production dice** (each 1–6; their sum determines production) plus one *
 
 ## 3. The board
 
-The board is 19 hexes arranged in a fixed axial layout (5 rows of 3–4–5–4–3 hexes). The hex _types_ and number _tokens_ are shuffled randomly from a fixed pool for each game seed.
+The board is 19 hexes arranged in a fixed axial layout (5 rows of 3–4–5–4–3 hexes). For each game seed, the hex _types_ are shuffled randomly. The number tokens are then placed in the standard A–R counterclockwise spiral, starting at the top-left coastal corner and skipping the desert; they are not shuffled independently.
 
 ### Hex mix
 
