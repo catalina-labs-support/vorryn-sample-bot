@@ -111,11 +111,11 @@ Starting with the first player and advancing in ascending seat order, each playe
 1. Play a `placeSetupBuilding` action, providing an `intersectionId`. The engine places a **settlement** at that intersection (consuming one settlement from supply).
 2. The state immediately enters a `placeSetupRoad` pending decision. Play a `placeSetupRoad` action, providing an `edgeId`. The engine places a road on that edge (consuming one road from supply).
 
-After the last-seated player completes step 2, the phase transitions to `setup2`.
+Setup order is the seat rotation **starting at the first player** (§4.1), not at seat 0. After the player one before the first player in that cyclic order completes step 2, the phase transitions to `setup2`. With seats p1/p2/p3 and p2 elected first, round 1 runs p2, p3, p1.
 
 ### 4.3 Round 2 — `setup2` phase
 
-In **reverse** (snake) order — last seat first, ending with the first player — each player takes one turn following the same two-step sequence. The key difference: the `placeSetupBuilding` action now places a **city** (not a settlement), consuming one city from supply. The city is worth 2 VP and will produce commodities on future production rolls (§6); the setup grant itself (below) pays resources only.
+In **reverse** (snake) order — the round-1 order walked backwards, so it begins with whoever placed last in round 1 and ends with the first player — each player takes one turn following the same two-step sequence. The key difference: the `placeSetupBuilding` action now places a **city** (not a settlement), consuming one city from supply. The city is worth 2 VP and will produce commodities on future production rolls (§6); the setup grant itself (below) pays resources only.
 
 After the first player completes their `setup2` road, the phase transitions to `roll` with `turnNumber = 1`, and the first player is the current player.
 
@@ -174,7 +174,12 @@ When `state.phase === 'action'` and no pending decision is open, `validActions[]
 - **City improvement** — §13
 - **Progress card plays** (action-phase timing window) — §14
 
-There is **no cap** on how many actions you may take in a single turn, beyond affordability and supply. You may play multiple progress cards, build multiple roads, and make multiple trades in any order, as long as each individual action is legal at the moment you submit it.
+There is **no general cap** on how many actions you may take in a single turn, beyond affordability and supply. You may play multiple progress cards, build multiple roads, and trade repeatedly in any order, as long as each individual action is legal at the moment you submit it.
+
+Two specific caps do exist and are enforced:
+
+- **5 domestic-trade proposals per turn** (§12.1). The enumerator stops offering the family at the cap; a sixth is rejected.
+- **Per-knight, per-turn limits** (§10): one action per knight, one activation per knight, one promotion per knight.
 
 `endTurn` is always present among the candidates (even if you have taken no actions). Submitting it advances play to the next player's roll phase, or — if you have too many progress cards in hand — first forces a `discardProgress` pending decision before the turn actually advances.
 
@@ -252,14 +257,15 @@ Players with `scienceLevel >= 3` who receive **zero** production from a roll are
 
 ### 6.6 Wire fields
 
-| Field                                | Description                                                                        |
-| ------------------------------------ | ---------------------------------------------------------------------------------- |
-| `state.dice.die1`, `state.dice.die2` | Production die values (1–6 each)                                                   |
-| `state.dice.sum`                     | Production sum (2–12)                                                              |
-| `state.dice.redDie`                  | The second production die; equals `die2` on normal and Augury-preset rolls         |
-| `state.dice.eventDieResult`          | `'ship'` \| `'science'` \| `'trade'` \| `'politics'`                               |
-| `state.dice.alchemyPreset`           | `true` if Augury overrode the production dice this roll                            |
-| `diceHistogram` (BotRequest)         | Cumulative `Record<number, number>` of production-sum tallies for the current game |
+| Field                                | Description                                                                            |
+| ------------------------------------ | -------------------------------------------------------------------------------------- |
+| `state.dice.die1`, `state.dice.die2` | Production die values (1–6 each)                                                       |
+| `state.dice.sum`                     | Production sum (2–12)                                                                  |
+| `state.dice.redDie`                  | The second production die; equals `die2` on normal and Augury-preset rolls             |
+| `state.dice.eventDieResult`          | `'ship'` \| `'science'` \| `'trade'` \| `'politics'`                                   |
+| `state.dice.alchemyPreset`           | `true` if Augury overrode the production dice this roll                                |
+| `state.dice.rollNumber`              | Monotonic roll counter — the only field distinguishing two identical consecutive rolls |
+| `diceHistogram` (BotRequest)         | Cumulative `Record<number, number>` of production-sum tallies for the current game     |
 
 The roll outcome arrives as updated `state.dice`; the top-level `recentEvents` field of `BotRequest` carries bounded event history. There is no separate `rollDice` response payload.
 
@@ -275,9 +281,12 @@ The threshold for a player is:
 threshold = 7 + 2 × (number of city walls that player has built)
 ```
 
+A player may build at most **3** city walls, so the threshold is bounded: 7, 9, 11 or 13. A
+pillaged city loses its wall (§8.5), returning it to supply and lowering the threshold again.
+
 A player over their threshold must discard `floor(handSize / 2)` cards, where `handSize` counts resources plus commodities together. Players at or below their threshold discard nothing.
 
-All discards are queued simultaneously as a single `discardResources` pending decision (`pending.payload.required` maps player id → required count; `pending.actingPlayerId` is `null`, meaning any listed player may respond). Each player chooses exactly which cards to discard; the response action type is `discardHalf`. The discard is from the player's combined resource+commodity hand; cards go back to the bank.
+All discards are queued simultaneously as a single `discardResources` pending decision (`pending.payload.required` maps player id → required count; `pending.actingPlayerId` is `null`, meaning any listed player may respond). **`required` is a snapshot taken when the 7 was rolled and never shrinks** — as players discard, only `allowedPlayerIds` narrows, so that is the authoritative "still owes a discard" list. A client deriving outstanding discards from `required` will show players who have already paid. Each player chooses exactly which cards to discard; the response action type is `discardHalf`. The discard is from the player's combined resource+commodity hand; cards go back to the bank.
 
 After all required discards are resolved, the engine moves on to the robber step (if active — see §7.2).
 
@@ -340,14 +349,14 @@ Only knights currently in `KnightState.Active` contribute. Inactive or freshly-p
 
 ### 8.4 Attack resolution — defense wins
 
-Defense succeeds when **`defenderStrength > 0` AND `defenderStrength >= berserkerStrength`**.
+Defense succeeds when **`defenderStrength >= berserkerStrength`** — there is no `> 0` requirement (rulebook: "If defender strength is equal to or greater than barbarian strength, the defenders win"). A 0-vs-0 attack is therefore a repel, recorded with result `repelled` and `defenderPlayerId: null`; the strength-above-zero test governs only whether a REWARD is granted, not whether the defense succeeded.
 
 **Sole largest contributor:** the player whose active knights contributed the highest total strength receives 1 Defender-of-Vorryn VP token (`player.vpTokens++`). Victory is checked immediately after the award; if the recipient is the **current player** and this VP is the winning point, the game ends at once. If the recipient is a non-current player, the victory check is deferred: the win triggers as soon as the start of their next turn resolves (§15).
 
 **Tied largest contributors:** when two or more players share the highest contribution, the tie-break behavior is:
 
 - The engine does **not** grant a VP token to any tied player.
-- Instead, each tied player is queued (in seat order, starting with the current player) for a `chooseProgressDeck` pending decision. Decks with no cards are excluded; legacy snapshot discard entries also count as recoverable cards.
+- Instead, each tied player is queued (in seat order, starting with the current player) for a `chooseProgressDeck` pending decision. Decks with no cards are excluded. (There is no discard pile in this engine — played and discarded cards return to the bottom of their own deck, so deck emptiness is the only eligibility test.)
 
 **The code confirms this is implemented via `chooseProgressDeck` pendings**, one per tied player, not a VP token.
 
@@ -590,13 +599,13 @@ The holder cannot fall below 5 and keep the bonus — once the maximum drops bel
 
 The longest-road holder is recomputed after:
 
-| Action            | Notes                                                                                                        |
-| ----------------- | ------------------------------------------------------------------------------------------------------------ |
-| `buildRoad`       | Always — new road may extend the builder's chain or create a new maximum                                     |
-| `buildSettlement` | Always — new settlement may interrupt an opponent's path through that intersection                           |
-| `recruitKnight`   | Only if the placed knight's intersection is adjacent to any opponent road (`intersectionAffectsLongestRoad`) |
-| `moveKnight`      | If source or destination is adjacent to any opponent road                                                    |
-| `displaceKnight`  | Always (both displacement and retreat resolution)                                                            |
+| Action            | Notes                                                                                                                                                                                               |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `buildRoad`       | Always — new road may extend the builder's chain or create a new maximum                                                                                                                            |
+| `buildSettlement` | Only when an opponent road is incident to the intersection (`intersectionAffectsLongestRoad`) — a settlement can only sever a path that runs through it, and never changes the builder's own length |
+| `recruitKnight`   | Only if the placed knight's intersection is adjacent to any opponent road (`intersectionAffectsLongestRoad`)                                                                                        |
+| `moveKnight`      | If source or destination is adjacent to any opponent road                                                                                                                                           |
+| `displaceKnight`  | Always (both displacement and retreat resolution)                                                                                                                                                   |
 
 `buildCity` and `buildCityWall` do **not** trigger recomputation (neither changes road topology or intersection occupancy relative to other players' roads).
 
@@ -679,7 +688,7 @@ All applicable rates are evaluated simultaneously; the minimum applies. Harbor o
 
 **Payload:** `{ "track": "science" | "trade" | "politics" }`
 
-**Cost:** `(currentLevel + 1)` commodities of the track's matching commodity, paid from hand. Crane performs one selected improvement atomically for 1 fewer commodity (minimum 0); it does not discount a later `improveCity` action.
+**Cost:** `(currentLevel + 1)` commodities of the track's matching commodity, paid from hand. Mason performs one selected improvement atomically for 1 fewer commodity (minimum 0); it does not discount a later `improveCity` action. The shared `playOptionalBuildOverride` helper does have a deferred-arm path that leaves `cranePlayed` set for a later action, but it is unreachable for Mason and Apothecary: the ingress (`play-progress-card.ts`) rejects their empty-target form before `validate` runs, and with a target the delegated `improveCity`/`buildCity` consumes the flag. `advanceTurn` clears it regardless.
 
 Track-to-commodity mapping:
 
@@ -757,7 +766,7 @@ VP cards (`scienceAnnals`, `politicsCharter`) reveal immediately on draw: they g
 
 ### Deck exhaustion
 
-Played and forcibly discarded cards go face down beneath their matching deck immediately. The `progressDiscard*` fields remain only for legacy snapshot compatibility and are not populated by current play.
+Played and forcibly discarded cards go to the bottom of their matching deck immediately. There are no `progressDiscard*` fields — neither `GameState` nor the wire `ClientGameState` has a discard pile, so a deck's own length is the whole story.
 
 ### Hand limit
 
@@ -789,9 +798,12 @@ No pendings triggered. Cannot be played if `scienceAugury` already appears in `p
 
 #### Mason — `scienceMason` (science, ×2)
 
-**Window:** `actionPhaseWithBuild`. **Payload:** `{}` (no payload parameters read at play time).
+**Window:** `actionPhaseWithBuild`. **Payload:** `{ track }` — REQUIRED. The empty form is
+rejected with `InvalidTarget`; the enumerator emits one candidate per commodity track.
 
-The card play itself builds one selected city improvement for 1 fewer matching commodity than normal (minimum 0). It does not arm a discount for a later action.
+The card play itself builds one selected city improvement for 1 fewer matching commodity than
+normal (minimum 0). The level-4/5 host requirement (§13.3) applies: with no non-metropolis city
+to host the marker, the improvement — and so the card play — is refused.
 
 No pendings triggered.
 
@@ -801,7 +813,7 @@ No pendings triggered.
 
 **Window:** `actionPhase`. **Payload:** `intersectionId`.
 
-Builds a free city wall on the player's own city at `intersectionId`. Requires the target to be an own city without an existing wall and at least one city wall in supply. Consumes one city-wall piece from supply.
+Builds a free city wall on the player's own city at `intersectionId`. Requires the target to be an own city without an existing wall, at least one city wall in supply, AND fewer than 3 walls already on the board for that player (the rulebook's "at most 3 city walls" cap, enforced here as well as on the paid `buildCityWall` path). Consumes one city-wall piece from supply.
 
 No pendings triggered. If no own unwalled city exists, no candidate is generated.
 
@@ -829,7 +841,8 @@ No pendings trigger. With no adjacent Fields hex, the card may still be played f
 
 #### Apothecary — `scienceMedicine` (science, ×2)
 
-**Window:** `actionPhaseWithBuild`. **Payload:** `{}` (no payload parameters read at play time).
+**Window:** `actionPhaseWithBuild`. **Payload:** `{ intersectionId }` — REQUIRED. The empty form
+is rejected with `InvalidTarget`; the enumerator emits one candidate per owned settlement.
 
 The card play itself upgrades the selected settlement for 2 ore + 1 grain. It does not arm a discount for a later build. A sideways pillaged city may be rebuilt this way even with no city in supply.
 
@@ -933,7 +946,7 @@ No pendings triggered.
 
 **Window:** `actionPhase`. **Payload:** `resourceType`.
 
-Takes up to 2 of the named resource from each other player directly (player-to-player transfer, bank bypassed). Each opponent gives `min(2, their count)` of that resource to the actor. Only resource types held by at least one opponent are offered as payload candidates; if no opponent holds any resource the card is fully suppressed.
+Takes up to 2 of the named resource from each other player directly (player-to-player transfer, bank bypassed). Each opponent gives `min(2, their count)` of that resource to the actor. All five resource types are offered as payload candidates regardless of what opponents hold — the rulebook lets you name any resource, and naming one nobody holds simply yields nothing. The card is never suppressed on an empty pool.
 
 No pendings triggered.
 
@@ -943,7 +956,7 @@ No pendings triggered.
 
 **Window:** `actionPhase`. **Payload:** `commodityType`.
 
-Takes exactly 1 of the named commodity from each other player who holds at least 1 (player-to-player transfer, bank bypassed). Players with 0 of that commodity give nothing. Only commodity types held by at least one opponent are offered as payload candidates; if no opponent holds any commodity the card is fully suppressed.
+Takes exactly 1 of the named commodity from each other player who holds at least 1 (player-to-player transfer, bank bypassed). Players with 0 of that commodity give nothing. All three commodity types are offered as payload candidates regardless of what opponents hold; naming one nobody holds simply yields nothing. The card is never suppressed on an empty pool.
 
 No pendings triggered.
 
@@ -1123,7 +1136,7 @@ The 20 pending-decision types, their triggers, which player must answer, and the
 | `scienceLevel3Bonus`      | Non-7 roll producing zero resources/commodities for a player with `scienceLevel >= 3` (§6.5, §13.2)                                                                       | Each eligible player (one at a time, seat order from current)                                                                        | `chooseScienceBonusResource` with `resource`                                                                                                                      |
 | `chooseMetropolisCity`    | Reaching improvement level 4 or 5 and triggering a metropolis transfer (§13.3)                                                                                            | The player gaining the metropolis                                                                                                    | `chooseMetropolisCity` with `intersectionId` of own non-metropolis city                                                                                           |
 | `choosePillageCity`       | Berserker attack loss when affected player has 2+ pillage-eligible cities (§8.5)                                                                                          | The pillaged player                                                                                                                  | `choosePillageCity` with `intersectionId` of the city to downgrade                                                                                                |
-| `chooseProgressDeck`      | Berserker defense tie (§8.4), or all-decks-exhausted collapse guard (§14)                                                                                                 | Each tied defender (one at a time)                                                                                                   | `chooseProgressDeck` with `deck` (`'science'`, `'trade'`, or `'politics'`)                                                                                        |
+| `chooseProgressDeck`      | Berserker defense tie (§8.4) only. When every deck is empty the pending is NOT queued — the queue collapses instead, so `eligibleDecks` is never empty                    | Each tied defender (one at a time)                                                                                                   | `chooseProgressDeck` with `deck` (`'science'`, `'trade'`, or `'politics'`)                                                                                        |
 | `discardProgress`         | Non-current player exceeds 4 progress cards after a draw (§6.2, §14), or current player ends turn with more than 4 progress cards (§5.3)                                  | The over-limit player                                                                                                                | `discardProgress` with the `instanceId`(s) of cards to discard (exact `requiredCount` must be discarded)                                                          |
 | `chooseKnightRetreat`     | Displacement (`displaceKnight` or Conspiracy card) when displaced knight has 2+ valid retreat intersections (§10.6)                                                       | The displaced knight's owner                                                                                                         | `displaceKnight` with `intersectionId` from `eligibleIntersectionIds`                                                                                             |
 | `chooseRobberDestination` | `chaseRobber` — an active knight chases the robber (§7.4)                                                                                                                 | The chasing player                                                                                                                   | `chaseRobber` with `hexId` of the destination hex                                                                                                                 |

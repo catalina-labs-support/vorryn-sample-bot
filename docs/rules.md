@@ -31,7 +31,7 @@ Each turn is three phases:
 
 ## Trade
 
-Players may freely propose resource and commodity trades with other players. Maritime trade uses 4:1 by default, 3:1 at a generic harbor, and 2:1 at a matching harbor or via the merchant. Commodity trades follow the same ratios.
+Players may freely propose resource and commodity trades with other players. Maritime trade takes the best available rate: 4:1 by default, 3:1 at a generic harbor, and 2:1 at a matching-resource harbor, via the merchant on its hex's resource, at trade track level 3+ for any commodity, or on a type named by Galleon for the rest of that turn. A matching-resource harbor is resource-only; the generic 3:1 harbor does apply to commodities. See `docs/RULES_REFERENCE.md` §12.2 for the authoritative list.
 
 ## Building
 
