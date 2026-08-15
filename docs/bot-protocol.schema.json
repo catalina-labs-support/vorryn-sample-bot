@@ -52,6 +52,11 @@
               "minimum": 0,
               "maximum": 1000000
             },
+            "stealOrdinal": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000
+            },
             "players": {
               "type": "object",
               "propertyNames": {
