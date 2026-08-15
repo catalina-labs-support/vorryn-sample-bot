@@ -2653,6 +2653,7 @@
             "phase",
             "currentPlayerId",
             "turnNumber",
+            "stealOrdinal",
             "players",
             "board",
             "dice",

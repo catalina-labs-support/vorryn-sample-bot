@@ -9,6 +9,7 @@
     "phase": "action",
     "currentPlayerId": "p-red",
     "turnNumber": 10,
+    "stealOrdinal": 3,
     "players": {
       "p-red": {
         "id": "p-red",
