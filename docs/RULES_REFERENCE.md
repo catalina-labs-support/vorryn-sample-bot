@@ -62,39 +62,41 @@ Two **production dice** (each 1–6; their sum determines production) plus one *
 
 ## 3. The board
 
-The board is 19 hexes arranged in a fixed axial layout (5 rows of 3–4–5–4–3 hexes). For each game seed, the hex _types_ are shuffled randomly. The number tokens are then placed in the standard A–R counterclockwise spiral, starting at the top-left coastal corner and skipping the desert; they are not shuffled independently.
+The host chooses a **standard** or **grand** board while the game is in the lobby. The standard board has 19 hexes arranged in 5 rows of 3–4–5–4–3. The grand board adds one complete outer ring, producing 37 hexes in 7 rows of 4–5–6–7–6–5–4. For each game seed, terrain is shuffled deterministically.
+
+Standard number tokens follow the prescribed A–R counterclockwise spiral, starting at the top-left coastal corner and skipping the desert. Grand-board tokens use twice the standard pool and a deterministic constrained layout that keeps equal tokens, red 6/8 tokens, and 2/12 tokens separated.
 
 ### Hex mix
 
-| Terrain   | Count | Resource produced | Commodity produced (cities only) |
-| --------- | ----- | ----------------- | -------------------------------- |
-| Hills     | 3     | `brick`           | —                                |
-| Forest    | 4     | `lumber`          | `paper`                          |
-| Mountains | 3     | `ore`             | `coin`                           |
-| Fields    | 4     | `grain`           | —                                |
-| Pasture   | 4     | `wool`            | `cloth`                          |
-| Desert    | 1     | —                 | —                                |
+| Terrain   | Standard | Grand | Resource produced | Commodity produced (cities only) |
+| --------- | -------- | ----- | ----------------- | -------------------------------- |
+| Hills     | 3        | 6     | `brick`           | —                                |
+| Forest    | 4        | 8     | `lumber`          | `paper`                          |
+| Mountains | 3        | 6     | `ore`             | `coin`                           |
+| Fields    | 4        | 8     | `grain`           | —                                |
+| Pasture   | 4        | 8     | `wool`            | `cloth`                          |
+| Desert    | 1        | 1     | —                 | —                                |
 
 Hills and Fields produce only resources; Forest, Mountains, and Pasture produce a commodity in addition to their resource when a city (not a settlement) is adjacent.
 
 ### Number tokens
 
-The 18 non-desert hexes each receive one token drawn from the pool `[2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12]`. The desert has no token and never produces.
+The standard board's 18 non-desert hexes receive the pool `[2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12]`. The grand board uses two copies of that pool across its 36 productive hexes. The desert has no token and never produces.
 
 ### Intersections and edges
 
-The standard board has **54 intersections** (build spots for settlements, cities, and knights) and **72 edges** (build spots for roads). Of the edges, **30 are coastal** (sea-facing); harbors are placed on coastal edges only.
+The standard board has **54 intersections**, **72 edges**, and 30 coastal edges. The grand board has **96 intersections**, **132 edges**, and 42 coastal edges. Intersections are build spots for settlements, cities, and knights; edges are build spots for roads. Harbors are placed on coastal edges only.
 
-### Harbors (9 total)
+### Harbors
 
-| Type        | Count | Trade rate                                                |
-| ----------- | ----- | --------------------------------------------------------- |
-| Generic 3:1 | 4     | Any 3 resources/commodities → 1 of any resource/commodity |
-| Brick 2:1   | 1     | 2 `brick` → 1 of any                                      |
-| Lumber 2:1  | 1     | 2 `lumber` → 1 of any                                     |
-| Ore 2:1     | 1     | 2 `ore` → 1 of any                                        |
-| Grain 2:1   | 1     | 2 `grain` → 1 of any                                      |
-| Wool 2:1    | 1     | 2 `wool` → 1 of any                                       |
+| Type        | Standard | Grand | Trade rate                                                |
+| ----------- | -------- | ----- | --------------------------------------------------------- |
+| Generic 3:1 | 4        | 7     | Any 3 resources/commodities → 1 of any resource/commodity |
+| Brick 2:1   | 1        | 1     | 2 `brick` → 1 of any                                      |
+| Lumber 2:1  | 1        | 1     | 2 `lumber` → 1 of any                                     |
+| Ore 2:1     | 1        | 1     | 2 `ore` → 1 of any                                        |
+| Grain 2:1   | 1        | 1     | 2 `grain` → 1 of any                                      |
+| Wool 2:1    | 1        | 1     | 2 `wool` → 1 of any                                       |
 
 Each harbor spans 2 adjacent coastal intersections. Harbors are never placed on the 6 outermost corner-tip edges, and no two harbors share an intersection. Trade rates are covered in full in §12.
 
