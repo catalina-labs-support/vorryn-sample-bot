@@ -880,6 +880,10 @@
                         "payload": {
                           "type": "object",
                           "properties": {
+                            "discardId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
                             "required": {
                               "type": "object",
                               "propertyNames": {

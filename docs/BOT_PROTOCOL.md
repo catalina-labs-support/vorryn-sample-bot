@@ -392,9 +392,11 @@ chooses which cards to discard.
     "currentPlayerId": "p-bob",
     "pendingDecision": {
       "type": "discardResources",
-      "actingPlayerId": "p-alice",
+      "actingPlayerId": null,
       "allowedPlayerIds": ["p-alice"],
-      "payload": { "required": { "lumber": 2, "grain": 1 } }
+      "payload": {
+        "required": { "p-alice": 3 }
+      }
     }
     /* ...remaining ClientGameState fields elided for brevity... */
   },
@@ -407,6 +409,11 @@ chooses which cards to discard.
   "recentEvents": []
 }
 ```
+
+The browser's client-state transport may include an optional `discardId`
+presentation key on this payload. Bot request envelopes intentionally omit it:
+it does not affect legal choices, and omitting it preserves strict v2 clients
+across rolling deploys and rollbacks.
 
 #### Response
 
