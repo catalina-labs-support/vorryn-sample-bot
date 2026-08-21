@@ -188,6 +188,29 @@ responder may revise their standing answer while the auction remains
 open. Selection-only bots still return one pre-validated `actionId`
 from `validActions[]`.
 
+### Standing-want actions
+
+When the host enabled the channel (`state.standingWantsEnabled`), three
+further action types are in the vocabulary:
+
+| Action type            | Who may take it                                     | Effect                                                            |
+| ---------------------- | --------------------------------------------------- | ----------------------------------------------------------------- |
+| `setStandingWant`      | Any player, roll or action phase, pending or not     | Posts/replaces that player's single public `{ offer, want }` want  |
+| `clearStandingWant`    | Any player, roll or action phase, pending or not     | Removes that player's posted want                                  |
+| `executeStandingWant`  | Current player only, action phase, no pending        | Atomically takes another player's posted want; the want then clears |
+
+Terms stay **proposer-perspective**, matching domestic trade: `offer` is
+what the *poster* gives, `want` is what the poster receives. Each player
+has at most one want, visible to everyone in
+`players[].standingWant`. A want auto-clears when its poster can no
+longer cover the `offer`, fires at most once, and every want clears when
+the game ends.
+
+As everywhere else in this protocol, the bot **selects** an `actionId`
+from `validActions[]` and never constructs the terms itself. The server
+enumerates only well-formed, currently-affordable standing-want
+candidates, so no candidate needs client-side validation.
+
 Because `bids` is public, a responder's candidate list may include
 **sweetened bids** — the proposal's own `offer` with one extra card
 added to `want` — which exist to outbid a rival's standing bid. There

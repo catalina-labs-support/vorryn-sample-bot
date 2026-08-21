@@ -644,6 +644,9 @@ Both `offer` and `want` are arrays of `{ type, count }` items. `MaterialType` co
 
 An un-taken counter is not recorded as a decline.
 
+The standing-wants channel (§12.3) is a separate trade path and does not
+interact with an open auction.
+
 The proposer is the pending's `actingPlayerId` and is not a member of `allowedPlayerIds`, which contains responders only.
 
 **Responder bid candidates.** With the counter family enabled (production human tables), a responder's enumerated bids are: the at-terms bid (the former accept), **sweetened bids** — the proposal's own terms plus one extra card on the want side, so the responder pays one more to outbid a rival acceptance without composing a full counter — and the bounded derived-adjustment counters. A sweetener increments an existing want line rather than duplicating its type, never uses a type already on the offer side (no type may appear on both sides), and is emitted only when the responder can pay the whole augmented want side, so the family is bounded by the material-type count.
@@ -684,6 +687,46 @@ Maritime trade lets the current player exchange cards with the bank at a negotia
 | Player holds the Guildmaster marker (`tradeMerchant`) on a hex whose resource matches `offer.type`        | 2:1  |
 
 All applicable rates are evaluated simultaneously; the minimum applies. Harbor ownership is determined by having a building (settlement or city) on any of the harbor's `intersectionIds`. The 3:1 harbor reduces all types to 3:1; the 2:1 commodity-track perk applies only when the offered card is a commodity. Each Galleon (`tradeMerchantFleet`) play adds its chosen type to `merchantFleetTypes` for the rest of the turn — multiple Galleons stack, one 2:1 type each; the list is cleared at turn advance. The Guildmaster hex rate applies only if `state.merchantOwnerPlayerId === actingPlayerId` and `state.merchantHexId !== null` and the hex produces the offered resource type (commodity hexes that also produce a resource match on the resource, not the commodity).
+
+### 12.3 Standing wants
+
+A **standing want** is a public, persistent trade offer a player leaves on the
+table for opponents to take on their own turn. The channel is **off unless the
+host enabled it at game creation** — `state.standingWantsEnabled` is stamped once
+and is immutable thereafter. When it is false, none of the three actions is
+legal.
+
+**One want per player.** `players[id].standingWant` is either `null` or a single
+`{ offer, want }` pair. Posting a new want replaces any previous one; there is no
+queue and no history. Terms are proposer-perspective, exactly as in domestic
+trade: **`offer` is what the poster gives** and `want` is what the poster
+receives. Both sides are non-empty, no material type appears on both sides, and
+a poster may only post terms whose `offer` side they can currently cover.
+
+**Posting and clearing are table-meta actions.** `setStandingWant` and
+`clearStandingWant` are legal for **any** player in the roll phase or the action
+phase, including while a pending decision is live and including when it is not
+the actor's turn. They do not consume a turn action, do not advance the phase,
+and never resolve or interfere with a pending decision.
+
+**Executing is an ordinary turn action.** `executeStandingWant` is legal only for
+the **current player**, in the action phase, with no pending decision, against
+another player's posted want that both parties can currently cover. Execution is
+a single atomic two-party transfer: the poster's `offer` moves to the executor
+and the executor pays the `want` to the poster. There is no acceptance step and
+no auction — the want's terms were already public.
+
+**Lifecycle.** A want is cleared by the engine, without any player action, when:
+
+- its poster can no longer cover the `offer` side (auto-clear on unaffordability);
+- it fires — a want clears the moment it is executed, so each posted want
+  executes at most once;
+- the game ends — every want clears on `gameOver`.
+
+Nothing else is stored: no post time, no expiry, no reservation, and no fire
+count. A want carries one lifecycle bit recording that it has become executable
+by an opponent, so the event is announced exactly once rather than on every
+recheck.
 
 ## 13. City improvements & metropolises
 
@@ -1230,6 +1273,9 @@ All 33 action types and the section(s) where they are documented:
 | `domesticTradePass`          | §12                                                    |
 | `domesticTradeAward`         | §12, §16                                               |
 | `domesticTradeCancel`        | §12                                                    |
+| `setStandingWant`            | §12.3                                                  |
+| `clearStandingWant`          | §12.3                                                  |
+| `executeStandingWant`        | §12.3                                                  |
 | `maritimeTrade`              | §12                                                    |
 | `playProgressCard`           | §14                                                    |
 | `discardProgress`            | §14, §16                                               |

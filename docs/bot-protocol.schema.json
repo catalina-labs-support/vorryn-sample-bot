@@ -34,6 +34,9 @@
               "minimum": 1,
               "maximum": 1000000
             },
+            "standingWantsEnabled": {
+              "type": "boolean"
+            },
             "phase": {
               "type": "string",
               "enum": [
@@ -173,6 +176,105 @@
                         "minimum": 0,
                         "maximum": 3
                       },
+                      "standingWant": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "offer": {
+                                "minItems": 1,
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "lumber",
+                                            "brick",
+                                            "wool",
+                                            "grain",
+                                            "ore"
+                                          ]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "coin",
+                                            "paper",
+                                            "cloth"
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    "count": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 1000000
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "count"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "want": {
+                                "minItems": 1,
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "lumber",
+                                            "brick",
+                                            "wool",
+                                            "grain",
+                                            "ore"
+                                          ]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "coin",
+                                            "paper",
+                                            "cloth"
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    "count": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 1000000
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "count"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "offer",
+                              "want"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
                       "resources": {
                         "type": "object",
                         "propertyNames": {
@@ -295,6 +397,7 @@
                       "tradeLevel",
                       "politicsLevel",
                       "metropolisCount",
+                      "standingWant",
                       "resources",
                       "commodities",
                       "progressHand",
@@ -420,6 +523,105 @@
                         "minimum": 0,
                         "maximum": 3
                       },
+                      "standingWant": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "offer": {
+                                "minItems": 1,
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "lumber",
+                                            "brick",
+                                            "wool",
+                                            "grain",
+                                            "ore"
+                                          ]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "coin",
+                                            "paper",
+                                            "cloth"
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    "count": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 1000000
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "count"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "want": {
+                                "minItems": 1,
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "lumber",
+                                            "brick",
+                                            "wool",
+                                            "grain",
+                                            "ore"
+                                          ]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "coin",
+                                            "paper",
+                                            "cloth"
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    "count": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 1000000
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "count"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "offer",
+                              "want"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
                       "resourceCount": {
                         "type": "integer",
                         "minimum": 0,
@@ -452,6 +654,7 @@
                       "tradeLevel",
                       "politicsLevel",
                       "metropolisCount",
+                      "standingWant",
                       "resourceCount",
                       "commodityCount",
                       "progressHandCount"
@@ -2654,6 +2857,7 @@
             "id",
             "version",
             "victoryPointsTarget",
+            "standingWantsEnabled",
             "phase",
             "currentPlayerId",
             "turnNumber",
@@ -3638,6 +3842,145 @@
                 "properties": {
                   "type": {
                     "type": "string",
+                    "const": "setStandingWant"
+                  },
+                  "offer": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "lumber",
+                                "brick",
+                                "wool",
+                                "grain",
+                                "ore"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "coin",
+                                "paper",
+                                "cloth"
+                              ]
+                            }
+                          ]
+                        },
+                        "count": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 1000000
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "count"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "want": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "lumber",
+                                "brick",
+                                "wool",
+                                "grain",
+                                "ore"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "coin",
+                                "paper",
+                                "cloth"
+                              ]
+                            }
+                          ]
+                        },
+                        "count": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 1000000
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "count"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "offer",
+                  "want",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "clearStandingWant"
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "executeStandingWant"
+                  },
+                  "targetPlayerId": {
+                    "type": "string"
+                  },
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "targetPlayerId",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
                     "const": "chooseProgressDeck"
                   },
                   "deck": {
@@ -3949,6 +4292,7 @@
             "enum": [
               "maritimeTrade",
               "domesticTradePropose",
+              "setStandingWant",
               "playProgressCard",
               "discardResources",
               "discardProgress",
@@ -4029,6 +4373,9 @@
                               "domesticTradeBid",
                               "domesticTradePass",
                               "domesticTradeAward",
+                              "setStandingWant",
+                              "clearStandingWant",
+                              "executeStandingWant",
                               "maritimeTrade",
                               "buildRoad",
                               "buildSettlement",

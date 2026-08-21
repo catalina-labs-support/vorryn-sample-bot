@@ -6,6 +6,7 @@
     "id": "capture-game",
     "version": 135,
     "victoryPointsTarget": 13,
+    "standingWantsEnabled": false,
     "phase": "action",
     "currentPlayerId": "p-red",
     "turnNumber": 10,
@@ -31,6 +32,7 @@
         "tradeLevel": 1,
         "politicsLevel": 0,
         "metropolisCount": 0,
+        "standingWant": null,
         "resources": {
           "wool": 0,
           "lumber": 1,
@@ -79,6 +81,7 @@
         "tradeLevel": 1,
         "politicsLevel": 1,
         "metropolisCount": 0,
+        "standingWant": null,
         "resourceCount": 1,
         "commodityCount": 0,
         "progressHandCount": 1
@@ -103,6 +106,7 @@
         "tradeLevel": 0,
         "politicsLevel": 1,
         "metropolisCount": 0,
+        "standingWant": null,
         "resourceCount": 4,
         "commodityCount": 1,
         "progressHandCount": 0
