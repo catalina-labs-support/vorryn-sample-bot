@@ -193,14 +193,14 @@ from `validActions[]`.
 When the host enabled the channel (`state.standingWantsEnabled`), three
 further action types are in the vocabulary:
 
-| Action type            | Who may take it                                     | Effect                                                            |
-| ---------------------- | --------------------------------------------------- | ----------------------------------------------------------------- |
-| `setStandingWant`      | Any player, roll or action phase, pending or not     | Posts/replaces that player's single public `{ offer, want }` want  |
-| `clearStandingWant`    | Any player, roll or action phase, pending or not     | Removes that player's posted want                                  |
-| `executeStandingWant`  | Current player only, action phase, no pending        | Atomically takes another player's posted want; the want then clears |
+| Action type           | Who may take it                                  | Effect                                                              |
+| --------------------- | ------------------------------------------------ | ------------------------------------------------------------------- |
+| `setStandingWant`     | Any player, roll or action phase, pending or not | Posts/replaces that player's single public `{ offer, want }` want   |
+| `clearStandingWant`   | Any player, roll or action phase, pending or not | Removes that player's posted want                                   |
+| `executeStandingWant` | Current player only, action phase, no pending    | Atomically takes another player's posted want; the want then clears |
 
 Terms stay **proposer-perspective**, matching domestic trade: `offer` is
-what the *poster* gives, `want` is what the poster receives. Each player
+what the _poster_ gives, `want` is what the poster receives. Each player
 has at most one want, visible to everyone in
 `players[].standingWant`. A want auto-clears when its poster can no
 longer cover the `offer`, fires at most once, and every want clears when
