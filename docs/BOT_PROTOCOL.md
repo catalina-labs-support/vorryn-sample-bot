@@ -188,16 +188,37 @@ responder may revise their standing answer while the auction remains
 open. Selection-only bots still return one pre-validated `actionId`
 from `validActions[]`.
 
+Because `bids` is public, a responder's candidate list may include
+**sweetened bids** — the proposal's own `offer` with one extra card
+added to `want` — which exist to outbid a rival's standing bid. There
+is no new action type: a sweetened bid is an ordinary
+`domesticTradeBid`, so a bot that simply picks an `actionId` needs no
+special handling. A bot that wants to compete for contested auctions
+can compare bids on public terms alone: bid A beats bid B only when the
+proposer gives the same cards under both and A hands the proposer
+strictly more. Bids with different give sides are not comparable, and
+the server does not rank them for you.
+
 ### Standing-want actions
 
 When the host enabled the channel (`state.standingWantsEnabled`), three
 further action types are in the vocabulary:
 
-| Action type           | Who may take it                                  | Effect                                                              |
-| --------------------- | ------------------------------------------------ | ------------------------------------------------------------------- |
-| `setStandingWant`     | Any player, roll or action phase, pending or not | Posts/replaces that player's single public `{ offer, want }` want   |
-| `clearStandingWant`   | Any player, roll or action phase, pending or not | Removes that player's posted want                                   |
-| `executeStandingWant` | Current player only, action phase, no pending    | Atomically takes another player's posted want; the want then clears |
+| Action type           | When it can reach your `validActions[]`                  | Effect                                                              |
+| --------------------- | -------------------------------------------------------- | ------------------------------------------------------------------- |
+| `setStandingWant`     | Your own turn, roll or action phase, no pending decision | Posts/replaces your single public `{ offer, want }` want            |
+| `clearStandingWant`   | Your own turn, roll or action phase, no pending decision | Removes your posted want                                            |
+| `executeStandingWant` | Your own turn, action phase, no pending decision         | Atomically takes another player's posted want; the want then clears |
+
+The engine itself is more permissive than that first column for the two
+posting actions: `setStandingWant` and `clearStandingWant` are table-meta and
+are accepted from **any** seated player throughout the roll and action phases,
+off-turn and with a pending decision outstanding. Human clients use that
+latitude. Bots cannot: enumeration returns nothing at all for a player who is
+neither the current player nor an allowed answerer on a live pending decision,
+and the pending-decision candidate set contains no standing-want actions. A
+selection-only bot is therefore never asked to decide off-turn, and there is no
+supported way to post one from outside your own turn.
 
 Terms stay **proposer-perspective**, matching domestic trade: `offer` is
 what the _poster_ gives, `want` is what the poster receives. Each player
@@ -209,18 +230,27 @@ the game ends.
 As everywhere else in this protocol, the bot **selects** an `actionId`
 from `validActions[]` and never constructs the terms itself. The server
 enumerates only well-formed, currently-affordable standing-want
-candidates, so no candidate needs client-side validation.
+candidates, so no candidate needs client-side validation. Posting
+candidates are a bounded shortlist of single-line terms the server
+derives from your own hand and build shortfalls, not the full term
+space; when that shortlist is capped, `truncatedFamilies` gains
+`'setStandingWant'` and `validActionsTruncated` is set. `executeStandingWant`
+candidates are filtered by **your** hand — one per opponent whose posted
+`want` you can currently pay — so their presence or absence tells you
+nothing about any opponent's hidden holdings.
 
-Because `bids` is public, a responder's candidate list may include
-**sweetened bids** — the proposal's own `offer` with one extra card
-added to `want` — which exist to outbid a rival's standing bid. There
-is no new action type: a sweetened bid is an ordinary
-`domesticTradeBid`, so a bot that simply picks an `actionId` needs no
-special handling. A bot that wants to compete for contested auctions
-can compare bids on public terms alone: bid A beats bid B only when the
-proposer gives the same cards under both and A hands the proposer
-strictly more. Bids with different give sides are not comparable, and
-the server does not rank them for you.
+Two independent switches decide whether you see any of this at all:
+
+1. **The host's per-game opt-in.** `state.standingWantsEnabled` is
+   stamped at game creation and never changes. When it is false there
+   are no candidates and the engine rejects all three action types.
+2. **The enumerator's standing-want options.** Every bot runtime —
+   first-party and external (friend-owned) alike — is enumerated with
+   both posting and execution enabled, so a channel the host enabled is
+   fully in your vocabulary. Do not treat a missing standing-want
+   candidate as a protocol error: check `state.standingWantsEnabled`
+   first, then affordability (posting needs a hand that covers the
+   `offer`; execution needs one that covers the poster's `want`).
 
 ## Hosting guidance
 

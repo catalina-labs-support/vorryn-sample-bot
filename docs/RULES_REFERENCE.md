@@ -707,14 +707,19 @@ a poster may only post terms whose `offer` side they can currently cover.
 `clearStandingWant` are legal for **any** player in the roll phase or the action
 phase, including while a pending decision is live and including when it is not
 the actor's turn. They do not consume a turn action, do not advance the phase,
-and never resolve or interfere with a pending decision.
+and never resolve or interfere with a pending decision. Neither is legal in
+either setup phase or once the game is over. Re-posting the terms you already
+have standing is rejected as a no-op, exactly as a repeated auction answer is
+(§12.1), and so is clearing when nothing is posted.
 
 **Executing is an ordinary turn action.** `executeStandingWant` is legal only for
 the **current player**, in the action phase, with no pending decision, against
 another player's posted want that both parties can currently cover. Execution is
 a single atomic two-party transfer: the poster's `offer` moves to the executor
 and the executor pays the `want` to the poster. There is no acceptance step and
-no auction — the want's terms were already public.
+no auction — the want's terms were already public. Executions are not capped per
+turn and do not count against the 5-proposal domestic-trade limit (§12.1), so
+the current player may take one want from every opponent in the same turn.
 
 **Lifecycle.** A want is cleared by the engine, without any player action, when:
 
@@ -722,6 +727,10 @@ no auction — the want's terms were already public.
 - it fires — a want clears the moment it is executed, so each posted want
   executes at most once;
 - the game ends — every want clears on `gameOver`.
+
+The unaffordability sweep runs after **every** committed action, whoever took
+it, so a want dies on the action that spends the cards backing it rather than
+surviving until its poster acts again.
 
 Nothing else is stored: no post time, no expiry, no reservation, and no fire
 count. A want carries one lifecycle bit recording that it has become executable
@@ -1241,7 +1250,7 @@ _"Victory points to win" is the standard target; a game may set a lower one (e.g
 
 ### Action index
 
-All 33 action types and the section(s) where they are documented:
+All 36 action types and the section(s) where they are documented:
 
 | Action type                  | Section(s)                                             |
 | ---------------------------- | ------------------------------------------------------ |
