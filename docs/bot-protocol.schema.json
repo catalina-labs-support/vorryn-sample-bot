@@ -4590,6 +4590,104 @@
                               "want"
                             ],
                             "additionalProperties": false
+                          },
+                          "standingWantDetails": {
+                            "type": "object",
+                            "properties": {
+                              "posterId": {
+                                "type": "string"
+                              },
+                              "executorId": {
+                                "type": "string"
+                              },
+                              "offer": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "lumber",
+                                            "brick",
+                                            "wool",
+                                            "grain",
+                                            "ore"
+                                          ]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "coin",
+                                            "paper",
+                                            "cloth"
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    "count": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 1000000
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "count"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "want": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "lumber",
+                                            "brick",
+                                            "wool",
+                                            "grain",
+                                            "ore"
+                                          ]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "coin",
+                                            "paper",
+                                            "cloth"
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    "count": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 1000000
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "count"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "posterId",
+                              "executorId",
+                              "offer",
+                              "want"
+                            ],
+                            "additionalProperties": false
                           }
                         },
                         "required": [
