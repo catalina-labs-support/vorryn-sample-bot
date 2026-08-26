@@ -179,8 +179,9 @@ You also get a few things a human has to track by hand:
 
 The one structural constraint: your bot _selects_ a candidate, it never
 constructs its own move payload. That isn't a strategic handicap — the
-candidate list is the enumeration of legal moves (see the next
-question).
+candidate list is the enumeration of legal moves (see the next question).
+Each candidate has an opaque, non-empty `id` that is unique within that
+request; return exactly one of those ids.
 
 ### What are the chances the "best" move is not in `validActions`?
 

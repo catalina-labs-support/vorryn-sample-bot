@@ -2901,7 +2901,8 @@
                     "const": "rollDice"
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -2918,7 +2919,8 @@
                     "const": "endTurn"
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -2938,7 +2940,8 @@
                     "type": "string"
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -2959,7 +2962,8 @@
                     "type": "string"
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -2977,7 +2981,8 @@
                     "const": "skipRoadBuilding"
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -2997,7 +3002,8 @@
                     "type": "string"
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -3018,7 +3024,8 @@
                     "type": "string"
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -3039,7 +3046,8 @@
                     "type": "string"
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -3060,7 +3068,8 @@
                     "type": "string"
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -3081,7 +3090,8 @@
                     "type": "string"
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -3110,7 +3120,8 @@
                     ]
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -3131,7 +3142,8 @@
                     "type": "string"
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -3152,7 +3164,8 @@
                     "type": "string"
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -3176,7 +3189,8 @@
                     "type": "string"
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -3201,7 +3215,8 @@
                     "type": "string"
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -3225,7 +3240,8 @@
                     "type": "string"
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -3250,7 +3266,8 @@
                     ]
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -3356,7 +3373,8 @@
                     "type": "boolean"
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -3488,7 +3506,8 @@
                     }
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -3590,7 +3609,8 @@
                     }
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -3689,7 +3709,8 @@
                     }
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -3708,7 +3729,8 @@
                     "const": "domesticTradePass"
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -3808,7 +3830,8 @@
                     }
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -3828,7 +3851,8 @@
                     "const": "domesticTradeCancel"
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -3927,7 +3951,8 @@
                     }
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -3946,7 +3971,8 @@
                     "const": "clearStandingWant"
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -3966,7 +3992,8 @@
                     "type": "string"
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -3992,7 +4019,8 @@
                     ]
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -4013,7 +4041,8 @@
                     "type": "string"
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -4041,7 +4070,8 @@
                     ]
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -4062,7 +4092,8 @@
                     "type": "string"
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -4083,7 +4114,8 @@
                     "type": "string"
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -4126,7 +4158,8 @@
                     }
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -4150,7 +4183,8 @@
                     }
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -4253,7 +4287,8 @@
                     "type": "string"
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -4270,7 +4305,8 @@
                     "const": "resign"
                   },
                   "id": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 1
                   }
                 },
                 "required": [

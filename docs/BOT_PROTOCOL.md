@@ -76,7 +76,7 @@ underlying state changed. Don't index by position across turns.
   gameId: string,
   playerId: string,                  // the player the bot is acting as
   state: ClientGameState,            // viewer-redacted game state
-  validActions: BotActionCandidate[],// non-empty; each has an opaque id
+  validActions: BotActionCandidate[],// non-empty; ids are opaque, non-empty, unique
   validActionsTruncated: boolean,    // true if any family was capped
   truncatedFamilies: string[],       // which families hit the cap
   diceHistogram: { [sum: string]: number }, // production-roll tally pad

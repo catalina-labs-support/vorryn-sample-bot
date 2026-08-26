@@ -6,10 +6,30 @@ import { z } from 'zod';
 
 const BotActionCandidateSchema = z
   .object({
-    id: z.string(),
+    id: z.string().min(1),
     type: z.string(),
   })
   .loose();
+
+const BotActionCandidatesSchema = z
+  .array(BotActionCandidateSchema)
+  .nonempty()
+  .superRefine((actions, ctx) => {
+    const seen = new Set<string>();
+    for (let index = 0; index < actions.length; index++) {
+      const id = actions[index]?.id;
+      if (id === undefined) continue;
+      if (seen.has(id)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: [index, 'id'],
+          message: `Duplicate bot action candidate id "${id}"`,
+        });
+      } else {
+        seen.add(id);
+      }
+    }
+  });
 
 const RecentEventSchema = z
   .object({
@@ -27,7 +47,7 @@ export const BotRequestSchema = z
     gameId: z.string(),
     playerId: z.string(),
     state: z.object({}).loose(),
-    validActions: z.array(BotActionCandidateSchema).nonempty(),
+    validActions: BotActionCandidatesSchema,
     validActionsTruncated: z.boolean(),
     truncatedFamilies: z.array(z.string()),
     diceHistogram: z.record(z.string(), z.number()),

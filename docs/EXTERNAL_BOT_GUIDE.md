@@ -82,8 +82,9 @@ A request carries a viewer-redacted `ClientGameState`, the acting
 `playerId`, and non-empty `validActions[]`. Hidden information
 (opponent hands, deck contents) appears as counts only.
 
-Each `BotActionCandidate` has an opaque server-assigned `id` plus the
-action payload. The `id` is the only thing your bot needs to return.
+Each `BotActionCandidate` has an opaque, non-empty server-assigned `id` that is
+unique within that request, plus the action payload. The `id` is the only thing
+your bot needs to return.
 
 **Don't index by position across turns.** The `id` is meaningful within
 a single request; the same array index may map to a different action

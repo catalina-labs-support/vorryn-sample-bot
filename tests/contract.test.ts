@@ -51,4 +51,55 @@ for (const name of FIXTURES) {
   console.log(`PASS — ${name}: bot chose ${body.actionId}`);
 }
 
+const baseFixture = JSON.parse(
+  readFileSync(join(__dirname, '..', 'fixtures', FIXTURES[0] ?? ''), 'utf8')
+);
+
+for (const malformed of [
+  {
+    label: 'empty candidate id',
+    payload: { ...baseFixture, validActions: [{ id: '', type: 'endTurn' }] },
+  },
+  {
+    label: 'duplicate candidate ids',
+    payload: {
+      ...baseFixture,
+      validActions: [
+        { id: 'duplicate', type: 'endTurn' },
+        { id: 'duplicate', type: 'rollDice' },
+      ],
+    },
+  },
+  {
+    label: 'wrong protocol version',
+    payload: { ...baseFixture, protocolVersion: 1 },
+  },
+]) {
+  const res = await app.inject({
+    method: 'POST',
+    url: '/play',
+    headers: { Authorization: `Bearer ${BOT_BEARER}` },
+    payload: malformed.payload,
+  });
+  if (res.statusCode !== 422) {
+    console.error(`${malformed.label}: expected 422, got ${res.statusCode}: ${res.body}`);
+    process.exit(1);
+  }
+  console.log(`PASS — rejected ${malformed.label}`);
+}
+
+for (const authorization of [undefined, 'Bearer wrong-secret', 'Basic fixture-bearer']) {
+  const res = await app.inject({
+    method: 'POST',
+    url: '/play',
+    headers: authorization === undefined ? {} : { Authorization: authorization },
+    payload: baseFixture,
+  });
+  if (res.statusCode !== 401) {
+    console.error(`bad authorization: expected 401, got ${res.statusCode}: ${res.body}`);
+    process.exit(1);
+  }
+}
+console.log('PASS — rejected missing and invalid authorization');
+
 await app.close();
