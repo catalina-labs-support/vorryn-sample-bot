@@ -9,7 +9,7 @@ working opponent seated at a real table this afternoon — then spend as
 long as you like making it ruthless.
 
 This repo is a complete, deployable starter in TypeScript: a Fastify
-handler, schema validation, a smoke test, and the full protocol docs
+handler, schema validation, a test suite, and the full protocol docs
 ([external-bot guide](docs/EXTERNAL_BOT_GUIDE.md),
 [protocol reference](docs/BOT_PROTOCOL.md),
 [JSON schema](docs/bot-protocol.schema.json),
@@ -60,7 +60,7 @@ Fork the repo, replace `pickAction`, deploy. Let's field a champion.
 | `src/schemas.ts`                  | Zod parsers for the request/response envelopes.                          |
 | `fixtures/play-request.json`      | A small hand-readable `BotRequest` for local testing.                    |
 | `fixtures/play-request-full.json` | A full-size `BotRequest` captured from a real self-play game.            |
-| `tests/contract.test.ts`          | Smoke test that POSTs both fixtures to `/play` and asserts a 200.        |
+| `tests/contract.test.ts`          | Contract tests that POST both fixtures to `/play` and assert a 200.      |
 | `Dockerfile`                      | Production Node image with a `/health` container check.                  |
 
 ## Setup
@@ -76,7 +76,7 @@ pnpm dev
 
 The dev server listens on `http://localhost:3001` and reloads on save.
 
-## Run the smoke test
+## Run the tests
 
 ```bash
 pnpm test
@@ -112,10 +112,10 @@ corpus file. The tuning command refuses to optimize fewer than 20 labeled
 decisions—smoke fixtures prove plumbing, not playing strength. Use completed
 games, fixed holdouts, and paired comparisons before adopting a weight change.
 
-The test injects `fixtures/play-request.json` through the Fastify
-handler with the expected bearer header and asserts the response is
-`{ protocolVersion: 2, kind: 'action', actionId: '...' }` with an
-`actionId` from the candidate list.
+The contract tests inject both fixtures through the Fastify handler with the
+expected bearer header and assert each response is
+`{ protocolVersion: 2, kind: 'action', actionId: '...' }` with an `actionId`
+from that request's candidate list.
 
 ## Registering with Vorryn
 
@@ -181,15 +181,15 @@ Ideas, ordered from least to most effort:
 Two fixtures show what your bot will receive. The small one
 (`play-request.json`) is hand-readable: a typical action-phase turn with
 a few candidates and an `endTurn`. The full one
-(`play-request-full.json`, ~93 KB pretty-printed; ~55 KB as actually
-sent on the wire, ~6 KB gzipped) is captured from a real self-play
-game at turn 10 — three fully populated players, a complete board
-(19 hexes, 54 intersections, 72 edges, 9 harbors), 99 candidates
-dominated by trade proposals, `validActionsTruncated: true` with
-`truncatedFamilies` set, a real dice histogram, and a 60-event
-`recentEvents` window. Use it to see realistic payload sizes, opponent
-redaction (you never see opponents' hands, only `opponentMaterialTypes`),
-and the truncation flag actually firing. Your strategy must handle:
+(`play-request-full.json`, ~68 KB pretty-printed; ~43 KB as actually sent on
+the wire, ~5.4 KB gzipped) is captured from a real self-play game at turn 10 —
+three fully populated players, a complete board (19 hexes, 54 intersections,
+72 edges, 9 harbors), 16 candidates spanning progress cards, domestic trades,
+and `endTurn`, a real dice histogram, and a 60-event `recentEvents` window. It
+has `validActionsTruncated: false`; production requests can still set that flag
+and name capped families in `truncatedFamilies`. Use the fixture to see
+realistic payload sizes and opponent redaction (you never see opponents' hands,
+only `opponentMaterialTypes`). Your strategy must handle:
 
 - **Setup phases** (`state.phase === 'setup1'` / `'setup2'`).
 - **Roll phase** (just `rollDice`, plus any pre-roll progress cards).
@@ -202,8 +202,11 @@ validated by Vorryn.
 
 ## Deploying
 
-Any HTTPS-capable host with persistent process memory will work. The
-sample is small enough for free tiers on Fly.io, Render, or Railway:
+Any HTTPS-capable host that can keep a small Node process available will work.
+The sample fits entry-level container or web-service plans on Fly.io, Render,
+or Railway. Fly.io is paid after its trial; Render and Railway offer limited
+free plans, but their limits can change. Check provider pricing before
+deploying, and use an always-warm instance for competitive games:
 
 ```bash
 # Fly.io example
@@ -329,12 +332,12 @@ with, and that reputation is yours to keep.
 
 Yes — and unusually for an online game, you can verify it yourself.
 
-Every game gets a secret seed drawn from the platform's
-cryptographically secure RNG at creation. From then on each roll (two
-production dice plus the event die) is derived deterministically from
-that seed and the game's state version — the same path for every
-player, human or bot, with no reroll, no nudge, and no way for the
-server operator to favor a seat without it being detectable.
+Every game gets a secret seed drawn from the platform's cryptographically
+secure RNG at creation. From then on each roll (two production dice plus the
+event die) is derived deterministically from that seed and the dice roll
+ordinal (`state.dice.rollNumber`) — the same path for every player, human or
+bot, with no reroll, no nudge, and no way for the server operator to favor a
+seat without it being detectable.
 
 Three properties fall out of that design:
 
@@ -403,12 +406,11 @@ against it offline.
 
 ### What is `personality`?
 
-An optional preset key (`aggressive`, `builder`, `trader`, …) the game
-creator can assign per seat; the first-party bot merges it over its
-tuning baseline. Your bot is free to honor it for flavor — or ignore
-it entirely. It's the canonical example of a v1.x additive field: bots
-that never read it work fine, and your schema codegen shouldn't error
-on unknown fields generally.
+An optional preset key (`aggressive`, `builder`, `trader`, …) the game creator
+can assign per seat; the first-party bot merges it over its tuning baseline.
+Your bot is free to honor it for flavor — or ignore it entirely. It's the
+canonical example of a v2.x additive field: bots that never read it work fine,
+and your schema codegen shouldn't error on unknown fields generally.
 
 ### How strong is this bot relative to the first-party bot?
 
