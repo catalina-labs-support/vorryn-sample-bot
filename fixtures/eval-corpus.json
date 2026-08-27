@@ -1,0 +1,4 @@
+[
+  { "requestFile": "play-request.json", "expectedActionType": "buildSettlement" },
+  { "requestFile": "play-request-full.json", "expectedActionType": "playProgressCard" }
+]

@@ -16,9 +16,13 @@ handler, schema validation, a smoke test, and the full protocol docs
 [complete rules reference](docs/RULES_REFERENCE.md) — every cost,
 card, and forced decision, so you never need to have played the game).
 The bundled strategy is a public-information Monte Carlo evaluator. It scores
-development, board production, robber pressure, progress cards, and trade
-value while sampling future uncertainty. It stays self-contained: the bot
+development, board production, robber pressure, progress cards, and hand-aware
+trade value while sampling opponent acceptance and future uncertainty. It stays self-contained: the bot
 never imports Vorryn's private engine or invents action payloads.
+
+Forced decisions use the same evaluator: discards preserve scarce materials
+and high-value progress cards, while robber, pillage, steal, and optional card
+effects pressure the public leader instead of relying on candidate order.
 
 ## Why build one?
 
@@ -44,12 +48,17 @@ Fork the repo, replace `pickAction`, deploy. Let's field a champion.
 | `src/app.ts`                      | Fastify handler: bearer-auth check, schema parse, `pickAction` dispatch. |
 | `src/index.ts`                    | Process entrypoint: env setup and HTTP listen.                           |
 | `src/strategy.ts`                 | The decision function and compact decision trace.                        |
+| `src/public-state.ts`             | Typed, defensive projection of the redacted public game state.           |
+| `src/opponent-beliefs.ts`         | Public-event material flow and human-seat belief model.                  |
 | `src/simulator.ts`                | Seedable public-information action simulator and evaluator.              |
+| `src/search.ts`                   | Deadline-bounded lookahead over inventory, production, and plans.        |
 | `src/simulate.ts`                 | Offline CLI for ranking actions in captured requests.                    |
+| `src/evaluate.ts` / `src/tune.ts` | Corpus evaluation and guarded parameter sweep tools.                     |
 | `src/schemas.ts`                  | Zod parsers for the request/response envelopes.                          |
 | `fixtures/play-request.json`      | A small hand-readable `BotRequest` for local testing.                    |
 | `fixtures/play-request-full.json` | A full-size `BotRequest` captured from a real self-play game.            |
 | `tests/contract.test.ts`          | Smoke test that POSTs both fixtures to `/play` and asserts a 200.        |
+| `Dockerfile`                      | Production Node image with a `/health` container check.                  |
 
 ## Setup
 
@@ -79,8 +88,26 @@ pnpm simulate path/to/play-request.json
 ```
 
 The simulator is seedable, so its unit tests and offline comparisons are
-repeatable. Tune the weights in `src/simulator.ts`, collect completed-game
-requests, and compare one change at a time over the same corpus.
+repeatable. Every candidate is evaluated against the same sampled worlds, so
+reordering `validActions` cannot change its score. Tune the weights in
+`src/simulator.ts`, collect completed-game requests, and compare one change at
+a time over the same corpus.
+
+Run the bundled smoke corpus, or point the evaluator at your own corpus file:
+
+```bash
+pnpm evaluate
+pnpm evaluate path/to/eval-corpus.json
+pnpm compare path/to/eval-corpus.json 0.32 0
+pnpm tune path/to/eval-corpus.json
+```
+
+An evaluation corpus is a JSON array of cases with `requestFile` and either
+`expectedActionId` or `expectedActionType`; it may also record
+`winnerPlayerId` for downstream outcome analysis. Paths are relative to the
+corpus file. The tuning command refuses to optimize fewer than 20 labeled
+decisions—smoke fixtures prove plumbing, not playing strength. Use completed
+games, fixed holdouts, and paired comparisons before adopting a weight change.
 
 The test injects `fixtures/play-request.json` through the Fastify
 handler with the expected bearer header and asserts the response is
@@ -120,6 +147,17 @@ also faces. For genuinely stronger play, grow this into a belief-state search:
 infer opponent material distributions from `recentEvents`, sample legal hidden
 worlds, and backpropagate terminal win value while always selecting from the
 original `validActions` array.
+
+`src/search.ts` performs abstract lookahead because the current request cannot
+enumerate the server's future legal candidates. It projects post-action
+inventory, new production, and the best reachable follow-up plan under a hard
+deadline. That is honest public-protocol search; calling it an exact engine
+rollout would overstate what an external bot can reconstruct.
+
+Domestic-trade candidates always use proposer perspective. When this bot is a
+responder, it therefore treats `offer` as what it receives and `want` as what
+it gives; reversing those fields makes a bot systematically accept losing
+human offers.
 
 Ideas, ordered from least to most effort:
 
@@ -174,6 +212,20 @@ Cloud Run on min-instances=0) will work but expect occasional turn
 forfeits on cold starts — the Vorryn server's per-request budget is
 12 seconds, and a Node Lambda cold start eats a noticeable chunk of
 that. For competitive play, one always-warm instance is worth it.
+
+The included production container can run on any OCI-compatible host:
+
+```bash
+docker build -t vorryn-bot .
+docker run --rm -p 3001:3001 -e BOT_BEARER="<your-secret>" vorryn-bot
+curl http://localhost:3001/health
+```
+
+The process handles `SIGTERM`/`SIGINT` with a graceful Fastify shutdown. Keep
+the bearer secret in the host's secret store, never in the image or repository.
+The bundled GitHub Actions workflow verifies the frozen install, TypeScript
+build, tests, and container build on every push and pull request. Dependabot
+checks npm and workflow dependencies weekly with a three-day cooldown.
 
 ## FAQ
 

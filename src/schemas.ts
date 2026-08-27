@@ -52,6 +52,7 @@ export const BotRequestSchema = z
     truncatedFamilies: z.array(z.string()),
     diceHistogram: z.record(z.string(), z.number()),
     recentEvents: z.array(RecentEventSchema),
+    humanPlayerIds: z.array(z.string()).optional(),
     personality: z.string().nullable().optional(),
   })
   .loose();

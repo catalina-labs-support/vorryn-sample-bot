@@ -19,3 +19,15 @@ const app = createSampleBotApp(BOT_BEARER);
 app.listen({ port: PORT, host: '0.0.0.0' }).then(() => {
   app.log.info({ port: PORT }, 'vorryn-sample-bot listening');
 });
+
+for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+  process.on(signal, () => {
+    app
+      .close()
+      .then(() => process.exit(0))
+      .catch((error: unknown) => {
+        app.log.error(error, 'graceful shutdown failed');
+        process.exit(1);
+      });
+  });
+}
