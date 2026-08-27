@@ -15,14 +15,16 @@ handler, schema validation, a smoke test, and the full protocol docs
 [JSON schema](docs/bot-protocol.schema.json),
 [complete rules reference](docs/RULES_REFERENCE.md) — every cost,
 card, and forced decision, so you never need to have played the game).
-The bundled strategy is a public-information Monte Carlo evaluator. It scores
-development, board production, robber pressure, progress cards, and hand-aware
-trade value while sampling opponent acceptance and future uncertainty. It stays self-contained: the bot
-never imports Vorryn's private engine or invents action payloads.
+The production strategy is a generated, standalone bundle of Vorryn's validated
+champion decision graph: specialized forced-decision resolvers, 25+ scoring
+rules, opponent beliefs, same-turn win planning, and bounded lookahead. It uses
+only the redacted request and server-supplied legal candidates; it has no
+private-server or engine dependency at runtime and never invents action
+payloads. When human seats are present, it automatically applies the validated
+human-table profile at zero deliberate decision noise.
 
-Forced decisions use the same evaluator: discards preserve scarce materials
-and high-value progress cards, while robber, pillage, steal, and optional card
-effects pressure the public leader instead of relying on candidate order.
+The readable public-information simulator remains as a deterministic fallback
+and experimentation surface. It is intentionally not the competitive selector.
 
 ## Why build one?
 
@@ -48,6 +50,7 @@ Fork the repo, replace `pickAction`, deploy. Let's field a champion.
 | `src/app.ts`                      | Fastify handler: bearer-auth check, schema parse, `pickAction` dispatch. |
 | `src/index.ts`                    | Process entrypoint: env setup and HTTP listen.                           |
 | `src/strategy.ts`                 | The decision function and compact decision trace.                        |
+| `src/champion.js`                 | Generated standalone competitive policy used in production.              |
 | `src/public-state.ts`             | Typed, defensive projection of the redacted public game state.           |
 | `src/opponent-beliefs.ts`         | Public-event material flow and human-seat belief model.                  |
 | `src/simulator.ts`                | Seedable public-information action simulator and evaluator.              |
@@ -137,7 +140,10 @@ it. The shared secret is stored encrypted and never shown to anyone but you.
 
 `src/strategy.ts` exports `pickAction(req: BotRequest): BotResponse`.
 Read the validated request, return the chosen `actionId` (must be one
-of `req.validActions[i].id`).
+of `req.validActions[i].id`). The checked-in `champion.js` is generated from
+Vorryn's validated decision graph; do not edit that bundle by hand. Put
+experiments in the readable simulator/search modules, measure them against a
+fixed corpus, and only override the champion when the evidence supports it.
 
 `src/simulator.ts` is an evaluator, not a clone of the private game engine.
 The protocol intentionally omits hidden hands, deck order, and the dice seed;
@@ -404,16 +410,20 @@ it entirely. It's the canonical example of a v1.x additive field: bots
 that never read it work fine, and your schema codegen shouldn't error
 on unknown fields generally.
 
-### How strong is the first-party bot — can I actually beat it?
+### How strong is this bot relative to the first-party bot?
 
-It's a greedy heuristic at scale: 25+ hand-tuned scoring rules over
-the current decision, plus a lightweight one-step lookahead. No game
-tree search, no rollouts, no hidden-information modeling beyond what's
-public — and it plays under exactly the same information limits you
-do. That's a real opponent, but a beatable one: a well-built MCTS bot
-with a few seconds of budget, or even a sharper heuristic tuned
-against it, can take it down. Someone's bot is going to be the
-strongest player on the platform. No reason it can't be yours.
+The production selector is the same validated champion decision graph under
+the same public-information limits. A private engine referee tested one sample
+seat against two built-in seats with fixed seeds and cyclic seat rotation:
+
+- Default profile: 104/300 wins (34.67%) versus 33.33% fair share; zero timeouts.
+- Human-table profile: 103/300 wins (34.33%) versus 33.33% fair share; zero timeouts.
+
+Average final VP was also essentially equal in both gates. Those results show
+policy parity, not a statistically proven edge. The sample automatically uses
+the strongest validated zero-noise human-table composition when a human roster
+is supplied. Improvements should clear a fresh paired engine gate before they
+replace this baseline.
 
 ## License
 

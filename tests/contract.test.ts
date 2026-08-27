@@ -48,6 +48,16 @@ for (const name of FIXTURES) {
     process.exit(1);
   }
 
+  if (body.decisionTrace?.externalStrategy !== 'bundled-champion-v1') {
+    console.error(`${name}: competitive champion policy did not run`);
+    process.exit(1);
+  }
+
+  if (body.decisionTrace?.externalStrategy !== 'bundled-champion-v1') {
+    console.error(`${name}: competitive champion policy did not run`);
+    process.exit(1);
+  }
+
   console.log(`PASS — ${name}: bot chose ${body.actionId}`);
 }
 
