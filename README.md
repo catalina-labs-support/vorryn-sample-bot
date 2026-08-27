@@ -15,8 +15,10 @@ handler, schema validation, a smoke test, and the full protocol docs
 [JSON schema](docs/bot-protocol.schema.json),
 [complete rules reference](docs/RULES_REFERENCE.md) — every cost,
 card, and forced decision, so you never need to have played the game).
-The bundled strategy just picks the first legal move — the fun is
-replacing it.
+The bundled strategy is a public-information Monte Carlo evaluator. It scores
+development, board production, robber pressure, progress cards, and trade
+value while sampling future uncertainty. It stays self-contained: the bot
+never imports Vorryn's private engine or invents action payloads.
 
 ## Why build one?
 
@@ -41,7 +43,9 @@ Fork the repo, replace `pickAction`, deploy. Let's field a champion.
 | --------------------------------- | ------------------------------------------------------------------------ |
 | `src/app.ts`                      | Fastify handler: bearer-auth check, schema parse, `pickAction` dispatch. |
 | `src/index.ts`                    | Process entrypoint: env setup and HTTP listen.                           |
-| `src/strategy.ts`                 | The decision function. Replace this.                                     |
+| `src/strategy.ts`                 | The decision function and compact decision trace.                        |
+| `src/simulator.ts`                | Seedable public-information action simulator and evaluator.              |
+| `src/simulate.ts`                 | Offline CLI for ranking actions in captured requests.                    |
 | `src/schemas.ts`                  | Zod parsers for the request/response envelopes.                          |
 | `fixtures/play-request.json`      | A small hand-readable `BotRequest` for local testing.                    |
 | `fixtures/play-request-full.json` | A full-size `BotRequest` captured from a real self-play game.            |
@@ -65,6 +69,18 @@ The dev server listens on `http://localhost:3001` and reloads on save.
 ```bash
 pnpm test
 ```
+
+Inspect the simulator's ranking of the realistic fixture:
+
+```bash
+pnpm simulate
+# Or rank a request captured from your own bot logs:
+pnpm simulate path/to/play-request.json
+```
+
+The simulator is seedable, so its unit tests and offline comparisons are
+repeatable. Tune the weights in `src/simulator.ts`, collect completed-game
+requests, and compare one change at a time over the same corpus.
 
 The test injects `fixtures/play-request.json` through the Fastify
 handler with the expected bearer header and asserts the response is
@@ -95,6 +111,15 @@ it. The shared secret is stored encrypted and never shown to anyone but you.
 `src/strategy.ts` exports `pickAction(req: BotRequest): BotResponse`.
 Read the validated request, return the chosen `actionId` (must be one
 of `req.validActions[i].id`).
+
+`src/simulator.ts` is an evaluator, not a clone of the private game engine.
+The protocol intentionally omits hidden hands, deck order, and the dice seed;
+an exact rollout cannot be reconstructed during a game. The simulator instead
+uses the complete visible board and samples the uncertainty a human player
+also faces. For genuinely stronger play, grow this into a belief-state search:
+infer opponent material distributions from `recentEvents`, sample legal hidden
+worlds, and backpropagate terminal win value while always selecting from the
+original `validActions` array.
 
 Ideas, ordered from least to most effort:
 

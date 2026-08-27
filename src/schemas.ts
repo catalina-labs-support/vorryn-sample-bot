@@ -57,6 +57,7 @@ export const BotRequestSchema = z
   .loose();
 
 export type BotRequest = z.infer<typeof BotRequestSchema>;
+export type BotActionCandidate = BotRequest['validActions'][number];
 
 export type BotResponse = {
   protocolVersion: 2;

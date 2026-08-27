@@ -1,27 +1,25 @@
-// REPLACE THIS FILE with your bot's actual decision logic.
-//
-// Contract: read the validated BotRequest, return one of the
-// candidates' `id` values. Anything else fails the contract and the
-// Vorryn server falls back to its first-party bot for the turn.
-
 import type { BotRequest, BotResponse } from './schemas.js';
+import { simulateActions } from './simulator.js';
 
 export function pickAction(req: BotRequest): BotResponse {
-  // Trivial strategy: pick the first candidate. Usually `endTurn` (action
-  // phase) or `rollDice` (roll phase) — both safe defaults, matching the
-  // Vorryn server's own fallback on bot failure.
-  const firstAction = req.validActions[0];
-  if (firstAction === undefined) {
-    throw new Error('BotRequest.validActions must be non-empty');
-  }
+  const ranked = simulateActions(req);
+  const best = ranked[0];
+  if (best === undefined) throw new Error('BotRequest.validActions must be non-empty');
 
   return {
     protocolVersion: 2,
     kind: 'action',
-    actionId: firstAction.id,
+    actionId: best.action.id,
     decisionTrace: {
-      strategy: 'first-candidate',
+      strategy: 'public-information-monte-carlo-v1',
       candidateCount: req.validActions.length,
+      score: Number(best.meanUtility.toFixed(3)),
+      uncertainty: Number(best.uncertainty.toFixed(3)),
+      runnerUpGap: Number(
+        (best.meanUtility - (ranked[1]?.meanUtility ?? best.meanUtility)).toFixed(3)
+      ),
+      samplesPerAction: best.samples,
+      truncated: req.validActionsTruncated,
     },
   };
 }

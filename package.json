@@ -10,7 +10,8 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "tsx tests/contract.test.ts"
+    "test": "tsx tests/contract.test.ts && tsx tests/simulator.test.ts",
+    "simulate": "tsx src/simulate.ts"
   },
   "dependencies": {
     "fastify": "^5.12.1",
