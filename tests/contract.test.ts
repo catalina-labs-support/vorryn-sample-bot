@@ -48,12 +48,49 @@ for (const name of FIXTURES) {
     process.exit(1);
   }
 
+  if (body.decisionTrace?.externalStrategy !== 'bundled-fair-ceiling-champion-v2') {
+    console.error(`${name}: competitive champion policy did not run`);
+    process.exit(1);
+  }
+
   console.log(`PASS — ${name}: bot chose ${body.actionId}`);
 }
 
 const baseFixture = JSON.parse(
   readFileSync(join(__dirname, '..', 'fixtures', FIXTURES[0] ?? ''), 'utf8')
 );
+const humanFixture = JSON.parse(
+  readFileSync(join(__dirname, '..', 'fixtures', FIXTURES[1] ?? ''), 'utf8')
+);
+const opponentId = Object.keys(humanFixture.state.players as Record<string, unknown>).find(
+  (playerId) => playerId !== humanFixture.playerId
+);
+if (opponentId === undefined) throw new Error('fixture needs an opponent for the human-table test');
+const humanTableResponse = await app.inject({
+  method: 'POST',
+  url: '/play',
+  headers: {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${BOT_BEARER}`,
+  },
+  payload: { ...humanFixture, humanPlayerIds: [opponentId] },
+});
+if (humanTableResponse.statusCode !== 200) {
+  throw new Error(`human-table champion failed: ${humanTableResponse.body}`);
+}
+const humanTableBody = humanTableResponse.json();
+if (humanTableBody.decisionTrace?.externalStrengthProfile !== 'maximum-strength') {
+  throw new Error('human-table request did not activate the maximum-strength policy');
+}
+const disabledHandicaps = humanTableBody.decisionTrace?.disabledPricedHandicaps;
+if (
+  !Array.isArray(disabledHandicaps) ||
+  !disabledHandicaps.includes('humanFacingProposalsPerTurn') ||
+  !disabledHandicaps.includes('humanProposalMinQuality')
+) {
+  throw new Error('human-table trace did not identify the disabled product handicaps');
+}
+console.log('PASS â€” every request activates the unhandicapped maximum-strength policy');
 
 for (const malformed of [
   {

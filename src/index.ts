@@ -6,6 +6,7 @@
 import { createSampleBotApp } from './app.js';
 
 const PORT = Number(process.env['PORT'] ?? 3001);
+const HOST = process.env['HOST'] ?? '0.0.0.0';
 const BOT_BEARER = process.env['BOT_BEARER'] ?? '';
 
 if (BOT_BEARER.length === 0) {
@@ -16,8 +17,8 @@ if (BOT_BEARER.length === 0) {
 
 const app = createSampleBotApp(BOT_BEARER);
 
-app.listen({ port: PORT, host: '0.0.0.0' }).then(() => {
-  app.log.info({ port: PORT }, 'vorryn-sample-bot listening');
+app.listen({ port: PORT, host: HOST }).then(() => {
+  app.log.info({ port: PORT, host: HOST }, 'vorryn-sample-bot listening');
 });
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
