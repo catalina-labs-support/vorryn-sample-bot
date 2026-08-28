@@ -86,12 +86,6 @@ underlying state changed. Don't index by position across turns.
                                      // NOT "no humans" — don't read absence
                                      // as an empty set. Seat bot-ness is
                                      // already public in the lobby.
-  personality?: string | null,       // optional style tuning-preset key; bot
-                                     // service merges over baseline,
-                                     // unknown keys fall back to baseline
-  tableProfile?: string | null,      // optional table-context overlay; "humans"
-                                     // composes with an explicit style
-  difficulty?: string | null,        // "easy" | "normal" | "hard"
   decisionMemory?: {                 // first-party, web-owned continuation token
     version: 1,
     strategy: { key: string, sinceTurn: number },
@@ -161,8 +155,7 @@ what you do not understand.
 - Additive changes (new optional fields, new action variants) ship as
   **v2.x within `protocolVersion: 2`** — bots that ignore unknown
   fields keep working. Codegen against the schema and **do not** error
-  on unknown enum members. `personality` is the canonical example:
-  bots that don't read it still function correctly.
+  on unknown enum members.
 - Breaking changes ship as a further version bump. Web will publish
   a new schema file and a migration note before flipping the default.
 

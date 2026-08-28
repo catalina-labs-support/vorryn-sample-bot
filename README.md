@@ -9,22 +9,20 @@ working opponent seated at a real table this afternoon — then spend as
 long as you like making it ruthless.
 
 This repo is a complete, deployable starter in TypeScript: a Fastify
-handler, schema validation, a test suite, and the full protocol docs
+handler, schema validation, a smoke test, and the full protocol docs
 ([external-bot guide](docs/EXTERNAL_BOT_GUIDE.md),
 [protocol reference](docs/BOT_PROTOCOL.md),
 [JSON schema](docs/bot-protocol.schema.json),
 [complete rules reference](docs/RULES_REFERENCE.md) — every cost,
 card, and forced decision, so you never need to have played the game).
-The production strategy is a generated, standalone bundle of Vorryn's validated
-champion decision graph: specialized forced-decision resolvers, 25+ scoring
-rules, opponent beliefs, same-turn win planning, and bounded lookahead. It uses
-only the redacted request and server-supplied legal candidates; it has no
-private-server or engine dependency at runtime and never invents action
-payloads. When human seats are present, it automatically applies the validated
-human-table profile at zero deliberate decision noise.
+The bundled strategy is a public-information Monte Carlo evaluator. It scores
+development, board production, robber pressure, progress cards, and hand-aware
+trade value while sampling opponent acceptance and future uncertainty. It stays self-contained: the bot
+never imports Vorryn's private engine or invents action payloads.
 
-The readable public-information simulator remains as a deterministic fallback
-and experimentation surface. It is intentionally not the competitive selector.
+Forced decisions use the same evaluator: discards preserve scarce materials
+and high-value progress cards, while robber, pillage, steal, and optional card
+effects pressure the public leader instead of relying on candidate order.
 
 ## Why build one?
 
@@ -50,7 +48,6 @@ Fork the repo, replace `pickAction`, deploy. Let's field a champion.
 | `src/app.ts`                      | Fastify handler: bearer-auth check, schema parse, `pickAction` dispatch. |
 | `src/index.ts`                    | Process entrypoint: env setup and HTTP listen.                           |
 | `src/strategy.ts`                 | The decision function and compact decision trace.                        |
-| `src/champion.js`                 | Generated standalone competitive policy used in production.              |
 | `src/public-state.ts`             | Typed, defensive projection of the redacted public game state.           |
 | `src/opponent-beliefs.ts`         | Public-event material flow and human-seat belief model.                  |
 | `src/simulator.ts`                | Seedable public-information action simulator and evaluator.              |
@@ -60,7 +57,7 @@ Fork the repo, replace `pickAction`, deploy. Let's field a champion.
 | `src/schemas.ts`                  | Zod parsers for the request/response envelopes.                          |
 | `fixtures/play-request.json`      | A small hand-readable `BotRequest` for local testing.                    |
 | `fixtures/play-request-full.json` | A full-size `BotRequest` captured from a real self-play game.            |
-| `tests/contract.test.ts`          | Contract tests that POST both fixtures to `/play` and assert a 200.      |
+| `tests/contract.test.ts`          | Smoke test that POSTs both fixtures to `/play` and asserts a 200.        |
 | `Dockerfile`                      | Production Node image with a `/health` container check.                  |
 
 ## Setup
@@ -76,7 +73,7 @@ pnpm dev
 
 The dev server listens on `http://localhost:3001` and reloads on save.
 
-## Run the tests
+## Run the smoke test
 
 ```bash
 pnpm test
@@ -112,10 +109,10 @@ corpus file. The tuning command refuses to optimize fewer than 20 labeled
 decisions—smoke fixtures prove plumbing, not playing strength. Use completed
 games, fixed holdouts, and paired comparisons before adopting a weight change.
 
-The contract tests inject both fixtures through the Fastify handler with the
-expected bearer header and assert each response is
-`{ protocolVersion: 2, kind: 'action', actionId: '...' }` with an `actionId`
-from that request's candidate list.
+The test injects `fixtures/play-request.json` through the Fastify
+handler with the expected bearer header and asserts the response is
+`{ protocolVersion: 2, kind: 'action', actionId: '...' }` with an
+`actionId` from the candidate list.
 
 ## Registering with Vorryn
 
@@ -140,10 +137,7 @@ it. The shared secret is stored encrypted and never shown to anyone but you.
 
 `src/strategy.ts` exports `pickAction(req: BotRequest): BotResponse`.
 Read the validated request, return the chosen `actionId` (must be one
-of `req.validActions[i].id`). The checked-in `champion.js` is generated from
-Vorryn's validated decision graph; do not edit that bundle by hand. Put
-experiments in the readable simulator/search modules, measure them against a
-fixed corpus, and only override the champion when the evidence supports it.
+of `req.validActions[i].id`).
 
 `src/simulator.ts` is an evaluator, not a clone of the private game engine.
 The protocol intentionally omits hidden hands, deck order, and the dice seed;
@@ -181,15 +175,15 @@ Ideas, ordered from least to most effort:
 Two fixtures show what your bot will receive. The small one
 (`play-request.json`) is hand-readable: a typical action-phase turn with
 a few candidates and an `endTurn`. The full one
-(`play-request-full.json`, ~68 KB pretty-printed; ~43 KB as actually sent on
-the wire, ~5.4 KB gzipped) is captured from a real self-play game at turn 10 —
-three fully populated players, a complete board (19 hexes, 54 intersections,
-72 edges, 9 harbors), 16 candidates spanning progress cards, domestic trades,
-and `endTurn`, a real dice histogram, and a 60-event `recentEvents` window. It
-has `validActionsTruncated: false`; production requests can still set that flag
-and name capped families in `truncatedFamilies`. Use the fixture to see
-realistic payload sizes and opponent redaction (you never see opponents' hands,
-only `opponentMaterialTypes`). Your strategy must handle:
+(`play-request-full.json`, ~93 KB pretty-printed; ~55 KB as actually
+sent on the wire, ~6 KB gzipped) is captured from a real self-play
+game at turn 10 — three fully populated players, a complete board
+(19 hexes, 54 intersections, 72 edges, 9 harbors), 99 candidates
+dominated by trade proposals, `validActionsTruncated: true` with
+`truncatedFamilies` set, a real dice histogram, and a 60-event
+`recentEvents` window. Use it to see realistic payload sizes, opponent
+redaction (you never see opponents' hands, only `opponentMaterialTypes`),
+and the truncation flag actually firing. Your strategy must handle:
 
 - **Setup phases** (`state.phase === 'setup1'` / `'setup2'`).
 - **Roll phase** (just `rollDice`, plus any pre-roll progress cards).
@@ -202,11 +196,8 @@ validated by Vorryn.
 
 ## Deploying
 
-Any HTTPS-capable host that can keep a small Node process available will work.
-The sample fits entry-level container or web-service plans on Fly.io, Render,
-or Railway. Fly.io is paid after its trial; Render and Railway offer limited
-free plans, but their limits can change. Check provider pricing before
-deploying, and use an always-warm instance for competitive games:
+Any HTTPS-capable host with persistent process memory will work. The
+sample is small enough for free tiers on Fly.io, Render, or Railway:
 
 ```bash
 # Fly.io example
@@ -332,12 +323,12 @@ with, and that reputation is yours to keep.
 
 Yes — and unusually for an online game, you can verify it yourself.
 
-Every game gets a secret seed drawn from the platform's cryptographically
-secure RNG at creation. From then on each roll (two production dice plus the
-event die) is derived deterministically from that seed and the dice roll
-ordinal (`state.dice.rollNumber`) — the same path for every player, human or
-bot, with no reroll, no nudge, and no way for the server operator to favor a
-seat without it being detectable.
+Every game gets a secret seed drawn from the platform's
+cryptographically secure RNG at creation. From then on each roll (two
+production dice plus the event die) is derived deterministically from
+that seed and the game's state version — the same path for every
+player, human or bot, with no reroll, no nudge, and no way for the
+server operator to favor a seat without it being detectable.
 
 Three properties fall out of that design:
 
@@ -406,26 +397,23 @@ against it offline.
 
 ### What is `personality`?
 
-An optional preset key (`aggressive`, `builder`, `trader`, …) the game creator
-can assign per seat; the first-party bot merges it over its tuning baseline.
-Your bot is free to honor it for flavor — or ignore it entirely. It's the
-canonical example of a v2.x additive field: bots that never read it work fine,
-and your schema codegen shouldn't error on unknown fields generally.
+An optional preset key (`aggressive`, `builder`, `trader`, …) the game
+creator can assign per seat; the first-party bot merges it over its
+tuning baseline. Your bot is free to honor it for flavor — or ignore
+it entirely. It's the canonical example of a v1.x additive field: bots
+that never read it work fine, and your schema codegen shouldn't error
+on unknown fields generally.
 
-### How strong is this bot relative to the first-party bot?
+### How strong is the first-party bot — can I actually beat it?
 
-The production selector is the same validated champion decision graph under
-the same public-information limits. A private engine referee tested one sample
-seat against two built-in seats with fixed seeds and cyclic seat rotation:
-
-- Default profile: 104/300 wins (34.67%) versus 33.33% fair share; zero timeouts.
-- Human-table profile: 103/300 wins (34.33%) versus 33.33% fair share; zero timeouts.
-
-Average final VP was also essentially equal in both gates. Those results show
-policy parity, not a statistically proven edge. The sample automatically uses
-the strongest validated zero-noise human-table composition when a human roster
-is supplied. Improvements should clear a fresh paired engine gate before they
-replace this baseline.
+It's a greedy heuristic at scale: 25+ hand-tuned scoring rules over
+the current decision, plus a lightweight one-step lookahead. No game
+tree search, no rollouts, no hidden-information modeling beyond what's
+public — and it plays under exactly the same information limits you
+do. That's a real opponent, but a beatable one: a well-built MCTS bot
+with a few seconds of budget, or even a sharper heuristic tuned
+against it, can take it down. Someone's bot is going to be the
+strongest player on the platform. No reason it can't be yours.
 
 ## License
 
