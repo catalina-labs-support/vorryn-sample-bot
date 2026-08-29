@@ -864,13 +864,9 @@
                         "type": "string"
                       },
                       "roadOwnerPlayerId": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       }
                     },
@@ -978,13 +974,9 @@
                   ]
                 },
                 "eventDieResult": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
+                  "type": [
+                    "string",
+                    "null"
                   ]
                 },
                 "alchemyPreset": {
@@ -1024,33 +1016,21 @@
               "type": "boolean"
             },
             "merchantHexId": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
+              "type": [
+                "string",
+                "null"
               ]
             },
             "merchantOwnerPlayerId": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
+              "type": [
+                "string",
+                "null"
               ]
             },
             "longestRoadHolderPlayerId": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
+              "type": [
+                "string",
+                "null"
               ]
             },
             "pendingDecision": {
@@ -1065,13 +1045,9 @@
                           "const": "discardResources"
                         },
                         "actingPlayerId": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "allowedPlayerIds": {
@@ -1128,13 +1104,9 @@
                           "const": "chooseRobberHex"
                         },
                         "actingPlayerId": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "allowedPlayerIds": {
@@ -1165,13 +1137,9 @@
                           "const": "chooseStealTarget"
                         },
                         "actingPlayerId": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "allowedPlayerIds": {
@@ -1212,13 +1180,9 @@
                           "const": "scienceLevel3Bonus"
                         },
                         "actingPlayerId": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "allowedPlayerIds": {
@@ -1266,13 +1230,9 @@
                           "const": "chooseMetropolisCity"
                         },
                         "actingPlayerId": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "allowedPlayerIds": {
@@ -1322,13 +1282,9 @@
                           "const": "choosePillageCity"
                         },
                         "actingPlayerId": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "allowedPlayerIds": {
@@ -1369,13 +1325,9 @@
                           "const": "chooseProgressDeck"
                         },
                         "actingPlayerId": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "allowedPlayerIds": {
@@ -1421,13 +1373,9 @@
                           "const": "discardProgress"
                         },
                         "actingPlayerId": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "allowedPlayerIds": {
@@ -1467,13 +1415,9 @@
                           "const": "chooseKnightRetreat"
                         },
                         "actingPlayerId": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "allowedPlayerIds": {
@@ -1514,13 +1458,9 @@
                           "const": "chooseRobberDestination"
                         },
                         "actingPlayerId": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "allowedPlayerIds": {
@@ -1551,13 +1491,9 @@
                           "const": "placeSetupRoad"
                         },
                         "actingPlayerId": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "allowedPlayerIds": {
@@ -1595,13 +1531,9 @@
                           "const": "weddingGiveCards"
                         },
                         "actingPlayerId": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "allowedPlayerIds": {
@@ -1645,13 +1577,9 @@
                           "const": "commercialHarborGive"
                         },
                         "actingPlayerId": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "allowedPlayerIds": {
@@ -1686,13 +1614,9 @@
                           "const": "guildDuesChooseCards"
                         },
                         "actingPlayerId": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "allowedPlayerIds": {
@@ -1783,13 +1707,9 @@
                           "const": "smithingPromote"
                         },
                         "actingPlayerId": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "allowedPlayerIds": {
@@ -1826,13 +1746,9 @@
                           "const": "treasonChooseKnight"
                         },
                         "actingPlayerId": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "allowedPlayerIds": {
@@ -1873,13 +1789,9 @@
                           "const": "treasonPlaceKnight"
                         },
                         "actingPlayerId": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "allowedPlayerIds": {
@@ -1916,13 +1828,9 @@
                           "const": "roadBuildingPlace"
                         },
                         "actingPlayerId": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "allowedPlayerIds": {
@@ -1953,13 +1861,9 @@
                           "const": "domesticTradeResponse"
                         },
                         "actingPlayerId": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "allowedPlayerIds": {
@@ -2195,13 +2099,9 @@
                           "const": "espionageChooseCard"
                         },
                         "actingPlayerId": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
+                          "type": [
+                            "string",
+                            "null"
                           ]
                         },
                         "allowedPlayerIds": {
@@ -2255,13 +2155,9 @@
               ]
             },
             "winnerPlayerId": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
+              "type": [
+                "string",
+                "null"
               ]
             },
             "lastBerserkerAttack": {
@@ -2287,13 +2183,9 @@
                       "maximum": 1000000
                     },
                     "defenderPlayerId": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
+                      "type": [
+                        "string",
+                        "null"
                       ]
                     },
                     "tiedDefenderIds": {
@@ -4366,13 +4258,9 @@
                     "const": "actionApplied"
                   },
                   "actingPlayerId": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "turnAfter": {
@@ -4811,13 +4699,9 @@
                             ]
                           },
                           "eventDieResult": {
-                            "anyOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "null"
-                              }
+                            "type": [
+                              "string",
+                              "null"
                             ]
                           }
                         },
@@ -4866,13 +4750,9 @@
                     "const": "diceRolled"
                   },
                   "actingPlayerId": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "turnAfter": {
@@ -4935,13 +4815,9 @@
                         ]
                       },
                       "eventDieResult": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       },
                       "turn": {
@@ -4979,13 +4855,9 @@
                     "const": "progressCardDraws"
                   },
                   "actingPlayerId": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "turnAfter": {
@@ -5055,13 +4927,9 @@
                     "const": "berserkerAttack"
                   },
                   "actingPlayerId": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "turnAfter": {
@@ -5097,13 +4965,9 @@
                         "maximum": 1000000
                       },
                       "defenderPlayerId": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       },
                       "tiedDefenderIds": {
@@ -5172,13 +5036,9 @@
                     "const": "longestRoad"
                   },
                   "actingPlayerId": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "turnAfter": {
@@ -5197,23 +5057,15 @@
                     "type": "object",
                     "properties": {
                       "previousHolderId": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       },
                       "newHolderId": {
-                        "anyOf": [
-                          {
-                            "type": "string"
-                          },
-                          {
-                            "type": "null"
-                          }
+                        "type": [
+                          "string",
+                          "null"
                         ]
                       }
                     },
@@ -5246,13 +5098,9 @@
                     "const": "steal"
                   },
                   "actingPlayerId": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "turnAfter": {
@@ -5303,13 +5151,9 @@
                     "const": "metropolisPlaced"
                   },
                   "actingPlayerId": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "turnAfter": {
@@ -5367,13 +5211,9 @@
                     "const": "commercialHarborExchange"
                   },
                   "actingPlayerId": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "turnAfter": {
@@ -5441,13 +5281,9 @@
                     "const": "knightReturnedToSupply"
                   },
                   "actingPlayerId": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "turnAfter": {
@@ -5500,13 +5336,9 @@
                     "const": "gameCompleted"
                   },
                   "actingPlayerId": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "string",
+                      "null"
                     ]
                   },
                   "turnAfter": {
@@ -5678,19 +5510,11 @@
                     "type": "string"
                   },
                   "additionalProperties": {
-                    "anyOf": [
-                      {
-                        "type": "number"
-                      },
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "boolean"
-                      },
-                      {
-                        "type": "null"
-                      }
+                    "type": [
+                      "number",
+                      "string",
+                      "boolean",
+                      "null"
                     ]
                   }
                 },
