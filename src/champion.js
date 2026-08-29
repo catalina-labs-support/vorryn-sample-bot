@@ -25057,11 +25057,6 @@ function tradeUnlocksProposerVpTransition(state, boardIndex, proposerId, offer, 
   return metropolisTracksClaimableWithHand(state, boardIndex, proposerId, projected).size > 0;
 }
 
-// bot/src/bot/trade-bundle-key.ts
-function tradeBundleKey(items) {
-  return [...items].sort((a, b) => a.type === b.type ? a.count - b.count : a.type.localeCompare(b.type)).map((item) => `${item.type}:${item.count}`).join("|");
-}
-
 // bot/src/bot/maritime-trade-rate.ts
 function maritimeTradeRate(action) {
   return action.offer.count / action.want.count;
@@ -25118,6 +25113,82 @@ function passesExecutionSafetyVetoes(risk) {
   if (risk.unlocksCounterpartyVp) return false;
   if (risk.cardsWePay > risk.cardsWeReceive) return false;
   return true;
+}
+
+// bot/src/bot/trade-bundle-key.ts
+function tradeBundleKey(items) {
+  return [...items].sort((a, b) => a.type === b.type ? a.count - b.count : a.type.localeCompare(b.type)).map((item) => `${item.type}:${item.count}`).join("|");
+}
+
+// bot/src/bot/trade-decline-history.ts
+var DECLINE_KEYS_CACHE = /* @__PURE__ */ new WeakMap();
+function declineKeyRows(declines) {
+  const cached2 = DECLINE_KEYS_CACHE.get(declines);
+  if (cached2 !== void 0) return cached2;
+  const rows = declines.map((decline) => ({
+    proposerId: decline.proposerId,
+    ...decline.targetPlayerId !== void 0 ? { targetPlayerId: decline.targetPlayerId } : {},
+    offer: decline.offer,
+    want: decline.want,
+    offerKey: tradeBundleKey(decline.offer),
+    wantKey: tradeBundleKey(decline.want)
+  }));
+  DECLINE_KEYS_CACHE.set(declines, rows);
+  return rows;
+}
+function analyzeDomesticTradeDeclines(state, proposerId, targetPlayerId, offer, want) {
+  const offerKey = tradeBundleKey(offer);
+  const wantKey = tradeBundleKey(want);
+  let matchingDeclines = 0;
+  let sameWantDeclines = 0;
+  let hasRepeatedBundle = false;
+  let hasDominatedBundle = false;
+  const candidateResponderDelta = targetPlayerId === void 0 ? null : tradePerspectiveDelta(state, targetPlayerId, offer, want);
+  let bestPriorResponderDelta = null;
+  for (const row of declineKeyRows(state.domesticTradeDeclinesThisTurn)) {
+    if (row.proposerId !== proposerId) continue;
+    if (targetPlayerId !== void 0 && row.targetPlayerId !== void 0 && row.targetPlayerId !== targetPlayerId) {
+      continue;
+    }
+    matchingDeclines++;
+    if (row.offerKey === offerKey && row.wantKey === wantKey) {
+      hasRepeatedBundle = true;
+    } else if (row.wantKey === wantKey && bundleDominates(row.offer, offer)) {
+      hasDominatedBundle = true;
+    }
+    if (row.wantKey !== wantKey) continue;
+    sameWantDeclines++;
+    const responderId = targetPlayerId ?? row.targetPlayerId;
+    if (responderId === void 0) continue;
+    const delta = tradePerspectiveDelta(state, responderId, row.offer, row.want);
+    bestPriorResponderDelta = bestPriorResponderDelta === null ? delta : Math.max(bestPriorResponderDelta, delta);
+  }
+  return {
+    matchingDeclines,
+    sameWantDeclines,
+    hasRepeatedBundle,
+    hasDominatedBundle,
+    candidateResponderDelta,
+    bestPriorResponderDelta
+  };
+}
+function bundleDominates(prior, candidate) {
+  const priorCounts = /* @__PURE__ */ new Map();
+  const candidateCounts = /* @__PURE__ */ new Map();
+  let priorTotal = 0;
+  let candidateTotal = 0;
+  for (const item of prior) {
+    priorCounts.set(item.type, (priorCounts.get(item.type) ?? 0) + item.count);
+    priorTotal += item.count;
+  }
+  for (const item of candidate) {
+    candidateCounts.set(item.type, (candidateCounts.get(item.type) ?? 0) + item.count);
+    candidateTotal += item.count;
+  }
+  for (const [type, count] of candidateCounts) {
+    if ((priorCounts.get(type) ?? 0) < count) return false;
+  }
+  return priorTotal > candidateTotal;
 }
 
 // bot/src/bot/score-rules/action-base-scorers/trade.ts
@@ -25312,16 +25383,12 @@ function scoreDomesticTradePropose(ctx, action) {
   let declinePen = 0;
   let sweetenBonus = 0;
   if (state.domesticTradeDeclinesThisTurn.length > 0) {
-    const offerKey = tradeBundleKey(action.offer);
-    const wantKey = tradeBundleKey(action.want);
     decline = analyzeDomesticTradeDeclines(
       state,
       actingPlayerId,
       action.targetPlayerId,
       action.offer,
-      action.want,
-      offerKey,
-      wantKey
+      action.want
     );
     declinePen = domesticTradeProposeDeclinePenalty(tuning, decline);
     sweetenBonus = domesticTradeDeclineSweetenBonus(tuning, decline, action.offer, action.want);
@@ -25561,58 +25628,6 @@ function opponentAcceptanceCreatesVpRisk(ctx, action, opponentId, opponentModel)
     0.05
   );
 }
-var DECLINE_KEYS_CACHE = /* @__PURE__ */ new WeakMap();
-function getDeclineKeyRows(declines) {
-  const cached2 = DECLINE_KEYS_CACHE.get(declines);
-  if (cached2 !== void 0) return cached2;
-  const rows = declines.map((dec) => ({
-    proposerId: dec.proposerId,
-    ...dec.targetPlayerId !== void 0 ? { targetPlayerId: dec.targetPlayerId } : {},
-    offer: dec.offer,
-    want: dec.want,
-    offerKey: tradeBundleKey(dec.offer),
-    wantKey: tradeBundleKey(dec.want)
-  }));
-  DECLINE_KEYS_CACHE.set(declines, rows);
-  return rows;
-}
-function analyzeDomesticTradeDeclines(state, proposerId, targetPlayerId, offer, want, offerKey, wantKey) {
-  const rows = getDeclineKeyRows(state.domesticTradeDeclinesThisTurn);
-  let matchingDeclines = 0;
-  let sameWantDeclines = 0;
-  let hasRepeatedBundle = false;
-  let hasDominatedBundle = false;
-  const candidateResponderDelta = targetPlayerId !== void 0 ? tradePerspectiveDelta(state, targetPlayerId, offer, want) : null;
-  let bestPriorResponderDelta = null;
-  for (const row of rows) {
-    if (row.proposerId !== proposerId) continue;
-    if (targetPlayerId !== void 0 && row.targetPlayerId !== void 0 && row.targetPlayerId !== targetPlayerId) {
-      continue;
-    }
-    matchingDeclines++;
-    if (row.offerKey === offerKey && row.wantKey === wantKey) {
-      hasRepeatedBundle = true;
-    } else if (row.wantKey === wantKey && bundleDominates(row.offer, offer)) {
-      hasDominatedBundle = true;
-    }
-    if (row.wantKey === wantKey) {
-      sameWantDeclines++;
-      const responderId = targetPlayerId ?? row.targetPlayerId;
-      if (responderId !== void 0) {
-        const delta = tradePerspectiveDelta(state, responderId, row.offer, row.want);
-        bestPriorResponderDelta = bestPriorResponderDelta === null ? delta : Math.max(bestPriorResponderDelta, delta);
-      }
-    }
-  }
-  return {
-    matchingDeclines,
-    sameWantDeclines,
-    hasRepeatedBundle,
-    hasDominatedBundle,
-    candidateResponderDelta,
-    bestPriorResponderDelta
-  };
-}
 function domesticTradeProposeDeclinePenalty(tuning, decline) {
   const { matchingDeclines, hasRepeatedBundle, hasDominatedBundle } = decline;
   if (matchingDeclines === 0) return 0;
@@ -25658,24 +25673,6 @@ function postDeclineRetryRejected(ctx, decline, projection, score2) {
     Math.floor(ctx.tuning.domesticTradeSameWantRetryBuildPathRequiredAfter)
   );
   return buildRequiredAfter > 0 && decline.sameWantDeclines >= buildRequiredAfter;
-}
-function bundleDominates(prior, candidate) {
-  const priorCounts = /* @__PURE__ */ new Map();
-  const candidateCounts = /* @__PURE__ */ new Map();
-  let priorTotal = 0;
-  let candidateTotal = 0;
-  for (const item of prior) {
-    priorCounts.set(item.type, (priorCounts.get(item.type) ?? 0) + item.count);
-    priorTotal += item.count;
-  }
-  for (const item of candidate) {
-    candidateCounts.set(item.type, (candidateCounts.get(item.type) ?? 0) + item.count);
-    candidateTotal += item.count;
-  }
-  for (const [type, count] of candidateCounts) {
-    if ((priorCounts.get(type) ?? 0) < count) return false;
-  }
-  return priorTotal > candidateTotal;
 }
 
 // bot/src/bot/score-rules/action-base-score.ts
