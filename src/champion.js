@@ -18639,6 +18639,75 @@ function projectedLongestRoadWithSettlement(board, intersection2, settlementOwne
   );
 }
 
+// bot/src/bot/embedded-progress-build.ts
+var embeddedBuildCache = /* @__PURE__ */ new WeakMap();
+var planningActionCache = /* @__PURE__ */ new WeakMap();
+function progressCardIdForAction(action, state, playerId) {
+  if (action.type !== ActionType.PlayProgressCard) return null;
+  const player = selfPlayer(state, playerId);
+  if (player === null) return null;
+  return findProgressCardByInstanceId(player, action.instanceId)?.cardId ?? null;
+}
+function progressCardPlaysConflict(first, second) {
+  if (first.type !== ActionType.PlayProgressCard || second.type !== ActionType.PlayProgressCard) {
+    return false;
+  }
+  return first.instanceId === second.instanceId;
+}
+function embeddedProgressBuildForCardId(cardId, payload) {
+  if (payload["skip"] === true) return null;
+  const effectHandler = ALL_CARDS_BY_ID.get(cardId)?.effectHandler;
+  if (effectHandler === "buildCityReducedCost") {
+    const intersectionId = payload["intersectionId"];
+    return typeof intersectionId === "string" && intersectionId !== "" ? { type: ActionType.BuildCity, intersectionId } : null;
+  }
+  if (effectHandler === "reduceCityImprovementCost") {
+    const track = asCommodityTrack(payload["track"]);
+    return track === null ? null : { type: ActionType.ImproveCity, track };
+  }
+  return null;
+}
+function embeddedProgressBuildForAction(action, state, playerId) {
+  if (action.type !== ActionType.PlayProgressCard) return null;
+  let byAction = embeddedBuildCache.get(state);
+  if (byAction === void 0) {
+    byAction = /* @__PURE__ */ new WeakMap();
+    embeddedBuildCache.set(state, byAction);
+  }
+  let byPlayer = byAction.get(action);
+  if (byPlayer === void 0) {
+    byPlayer = /* @__PURE__ */ new Map();
+    byAction.set(action, byPlayer);
+  }
+  if (byPlayer.has(playerId)) return byPlayer.get(playerId) ?? null;
+  const cardId = progressCardIdForAction(action, state, playerId);
+  const embedded = cardId === null ? null : embeddedProgressBuildForCardId(cardId, action);
+  byPlayer.set(playerId, embedded);
+  return embedded;
+}
+function embeddedProgressBuildForCandidate(action, state, playerId) {
+  const embedded = embeddedProgressBuildForAction(action, state, playerId);
+  return embedded === null ? null : { ...embedded, id: action.id };
+}
+function planningActionForCandidate(action, state, playerId) {
+  if (action.type !== ActionType.PlayProgressCard) return action;
+  let byAction = planningActionCache.get(state);
+  if (byAction === void 0) {
+    byAction = /* @__PURE__ */ new WeakMap();
+    planningActionCache.set(state, byAction);
+  }
+  let byPlayer = byAction.get(action);
+  if (byPlayer === void 0) {
+    byPlayer = /* @__PURE__ */ new Map();
+    byAction.set(action, byPlayer);
+  }
+  const cached2 = byPlayer.get(playerId);
+  if (cached2 !== void 0) return cached2;
+  const planned = embeddedProgressBuildForCandidate(action, state, playerId) ?? action;
+  byPlayer.set(playerId, planned);
+  return planned;
+}
+
 // bot/src/bot/win-detection.ts
 var MAX_WINNING_VP_DELTA = 3;
 var VP_CAPABLE_ACTION_TYPES = /* @__PURE__ */ new Set([
@@ -18757,15 +18826,18 @@ function twoRoadLrWinDelta(edgeIdA, edgeIdB, state, playerId, deps = {}) {
 function improveCityWinDelta(track, state, playerId, deps) {
   const player = state.players[playerId];
   if (player === void 0) return 0;
-  const newLevel = trackLevelFor(track, player) + 1;
+  const currentLevel = deps.projectedTrackLevels?.[track] ?? trackLevelFor(track, player);
+  const newLevel = currentLevel + 1;
   if (newLevel < METROPOLIS_TRIGGER_LEVEL) return 0;
-  if (!hasEligibleMetropolisCity(state, playerId, deps.boardIndex)) return 0;
+  const hasEligibleCity = deps.eligibleMetropolisCityCount === void 0 ? hasEligibleMetropolisCity(state, playerId, deps.boardIndex) : deps.eligibleMetropolisCityCount > 0;
+  if (!hasEligibleCity) return 0;
   const { holderPlayerId, holderLevel } = metropolisHolderInfo(state, track, deps.boardIndex);
   if (holderPlayerId === playerId) return 0;
   if (holderPlayerId !== null && holderLevel >= newLevel) return 0;
   return 2;
 }
 function progressCardWinDelta(action, state, playerId, deps) {
+  if (action.skip === true) return 0;
   const player = selfPlayer(state, playerId);
   if (player === null) return 0;
   const card2 = findProgressCardByInstanceId(player, action.instanceId);
@@ -18774,6 +18846,11 @@ function progressCardWinDelta(action, state, playerId, deps) {
   if (cardData?.isVp === true) return 1;
   if (cardData?.effectHandler === "takeMerchantControl") {
     return state.merchantOwnerPlayerId !== playerId ? 1 : 0;
+  }
+  const embedded = embeddedProgressBuildForAction(action, state, playerId);
+  if (embedded?.type === ActionType.BuildCity) return 1;
+  if (embedded?.type === ActionType.ImproveCity) {
+    return improveCityWinDelta(embedded.track, state, playerId, deps);
   }
   if (card2.cardId === "politicsDiplomacy" && typeof action.edgeId === "string" && action.edgeId !== "") {
     return diplomacyWinDelta(action.edgeId, state, playerId, deps);
@@ -21518,7 +21595,7 @@ function readTradeSelections(raw) {
 }
 
 // bot/src/opponents/recent-event-ledger.ts
-function buildRecentEventIndexes(recentEvents, trackGains) {
+function buildRecentEventIndexes(recentEvents, trackGains, state) {
   const spend = /* @__PURE__ */ new Map();
   const gains = /* @__PURE__ */ new Map();
   const tradeResponses = /* @__PURE__ */ new Map();
@@ -21527,6 +21604,7 @@ function buildRecentEventIndexes(recentEvents, trackGains) {
   const standingWantExecutions = /* @__PURE__ */ new Map();
   const activeTradeResponseByResponder = /* @__PURE__ */ new Map();
   const freeRoadGrants = /* @__PURE__ */ new Map();
+  const improvementCosts = inferPublicImprovementCosts(recentEvents, state);
   for (const event of recentEvents) {
     if (event.type !== GameEventType.ActionApplied) continue;
     classifyActionApplied(
@@ -21539,12 +21617,13 @@ function buildRecentEventIndexes(recentEvents, trackGains) {
       standingWantExecutions,
       activeTradeResponseByResponder,
       freeRoadGrants,
+      improvementCosts,
       event
     );
   }
   return { spend, gains, tradeResponses, tradeWantResponses, wantTells, standingWantExecutions };
 }
-function classifyActionApplied(spend, gains, trackGains, tradeResponses, tradeWantResponses, wantTells, standingWantExecutions, activeTradeResponseByResponder, freeRoadGrants, event) {
+function classifyActionApplied(spend, gains, trackGains, tradeResponses, tradeWantResponses, wantTells, standingWantExecutions, activeTradeResponseByResponder, freeRoadGrants, improvementCosts, event) {
   if (trackGains) {
     recordProductionGains(gains, event.payload.production);
   }
@@ -21564,6 +21643,7 @@ function classifyActionApplied(spend, gains, trackGains, tradeResponses, tradeWa
     recordPublicGains(gains, actorId, actionType, action);
   }
   if (actionType === ActionType.PlayProgressCard) {
+    recordEmbeddedProgressBuildSpend(spend, actorId, action, improvementCosts.get(event.sequence));
     const markedFreeRoadCount = action["freeRoadCount"];
     if (typeof markedFreeRoadCount === "number" && Number.isInteger(markedFreeRoadCount) && markedFreeRoadCount > 0) {
       freeRoadGrants.set(actorId, markedFreeRoadCount);
@@ -21655,7 +21735,7 @@ function classifyActionApplied(spend, gains, trackGains, tradeResponses, tradeWa
     }
     return;
   }
-  const cost = actionCost2(actionType, action);
+  const cost = actionCost2(actionType, action, improvementCosts.get(event.sequence));
   if (cost === null) {
     return;
   }
@@ -21668,6 +21748,60 @@ function classifyActionApplied(spend, gains, trackGains, tradeResponses, tradeWa
       perActor = /* @__PURE__ */ new Map();
       spend.set(actorId, perActor);
     }
+    perActor.set(type, (perActor.get(type) ?? 0) + count);
+  }
+}
+function inferPublicImprovementCosts(recentEvents, state) {
+  const costs = /* @__PURE__ */ new Map();
+  if (state === void 0) return costs;
+  const postLevelByPlayerTrack = /* @__PURE__ */ new Map();
+  for (let index = recentEvents.length - 1; index >= 0; index--) {
+    const event = recentEvents[index];
+    if (event?.type !== GameEventType.ActionApplied) continue;
+    const actorId = event.actingPlayerId;
+    if (actorId === null || actorId === "") continue;
+    const player = state.players[actorId];
+    if (player === void 0) continue;
+    const action = readObject(event.payload.action);
+    if (action === null) continue;
+    const actionType = readString(action["type"]);
+    let track = actionType === ActionType.ImproveCity ? asCommodityTrack(action["track"]) : null;
+    let discounted = false;
+    if (actionType === ActionType.PlayProgressCard) {
+      const cardId = readString(action["cardId"]);
+      const embedded = cardId === null ? null : embeddedProgressBuildForCardId(cardId, action);
+      if (embedded?.type !== ActionType.ImproveCity) continue;
+      track = embedded.track;
+      discounted = true;
+    }
+    if (track === null) continue;
+    const key = `${actorId}\0${track}`;
+    const postLevel = postLevelByPlayerTrack.get(key) ?? trackLevelFor(track, player);
+    if (postLevel <= 0) continue;
+    const preLevel = postLevel - 1;
+    costs.set(event.sequence, improvementCost(discounted, preLevel));
+    postLevelByPlayerTrack.set(key, preLevel);
+  }
+  return costs;
+}
+function recordEmbeddedProgressBuildSpend(spend, actorId, action, inferredImprovementCost) {
+  const cardId = readString(action["cardId"]);
+  if (cardId === null) return;
+  const embedded = embeddedProgressBuildForCardId(cardId, action);
+  if (embedded?.type === ActionType.BuildCity) {
+    addMaterialCost(spend, actorId, cityCostFor(true));
+    return;
+  }
+  if (embedded?.type === ActionType.ImproveCity && inferredImprovementCost !== void 0) {
+    addMaterialCost(spend, actorId, {
+      [trackCommodity(embedded.track)]: inferredImprovementCost
+    });
+  }
+}
+function addMaterialCost(spend, actorId, cost) {
+  for (const [type, count] of Object.entries(cost)) {
+    if (count === void 0 || count <= 0) continue;
+    const perActor = getOrCreate(spend, actorId, () => /* @__PURE__ */ new Map());
     perActor.set(type, (perActor.get(type) ?? 0) + count);
   }
 }
@@ -21802,8 +21936,12 @@ function addGain(gains, playerId, type, count) {
   const perPlayer = getOrCreate(gains, playerId, () => /* @__PURE__ */ new Map());
   perPlayer.set(type, (perPlayer.get(type) ?? 0) + count);
 }
-function actionCost2(actionType, action) {
+function actionCost2(actionType, action, inferredImprovementCost) {
   if (actionType === ActionType.ImproveCity) {
+    const track = asCommodityTrack(action["track"]);
+    if (track !== null && inferredImprovementCost !== void 0) {
+      return { [trackCommodity(track)]: inferredImprovementCost };
+    }
     return improveCityCostHint(action);
   }
   const typed = asActionType(actionType);
@@ -22186,7 +22324,7 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
     if (recentEventIndexes !== null) {
       return recentEventIndexes;
     }
-    recentEventIndexes = buildRecentEventIndexes(recentEvents, trackGains);
+    recentEventIndexes = buildRecentEventIndexes(recentEvents, trackGains, state);
     return recentEventIndexes;
   }
   function opponents() {
@@ -27894,6 +28032,7 @@ var RANKED_PENDING_TYPES = /* @__PURE__ */ new Set([
 ]);
 
 // bot/src/bot/lookahead/action-delta.ts
+var NO_PRIOR_ACTIONS = [];
 function negateCost(cost) {
   const out = {};
   for (const [type, amount] of Object.entries(cost)) {
@@ -27929,6 +28068,7 @@ function actionDelta(action, ctx = {}) {
       return ctx.cityCost === void 0 ? CITY_DELTA : negateCost(ctx.cityCost);
     case ActionType.ImproveCity: {
       const level = ctx.currentLevel ?? 0;
+      if (level >= MAX_TRACK_LEVEL) return null;
       const cost = improvementCost(ctx.cranePlayed === true, level);
       const commodity = trackCommodity(action.track);
       const delta = cost === 0 ? 0 : -cost;
@@ -27953,7 +28093,7 @@ function actionDelta(action, ctx = {}) {
       return bundleDelta(standingWant.offer, standingWant.want);
     }
     case ActionType.PlayProgressCard:
-      return {};
+      return ctx.progressCardDelta === null ? null : ctx.progressCardDelta ?? {};
     default:
       return null;
   }
@@ -27969,7 +28109,7 @@ function mergeDelta(a, b) {
 function chainDiscountConsumed(action, medicineConsumed, craneConsumed) {
   return medicineConsumed && action.type === ActionType.BuildCity || craneConsumed && action.type === ActionType.ImproveCity;
 }
-function buildActionDeltaContext(state, playerId, action, discountConsumed = false) {
+function buildActionDeltaContext(state, playerId, action, discountConsumed = false, priorActions = NO_PRIOR_ACTIONS) {
   if (action.type === ActionType.ExecuteStandingWant) {
     const standingWant = state.players[action.targetPlayerId]?.standingWant ?? null;
     return standingWant === null ? {} : { standingWant };
@@ -27980,13 +28120,41 @@ function buildActionDeltaContext(state, playerId, action, discountConsumed = fal
     const medicinePlayed = !discountConsumed && isSelf(player2) && player2.medicinePlayed;
     return { cityCost: cityCostFor(medicinePlayed) };
   }
+  if (action.type === ActionType.PlayProgressCard) {
+    const embedded = embeddedProgressBuildForAction(action, state, playerId);
+    if (embedded?.type === ActionType.BuildCity) {
+      return { progressCardDelta: negateCost(cityCostFor(true)) };
+    }
+    if (embedded?.type === ActionType.ImproveCity) {
+      const player2 = state.players[playerId];
+      if (player2 === void 0) return {};
+      const currentLevel = projectedTrackLevel(state, playerId, embedded.track, priorActions);
+      if (currentLevel >= MAX_TRACK_LEVEL) return { progressCardDelta: null };
+      const cost = improvementCost(true, currentLevel);
+      const commodity = trackCommodity(embedded.track);
+      return { progressCardDelta: { [commodity]: cost === 0 ? 0 : -cost } };
+    }
+    return {};
+  }
   if (action.type !== ActionType.ImproveCity) return {};
   const player = state.players[playerId];
   if (player === void 0) return {};
   return {
-    currentLevel: trackLevelFor(action.track, player),
+    currentLevel: projectedTrackLevel(state, playerId, action.track, priorActions),
     cranePlayed: !discountConsumed && isSelf(player) && player.cranePlayed
   };
+}
+function projectedTrackLevel(state, playerId, track, priorActions) {
+  const player = state.players[playerId];
+  if (player === void 0) return 0;
+  let level = trackLevelFor(track, player);
+  for (const prior of priorActions) {
+    const planningAction = planningActionForCandidate(prior, state, playerId);
+    if (planningAction.type === ActionType.ImproveCity && planningAction.track === track) {
+      level++;
+    }
+  }
+  return level;
 }
 
 // bot/src/bot/lookahead/action-shape-key.ts
@@ -28055,29 +28223,32 @@ function isSyntheticFollowupId(id) {
 }
 function enumerateSyntheticFollowups(candidate, ctx, projected, medicineConsumed = false, craneConsumed = false) {
   const out = [];
+  const plannedCandidate = candidate.type === ActionType.PlayProgressCard ? planningActionForCandidate(candidate, ctx.state, ctx.actingPlayerId) : candidate;
   if (candidateCanUnlockByResources(candidate, ctx)) {
     const builds = resourceUnlockedFollowups(ctx, projected, medicineConsumed, craneConsumed);
     const maritime = enumerateNewlyUnlockedMaritimeTrades(candidate, ctx, projected);
     return [...builds, ...maritime];
   }
-  if (candidate.type === ActionType.BuildRoad) {
-    out.push(...enumerateRoadUnlockedSettlements(candidate.edgeId, ctx, projected));
+  if (plannedCandidate.type === ActionType.BuildRoad) {
+    out.push(...enumerateRoadUnlockedSettlements(plannedCandidate.edgeId, ctx, projected));
   }
-  if (candidate.type === ActionType.BuildSettlement) {
+  if (plannedCandidate.type === ActionType.BuildSettlement) {
     out.push(
       ...enumerateSettlementUnlockedCities(
-        candidate.intersectionId,
+        plannedCandidate.intersectionId,
         ctx,
         projected,
         medicineConsumed
       )
     );
   }
-  if (candidate.type === ActionType.BuildCity) {
-    out.push(...enumerateCityUnlockedSettlements(candidate, ctx, projected));
-    out.push(...enumerateSidewaysCityUnlockedCities(candidate, ctx, projected, medicineConsumed));
+  if (plannedCandidate.type === ActionType.BuildCity) {
+    out.push(...enumerateCityUnlockedSettlements(plannedCandidate, ctx, projected));
+    out.push(
+      ...enumerateSidewaysCityUnlockedCities(plannedCandidate, ctx, projected, medicineConsumed)
+    );
   }
-  return dedupeByActionShape(out, actionShapeKey(candidate));
+  return dedupeByActionShape(out, actionShapeKey(plannedCandidate));
 }
 function enumerateNewlyUnlockedMaritimeTrades(candidate, ctx, projected) {
   if (candidate.type !== ActionType.DomesticTradePropose) return [];
@@ -28357,13 +28528,18 @@ function settlementSitesAdjacent(state, intersectionIdA, intersectionIdB) {
 }
 
 // bot/src/bot/lookahead/turn-lookahead.ts
-function isBuildChainStarter(action) {
+var NO_PRIOR_ACTIONS2 = [];
+function isBuildChainStarter(action, ctx) {
   switch (action.type) {
     case ActionType.BuildRoad:
     case ActionType.BuildSettlement:
     case ActionType.BuildCity:
     case ActionType.ImproveCity:
       return true;
+    case ActionType.PlayProgressCard: {
+      const plannedAction = planningActionForCandidate(action, ctx.state, ctx.actingPlayerId);
+      return plannedAction.type === ActionType.BuildCity;
+    }
     default:
       return false;
   }
@@ -28374,13 +28550,13 @@ function isTradeAction(action) {
 function canRepeatSameCandidate(prior, followup) {
   return prior.id === followup.id && prior.type === ActionType.MaritimeTrade && followup.type === ActionType.MaritimeTrade;
 }
-function canStartSecondPlyAfter(outer, followup) {
-  return isBuildChainStarter(followup) || isTradeAction(outer) && followup.type === ActionType.MaritimeTrade;
+function canStartSecondPlyAfter(outer, followup, ctx) {
+  return isBuildChainStarter(followup, ctx) || isTradeAction(outer) && followup.type === ActionType.MaritimeTrade;
 }
-function costOnlyDeltaFor(state, actingPlayerId, action, discountConsumed = false) {
+function costOnlyDeltaFor(state, actingPlayerId, action, discountConsumed = false, priorActions = NO_PRIOR_ACTIONS2) {
   const delta = actionDelta(
     action,
-    buildActionDeltaContext(state, actingPlayerId, action, discountConsumed)
+    buildActionDeltaContext(state, actingPlayerId, action, discountConsumed, priorActions)
   );
   return delta === null ? null : costOnly(delta);
 }
@@ -28389,15 +28565,33 @@ function cachedFollowupCost(ctx, followup, costCache) {
   if (cached2 !== void 0) return cached2;
   return costOnlyDeltaFor(ctx.state, ctx.actingPlayerId, followup);
 }
-function chainFollowupCost(ctx, followup, costCache, medicineConsumed, craneConsumed) {
-  if (chainDiscountConsumed(followup, medicineConsumed, craneConsumed)) {
-    return costOnlyDeltaFor(ctx.state, ctx.actingPlayerId, followup, true);
+function chainFollowupCost(ctx, followup, costCache, medicineConsumed, craneConsumed, priorActions) {
+  const discountConsumed = chainDiscountConsumed(followup, medicineConsumed, craneConsumed);
+  const improvementCostChanged = followup.type === ActionType.ImproveCity && priorImprovementChangesCost(ctx.state, ctx.actingPlayerId, followup, priorActions);
+  if (discountConsumed || improvementCostChanged) {
+    return costOnlyDeltaFor(
+      ctx.state,
+      ctx.actingPlayerId,
+      followup,
+      discountConsumed,
+      priorActions
+    );
   }
   return cachedFollowupCost(ctx, followup, costCache);
+}
+function priorImprovementChangesCost(state, playerId, followup, priorActions) {
+  for (const prior of priorActions) {
+    const plannedPrior = prior.type === ActionType.PlayProgressCard ? planningActionForCandidate(prior, state, playerId) : prior;
+    if (plannedPrior.type === ActionType.ImproveCity && plannedPrior.track === followup.track) {
+      return true;
+    }
+  }
+  return false;
 }
 function buildLookaheadCostCache(state, actingPlayerId, pool) {
   const cache2 = /* @__PURE__ */ new Map();
   for (const a of pool) {
+    if (a.type === ActionType.PlayProgressCard) continue;
     if (cache2.has(a.id)) continue;
     cache2.set(a.id, costOnlyDeltaFor(state, actingPlayerId, a));
   }
@@ -28411,6 +28605,8 @@ function computeTurnLookaheadBonus(ctx, candidate, followupPool, scoreCandidate,
     buildActionDeltaContext(ctx.state, ctx.actingPlayerId, candidate)
   );
   if (candidateDelta === null) return 0;
+  const candidateIsProgressCard = candidate.type === ActionType.PlayProgressCard;
+  const plannedCandidate = candidateIsProgressCard ? planningActionForCandidate(candidate, ctx.state, ctx.actingPlayerId) : candidate;
   const medicineArmed = player.medicinePlayed;
   const craneArmed = player.cranePlayed;
   const medicineConsumed = medicineArmed && candidate.type === ActionType.BuildCity;
@@ -28421,18 +28617,25 @@ function computeTurnLookaheadBonus(ctx, candidate, followupPool, scoreCandidate,
   );
   const multiplier = candidateLookaheadMultiplier(ctx, candidate, projected);
   if (multiplier === 0) return 0;
-  const runSecondPly = secondPly !== void 0 && secondPly.secondPlyK > 0 && (isBuildChainStarter(candidate) || isTradeAction(candidate));
+  const runSecondPly = secondPly !== void 0 && secondPly.secondPlyK > 0 && (isBuildChainStarter(candidate, ctx) || isTradeAction(candidate));
   let bestFollowupScore = 0;
   const chainStarters = [];
   const supplyScratch = { roads: 0, settlements: 0, cities: 0 };
+  const firstPlyPriors = [candidate];
   const consider = (followup) => {
     const score2 = canRepeatSameCandidate(candidate, followup) ? 0 : scoreCandidate(followup);
     if (score2 > bestFollowupScore) bestFollowupScore = score2;
-    if (runSecondPly && canStartSecondPlyAfter(candidate, followup)) {
+    if (runSecondPly && canStartSecondPlyAfter(candidate, followup, ctx)) {
       const discountConsumed = chainDiscountConsumed(followup, medicineConsumed, craneConsumed);
       const delta = actionDelta(
         followup,
-        buildActionDeltaContext(ctx.state, ctx.actingPlayerId, followup, discountConsumed)
+        buildActionDeltaContext(
+          ctx.state,
+          ctx.actingPlayerId,
+          followup,
+          discountConsumed,
+          firstPlyPriors
+        )
       );
       if (delta !== null) {
         chainStarters.push({
@@ -28449,15 +28652,25 @@ function computeTurnLookaheadBonus(ctx, candidate, followupPool, scoreCandidate,
       continue;
     }
     if (followup.type === ActionType.PlayProgressCard) continue;
-    if (actionsConflictAfterPrior(ctx, candidate, followup)) continue;
-    if (!hasSupplyAfterCandidate(ctx.state, ctx.actingPlayerId, candidate, followup, supplyScratch))
+    if (candidateIsProgressCard ? planningActionsConflict(ctx, plannedCandidate, followup) : ordinaryActionsConflict(ctx, candidate, followup)) {
+      continue;
+    }
+    if (!hasSupplyAfterPlanningAction(
+      ctx.state,
+      ctx.actingPlayerId,
+      player,
+      plannedCandidate,
+      followup,
+      supplyScratch
+    ))
       continue;
     const followupCost = chainFollowupCost(
       ctx,
       followup,
       costCache,
       medicineConsumed,
-      craneConsumed
+      craneConsumed,
+      firstPlyPriors
     );
     if (followupCost === null) continue;
     if (!canAffordHypothetical(projected, followupCost)) continue;
@@ -28470,8 +28683,10 @@ function computeTurnLookaheadBonus(ctx, candidate, followupPool, scoreCandidate,
     medicineConsumed,
     craneConsumed
   )) {
-    if (actionsConflictAfterPrior(ctx, candidate, followup)) continue;
-    if (runSecondPly && canStartSecondPlyAfter(candidate, followup)) {
+    if (candidateIsProgressCard ? planningActionsConflict(ctx, plannedCandidate, followup) : ordinaryActionsConflict(ctx, candidate, followup)) {
+      continue;
+    }
+    if (runSecondPly && canStartSecondPlyAfter(candidate, followup, ctx)) {
       const cost = costOnlyDeltaFor(ctx.state, ctx.actingPlayerId, followup);
       if (cost === null) continue;
       consider(followup);
@@ -28491,7 +28706,9 @@ function computeTurnLookaheadBonus(ctx, candidate, followupPool, scoreCandidate,
       scoreCandidate,
       secondPly,
       medicineArmed,
-      craneArmed
+      craneArmed,
+      plannedCandidate,
+      candidateIsProgressCard
     );
     if (chained > bestFollowupScore) bestFollowupScore = chained;
   }
@@ -28500,8 +28717,12 @@ function computeTurnLookaheadBonus(ctx, candidate, followupPool, scoreCandidate,
 function hasSupplyAfterCandidate(state, playerId, candidate, followup, supply = { roads: 0, settlements: 0, cities: 0 }) {
   const player = state.players[playerId];
   if (player === void 0) return false;
+  const plannedCandidate = candidate.type === ActionType.PlayProgressCard ? planningActionForCandidate(candidate, state, playerId) : candidate;
+  return hasSupplyAfterPlanningAction(state, playerId, player, plannedCandidate, followup, supply);
+}
+function hasSupplyAfterPlanningAction(state, playerId, player, plannedCandidate, followup, supply) {
   resetPieceSupply(supply, player);
-  applyPieceSupplyEffect(supply, state, playerId, candidate);
+  applyPieceSupplyEffect(supply, state, playerId, plannedCandidate);
   return hasPieceForAction(supply, state, playerId, followup);
 }
 function resetPieceSupply(supply, player) {
@@ -28530,6 +28751,14 @@ function applyPieceSupplyEffect(supply, state, playerId, action) {
         supply.settlements++;
       }
       return;
+    case ActionType.PlayProgressCard: {
+      const plannedAction = planningActionForCandidate(action, state, playerId);
+      if (plannedAction.type === ActionType.BuildCity && !isSidewaysCityRebuild(state, playerId, plannedAction)) {
+        supply.cities--;
+        supply.settlements++;
+      }
+      return;
+    }
     default:
       return;
   }
@@ -28542,6 +28771,10 @@ function hasPieceForAction(supply, state, playerId, action) {
       return supply.settlements > 0;
     case ActionType.BuildCity:
       return isSidewaysCityRebuild(state, playerId, action) || supply.cities > 0;
+    case ActionType.PlayProgressCard: {
+      const plannedAction = planningActionForCandidate(action, state, playerId);
+      return plannedAction.type !== ActionType.BuildCity || isSidewaysCityRebuild(state, playerId, plannedAction) || supply.cities > 0;
+    }
     default:
       return true;
   }
@@ -28552,7 +28785,7 @@ function hasSupplyForChain(state, playerId, player, priorA, priorB, followup) {
   applyPieceSupplyEffect(supply, state, playerId, priorB);
   return hasPieceForAction(supply, state, playerId, followup);
 }
-function bestTwoPlyScore(ctx, candidate, projectedAfterCandidate, chainStarters, followupPool, costCache, scoreCandidate, secondPly, medicineArmed, craneArmed) {
+function bestTwoPlyScore(ctx, candidate, projectedAfterCandidate, chainStarters, followupPool, costCache, scoreCandidate, secondPly, medicineArmed, craneArmed, plannedCandidate, candidateIsProgressCard) {
   const topK = [...chainStarters].sort((a, b) => b.score - a.score).slice(0, secondPly.secondPlyK);
   const candidateShapeKey = actionShapeKey(candidate);
   const poolShapeKeys = shapeKeysForPool(followupPool);
@@ -28564,6 +28797,7 @@ function bestTwoPlyScore(ctx, candidate, projectedAfterCandidate, chainStarters,
     const aShapeKey = actionShapeKey(a.followup);
     const medicineConsumed = medicineArmed && (candidate.type === ActionType.BuildCity || a.followup.type === ActionType.BuildCity);
     const craneConsumed = craneArmed && (candidate.type === ActionType.ImproveCity || a.followup.type === ActionType.ImproveCity);
+    const twoPlyPriors = [candidate, a.followup];
     let bestB = 0;
     for (const followup of followupPool) {
       if (followup.type === ActionType.PlayProgressCard) continue;
@@ -28572,10 +28806,17 @@ function bestTwoPlyScore(ctx, candidate, projectedAfterCandidate, chainStarters,
       if (shapeKey === void 0 || shapeKey === candidateShapeKey || shapeKey === aShapeKey) {
         continue;
       }
-      if (actionsConflictAfterPrior(ctx, candidate, followup) || actionsConflictAfterPrior(ctx, a.followup, followup)) {
+      if ((candidateIsProgressCard ? planningActionsConflict(ctx, plannedCandidate, followup) : ordinaryActionsConflict(ctx, candidate, followup)) || ordinaryActionsConflict(ctx, a.followup, followup)) {
         continue;
       }
-      if (!hasSupplyForChain(ctx.state, ctx.actingPlayerId, player, candidate, a.followup, followup)) {
+      if (!hasSupplyForChain(
+        ctx.state,
+        ctx.actingPlayerId,
+        player,
+        plannedCandidate,
+        a.followup,
+        followup
+      )) {
         continue;
       }
       const followupCost = chainFollowupCost(
@@ -28583,7 +28824,8 @@ function bestTwoPlyScore(ctx, candidate, projectedAfterCandidate, chainStarters,
         followup,
         costCache,
         medicineConsumed,
-        craneConsumed
+        craneConsumed,
+        twoPlyPriors
       );
       if (followupCost === null) continue;
       if (!canAffordHypothetical(projectedAfterA, followupCost)) continue;
@@ -28598,10 +28840,17 @@ function bestTwoPlyScore(ctx, candidate, projectedAfterCandidate, chainStarters,
       craneConsumed
     )) {
       if (actionShapeKey(followup) === candidateShapeKey) continue;
-      if (actionsConflictAfterPrior(ctx, candidate, followup) || actionsConflictAfterPrior(ctx, a.followup, followup)) {
+      if ((candidateIsProgressCard ? planningActionsConflict(ctx, plannedCandidate, followup) : ordinaryActionsConflict(ctx, candidate, followup)) || ordinaryActionsConflict(ctx, a.followup, followup)) {
         continue;
       }
-      if (!hasSupplyForChain(ctx.state, ctx.actingPlayerId, player, candidate, a.followup, followup)) {
+      if (!hasSupplyForChain(
+        ctx.state,
+        ctx.actingPlayerId,
+        player,
+        plannedCandidate,
+        a.followup,
+        followup
+      )) {
         continue;
       }
       const score2 = scoreCandidate(followup);
@@ -28612,11 +28861,30 @@ function bestTwoPlyScore(ctx, candidate, projectedAfterCandidate, chainStarters,
   }
   return best;
 }
-function actionsConflictAfterPrior(ctx, prior, followup) {
+function ordinaryActionsConflict(ctx, prior, followup) {
   if (prior.type === ActionType.BuildSettlement && followup.type === ActionType.BuildSettlement && settlementSitesAdjacent(ctx.state, prior.intersectionId, followup.intersectionId)) {
     return true;
   }
   return prior.type === ActionType.ImproveCity && followup.type === ActionType.ImproveCity && nonMetropolisCityCount(ctx.boardIndex, ctx.actingPlayerId) < 2 && nextImprovementTransfersMetropolis(
+    ctx.state,
+    ctx.boardIndex,
+    ctx.actingPlayerId,
+    prior.track
+  ) && nextImprovementTransfersMetropolis(
+    ctx.state,
+    ctx.boardIndex,
+    ctx.actingPlayerId,
+    followup.track
+  );
+}
+function planningActionsConflict(ctx, prior, followup) {
+  if (prior.type === ActionType.BuildSettlement) {
+    return followup.type === ActionType.BuildSettlement && settlementSitesAdjacent(ctx.state, prior.intersectionId, followup.intersectionId);
+  }
+  if (prior.type === ActionType.BuildCity) {
+    return followup.type === ActionType.BuildCity && prior.intersectionId === followup.intersectionId;
+  }
+  return prior.type === ActionType.ImproveCity && followup.type === ActionType.ImproveCity && prior.track !== followup.track && nonMetropolisCityCount(ctx.boardIndex, ctx.actingPlayerId) < 2 && nextImprovementTransfersMetropolis(
     ctx.state,
     ctx.boardIndex,
     ctx.actingPlayerId,
@@ -28670,7 +28938,7 @@ function unlocksConcreteMaritimeChain(ctx, candidate, projected) {
     if (delta === null) continue;
     const afterMaritime = applyResourceDelta(projected, delta);
     if (enumerateSyntheticFollowups(maritime, ctx, afterMaritime).some(
-      (followup) => isBuildChainStarter(followup)
+      (followup) => isBuildChainStarter(followup, ctx)
     )) {
       return true;
     }
@@ -28749,12 +29017,19 @@ function findSameTurnWinningPlan(ctx, actionPool, base) {
   for (const setupAction of planPool) {
     if (setupAction.type === ActionType.EndTurn) continue;
     if (setupAction.type === ActionType.DomesticTradePropose) continue;
+    const plannedSetup = planningActionForCandidate(setupAction, ctx.state, ctx.playerId);
     const delta = actionDelta(
       setupAction,
       buildActionDeltaContext(ctx.state, ctx.playerId, setupAction)
     );
     if (delta === null) continue;
     const setupVpDelta = vpDeltaByActionId.get(setupAction.id) ?? 0;
+    const projectedVpDeps = projectedMetropolisDeps(
+      ctx,
+      plannedSetup,
+      setupVpDelta,
+      eligibleMetropolisCityCount
+    );
     const projected = applyResourceDelta(
       { resources: self2.resources, commodities: self2.commodities },
       delta
@@ -28763,16 +29038,25 @@ function findSameTurnWinningPlan(ctx, actionPool, base) {
     let setupScore = null;
     const lazySetupScore = () => setupScore ??= score(setupCtx);
     for (const followup of enumerateFollowups(ctx, setupCtx, setupAction, planPool, projected)) {
-      const rawFollowupVpDelta = vpDeltaByActionId.get(followup.id) ?? winningVpDelta(followup, ctx.state, ctx.playerId, { boardIndex: ctx.boardIndex });
+      const plannedFollowup = planningActionForCandidate(followup, ctx.state, ctx.playerId);
+      const rawFollowupVpDelta = plannedFollowup.type === ActionType.ImproveCity ? winningVpDelta(followup, ctx.state, ctx.playerId, {
+        boardIndex: ctx.boardIndex,
+        ...projectedVpDeps
+      }) : vpDeltaByActionId.get(followup.id) ?? winningVpDelta(followup, ctx.state, ctx.playerId, {
+        boardIndex: ctx.boardIndex
+      });
       const setupLrPortion = longestRoadPortionForPlanning(setupAction, setupVpDelta);
       const followupLrPortion = longestRoadPortionForPlanning(followup, rawFollowupVpDelta);
       let followupVpDelta = setupLrPortion > 0 ? rawFollowupVpDelta - followupLrPortion : rawFollowupVpDelta;
       if (isMerchantPlay(setupAction, self2) && isMerchantPlay(followup, self2)) {
         followupVpDelta = 0;
       }
+      if (setupVpDelta >= 2 && plannedSetup.type === ActionType.ImproveCity && plannedFollowup.type === ActionType.ImproveCity && plannedSetup.track === plannedFollowup.track) {
+        followupVpDelta = 0;
+      }
       if (metropolisClaimsCompeteForHost(
-        setupAction,
-        followup,
+        plannedSetup,
+        plannedFollowup,
         setupVpDelta,
         rawFollowupVpDelta,
         eligibleMetropolisCityCount
@@ -28814,6 +29098,23 @@ function isMerchantPlay(action, self2) {
     (card2) => card2.instanceId === action.instanceId && ALL_CARDS_BY_ID.get(card2.cardId)?.effectHandler === "takeMerchantControl"
   );
 }
+function projectedMetropolisDeps(ctx, plannedSetup, setupVpDelta, eligibleCityCount) {
+  let projectedEligibleCityCount = eligibleCityCount;
+  const projectedTrackLevels = {};
+  if (plannedSetup.type === ActionType.BuildCity) {
+    projectedEligibleCityCount++;
+  } else if (plannedSetup.type === ActionType.ImproveCity) {
+    const player = ctx.state.players[ctx.playerId];
+    if (player !== void 0) {
+      projectedTrackLevels[plannedSetup.track] = trackLevelFor(plannedSetup.track, player) + 1;
+    }
+    if (setupVpDelta >= 2) projectedEligibleCityCount--;
+  }
+  return {
+    projectedTrackLevels,
+    eligibleMetropolisCityCount: Math.max(0, projectedEligibleCityCount)
+  };
+}
 function enumerateFollowups(ctx, setupCtx, setupAction, actionPool, projected) {
   const out = [];
   const seen = /* @__PURE__ */ new Set();
@@ -28821,10 +29122,20 @@ function enumerateFollowups(ctx, setupCtx, setupAction, actionPool, projected) {
   const self2 = selfPlayer(ctx.state, ctx.playerId);
   const medicineConsumed = setupAction.type === ActionType.BuildCity && self2 !== null && self2.medicinePlayed;
   const craneConsumed = setupAction.type === ActionType.ImproveCity && self2 !== null && self2.cranePlayed;
+  const plannedSetup = planningActionForCandidate(setupAction, ctx.state, ctx.playerId);
   for (const followup of actionPool) {
     if (followup.id === setupAction.id) continue;
+    if (progressCardPlaysConflict(setupAction, followup)) continue;
     if (!hasSupplyAfterSetup(ctx, setupAction, followup, supplyScratch)) continue;
-    if (setupAction.type === ActionType.BuildSettlement && followup.type === ActionType.BuildSettlement && settlementSitesAdjacent(ctx.state, setupAction.intersectionId, followup.intersectionId)) {
+    const plannedFollowup = planningActionForCandidate(followup, ctx.state, ctx.playerId);
+    if (plannedSetup.type === ActionType.BuildSettlement && plannedFollowup.type === ActionType.BuildSettlement && settlementSitesAdjacent(
+      ctx.state,
+      plannedSetup.intersectionId,
+      plannedFollowup.intersectionId
+    )) {
+      continue;
+    }
+    if (plannedSetup.type === ActionType.BuildCity && plannedFollowup.type === ActionType.BuildCity && plannedSetup.intersectionId === plannedFollowup.intersectionId) {
       continue;
     }
     const delta = actionDelta(
@@ -28833,7 +29144,8 @@ function enumerateFollowups(ctx, setupCtx, setupAction, actionPool, projected) {
         ctx.state,
         ctx.playerId,
         followup,
-        chainDiscountConsumed(followup, medicineConsumed, craneConsumed)
+        chainDiscountConsumed(followup, medicineConsumed, craneConsumed),
+        [setupAction]
       )
     );
     if (delta === null) continue;
@@ -29579,7 +29891,7 @@ function chooseEndgamePlan(plan, base, request, scoredPoolSize, repeatTradeCandi
 function scoreActionPool(ctx, actionPool, base, rankedWidth) {
   const { request } = ctx;
   const truncatedFamilies = request.validActionsTruncated && request.truncatedFamilies.length > 0 ? new Set(request.truncatedFamilies) : null;
-  const lookaheadEnabled = ctx.tuning.turnLookaheadEnabled && actionPool.length <= ctx.tuning.turnLookaheadCandidateLimit && actionPool.some((action) => isTurnLookaheadCandidate(action));
+  const lookaheadEnabled = ctx.tuning.turnLookaheadEnabled && actionPool.length <= ctx.tuning.turnLookaheadCandidateLimit && actionPool.some((action) => isTurnLookaheadCandidate(action, ctx.state, ctx.playerId));
   const followupScoreCache = lookaheadEnabled ? /* @__PURE__ */ new Map() : null;
   const followupScorer = (followup) => {
     if (followupScoreCache !== null) {
@@ -29605,7 +29917,7 @@ function scoreActionPool(ctx, actionPool, base, rankedWidth) {
     }
     let candidateScore = baseScore;
     let turnLookaheadBonus = 0;
-    if (lookaheadEnabled && isTurnLookaheadCandidate(action)) {
+    if (lookaheadEnabled && isTurnLookaheadCandidate(action, ctx.state, ctx.playerId)) {
       const bonus = computeTurnLookaheadBonus(
         candidateCtx,
         action,
@@ -29675,7 +29987,7 @@ function truncatedScoreMultiplier(ctx, action) {
   }
   return ctx.tuning.truncatedFamilyScoreMultiplier;
 }
-function isTurnLookaheadCandidate(action) {
+function isTurnLookaheadCandidate(action, state, playerId) {
   switch (action.type) {
     case ActionType.BuildRoad:
     case ActionType.BuildSettlement:
@@ -29685,6 +29997,11 @@ function isTurnLookaheadCandidate(action) {
     case ActionType.MaritimeTrade:
     case ActionType.ExecuteStandingWant:
       return true;
+    case ActionType.PlayProgressCard: {
+      if (state === void 0 || playerId === void 0) return false;
+      const plannedAction = planningActionForCandidate(action, state, playerId);
+      return plannedAction.type === ActionType.BuildCity;
+    }
     default:
       return false;
   }
@@ -29859,10 +30176,6 @@ var HUMANS = Object.freeze({
   // turn, but a person should not have to dismiss all five. This deliberate
   // three-proposal ceiling is registered as a priced handicap in fair-ceiling.
   humanFacingProposalsPerTurn: 3,
-  // Reject proposals unlikely to find a human with the requested card to spare.
-  // A corpus-derived 2-for-1 odds lift can carry a borderline proposal over the
-  // floor; commodity asks face the observed lower-response adjustment.
-  humanProposalMinQuality: 0.22,
   domesticTradeMaxDeclinesPerTurn: 5,
   domesticTradeDeclineFatiguePerDecline: 10,
   // Raise the bar for an ordinary proposal so marginal trades lose to EndTurn.
@@ -30120,12 +30433,6 @@ var PRICED_HANDICAPS = Object.freeze([
     productionValue: 3,
     ceilingValue: NO_PROPOSAL_CAP,
     ledgerRow: "| Human trade proposal cap     | human-facing hard | +3.26pp uncapped (6,600 pairs)               | Limit repeated trade dialogs        | Accepted 2026-08-26               |"
-  },
-  {
-    knob: "humanProposalMinQuality",
-    productionValue: 0.22,
-    ceilingValue: 0,
-    ledgerRow: "| Human proposal quality floor | human-facing hard | Joint bundle: \u22125.73..\u22127.85pp (3\xD73,300 pairs) | Suppress implausible asks           | Accepted 2026-08-26               |"
   },
   {
     knob: "domesticTradeProposeOverheadDefault",

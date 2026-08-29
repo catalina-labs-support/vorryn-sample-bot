@@ -82,13 +82,29 @@ const humanTableBody = humanTableResponse.json();
 if (humanTableBody.decisionTrace?.externalStrengthProfile !== 'maximum-strength') {
   throw new Error('human-table request did not activate the maximum-strength policy');
 }
+// The full priced-handicap set the champion disables, mirroring PRICED_HANDICAPS
+// in bot/src/fair-ceiling.ts. This example is standalone by design, so it cannot
+// import that constant and must restate it — which means this list going stale is
+// a real failure mode, not a nuisance. It already happened: `humanProposalMinQuality`
+// was retired from PRICED_HANDICAPS on 2026-08-28 (e35ae12eb) and this assertion
+// kept passing, because the committed champion.js bundle was equally stale and
+// still emitted the retired knob. Two stale artifacts agreeing with each other,
+// under a green CI job. Asserting the WHOLE set rather than a two-item subset is
+// what makes the next divergence fail loudly instead of silently agreeing.
+const EXPECTED_DISABLED_HANDICAPS = [
+  'humanFacingProposalsPerTurn',
+  'domesticTradeProposeOverheadDefault',
+  'tradeBuildPathTwoForOneBonus',
+];
 const disabledHandicaps = humanTableBody.decisionTrace?.disabledPricedHandicaps;
 if (
   !Array.isArray(disabledHandicaps) ||
-  !disabledHandicaps.includes('humanFacingProposalsPerTurn') ||
-  !disabledHandicaps.includes('humanProposalMinQuality')
+  disabledHandicaps.length !== EXPECTED_DISABLED_HANDICAPS.length ||
+  !EXPECTED_DISABLED_HANDICAPS.every((knob) => disabledHandicaps.includes(knob))
 ) {
-  throw new Error('human-table trace did not identify the disabled product handicaps');
+  throw new Error(
+    `human-table trace did not identify the disabled product handicaps — expected exactly [${EXPECTED_DISABLED_HANDICAPS.join(', ')}], got [${String(disabledHandicaps)}]`
+  );
 }
 console.log('PASS â€” every request activates the unhandicapped maximum-strength policy');
 
