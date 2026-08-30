@@ -25123,6 +25123,9 @@ var DEFAULT_TUNING = Object.freeze({
   // scoring magnitudes, so the bot won't sacrifice a clearly stronger spot.
   actionPhaseOpponentDenialWeight: Object.freeze({ 3: 0.1, 4: 0.15 }),
   actionPhaseOpponentDenialWeightDefault: 0.1,
+  // Empty ⇒ every rule contributes unscaled. Populated only by offline
+  // ablation harnesses; production never sets it.
+  scoreRuleScale: Object.freeze({}),
   knightResourceTradeMinUrgency: 0.8,
   knightResourceTradeImminentTrackRemaining: 3,
   knightResourceTradeActivateCompleteBonus: 55,
@@ -25334,6 +25337,7 @@ function mergeTuningOverrides(overrides, base = DEFAULT_TUNING) {
     ...base.setupValuationWeights,
     ...overrides.setupValuationWeights
   }) : base.setupValuationWeights;
+  writable["scoreRuleScale"] = "scoreRuleScale" in overrides ? Object.freeze({ ...base.scoreRuleScale, ...overrides.scoreRuleScale }) : base.scoreRuleScale;
   return Object.freeze(merged);
 }
 
@@ -31103,20 +31107,38 @@ var SCORE_RULES = [
   opponentWantTell,
   racePostureAdjustments
 ];
+var SCORE_RULE_NAMES = new Set(SCORE_RULES.map((rule) => rule.name));
 
 // bot/src/bot/scorer.ts
+function hasRuleScale(scale) {
+  for (const _ in scale) return true;
+  return false;
+}
+function scaledContribution(rule, ctx, factor) {
+  if (factor === void 0) return rule(ctx);
+  if (factor === 0) return 0;
+  return rule(ctx) * factor;
+}
 function score(ctx) {
   let preWeight = 0;
-  for (const rule of SCORE_RULES) {
-    preWeight += rule(ctx);
+  const scale = ctx.tuning.scoreRuleScale;
+  if (hasRuleScale(scale)) {
+    for (const rule of SCORE_RULES) {
+      preWeight += scaledContribution(rule, ctx, scale[rule.name]);
+    }
+  } else {
+    for (const rule of SCORE_RULES) {
+      preWeight += rule(ctx);
+    }
   }
   return applyStrategyWeight(preWeight, strategyWeightFor(ctx));
 }
 function scoreWithBreakdown(ctx) {
   const breakdown = {};
   let preWeight = 0;
+  const scale = ctx.tuning.scoreRuleScale;
   for (const rule of SCORE_RULES) {
-    const value = rule(ctx);
+    const value = scaledContribution(rule, ctx, scale[rule.name]);
     breakdown[rule.name || "<anonymous>"] = value;
     preWeight += value;
   }
@@ -34897,37 +34919,39 @@ var NO_PROPOSAL_CAP = 0;
 var PRICED_HANDICAPS = Object.freeze([
   {
     knob: "humanFacingProposalsPerTurn",
-    productionValue: 3,
+    handicapValue: 3,
     ceilingValue: NO_PROPOSAL_CAP,
-    ledgerRow: "| Human trade proposal cap     | human-facing hard | +3.26pp uncapped (6,600 pairs)               | Limit repeated trade dialogs        | Accepted 2026-08-26               |"
+    ledgerRow: "| Human trade proposal cap     | human-facing hard | +3.26pp uncapped (6,600 pairs)               | Limit repeated trade dialogs        | Retired 2026-08-27 (ceiling served)                   |"
   },
   {
     knob: "domesticTradeProposeOverheadDefault",
-    productionValue: 12,
+    handicapValue: 12,
     ceilingValue: 8,
-    ledgerRow: "| Ordinary proposal restraint  | human-facing hard | Unmeasured                                   | Prefer holding over marginal trades | Accepted 2026-08-26               |"
+    ledgerRow: "| Ordinary proposal restraint  | human-facing hard | Unmeasured                                   | Prefer holding over marginal trades | Retired 2026-08-27 (ceiling served)                   |"
   },
   {
     knob: "tradeBuildPathTwoForOneBonus",
-    productionValue: 12,
+    handicapValue: 12,
     ceilingValue: 0,
-    ledgerRow: "| Build-path 2-for-1 bonus     | human-facing hard | Joint bundle: \u22125.73..\u22127.85pp (3\xD73,300 pairs) | Make surplus sweeteners competitive | Accepted 2026-08-26               |"
+    ledgerRow: "| Build-path 2-for-1 bonus     | human-facing hard | Joint bundle: \u22125.73..\u22127.85pp (3\xD73,300 pairs) | Make surplus sweeteners competitive | Retired 2026-08-27 (ceiling served)                   |"
   }
 ]);
-function productionHumanHardTuning(seatPersonality = null, base = DEFAULT_TUNING) {
+function handicappedHumanHardTuning(seatPersonality = null, base = DEFAULT_TUNING) {
   const profiles = resolveSeatRequestProfiles({
     seatPersonality,
     hasHumanOpponent: true
   });
   return resolveRequestTuning({ ...profiles, difficulty: "hard" }, base);
 }
-function fairCeilingTuning(seatPersonality = null, base = DEFAULT_TUNING) {
-  const production = productionHumanHardTuning(seatPersonality, base);
+function stripPricedHandicaps(tuning) {
   const overrides = {};
   for (const handicap of PRICED_HANDICAPS) {
     overrides[handicap.knob] = handicap.ceilingValue;
   }
-  return mergeTuningOverrides(overrides, production);
+  return mergeTuningOverrides(overrides, tuning);
+}
+function fairCeilingTuning(seatPersonality = null, base = DEFAULT_TUNING) {
+  return stripPricedHandicaps(handicappedHumanHardTuning(seatPersonality, base));
 }
 function maximumStrengthTuning(base = DEFAULT_TUNING) {
   return fairCeilingTuning(null, base);
