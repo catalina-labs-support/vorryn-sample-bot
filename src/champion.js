@@ -24881,12 +24881,16 @@ var DEFAULT_TUNING = Object.freeze({
   domesticTradeDeclineFatiguePerDecline: 12,
   domesticTradeDeclineFatigueCap: 48,
   domesticTradeMaxDeclinesPerTurn: 3,
+  // Strict no-op by default: bot-vs-bot play and frozen eval baselines stay
+  // bit-identical. The `humans` table profile arms this — see personalities.ts.
+  domesticTradeResponderDeclineWindowStop: Infinity,
   domesticTradeBotProposalLimit: 1,
   // Bot-only default stays uncapped. The humans table overlay installs the
   // user-facing interruption budget and proposal-quality filter.
   humanFacingProposalsPerTurn: 0,
   humanProposalMinQuality: 0,
   opponentNearWinTradeStopEnabled: true,
+  strategyMilitaryControlEnabled: true,
   domesticTradeReversalLookback: 3,
   // Bot-vs-bot equilibrium prior (bots accept ≈0% of non-improving trades).
   // The `humans` personality raises this — see personalities.ts.
@@ -25805,9 +25809,11 @@ function buildRecentEventIndexes(recentEvents, trackGains, state) {
   const gains = /* @__PURE__ */ new Map();
   const tradeResponses = /* @__PURE__ */ new Map();
   const tradeWantResponses = /* @__PURE__ */ new Map();
+  const tradeDeclinesByProposer = /* @__PURE__ */ new Map();
   const wantTells = /* @__PURE__ */ new Map();
   const standingWantExecutions = /* @__PURE__ */ new Map();
   const activeTradeResponseByResponder = /* @__PURE__ */ new Map();
+  const activeProposal = { proposerId: null };
   const freeRoadGrants = /* @__PURE__ */ new Map();
   const improvementCosts = inferPublicImprovementCosts(recentEvents, state);
   for (const event of recentEvents) {
@@ -25818,17 +25824,27 @@ function buildRecentEventIndexes(recentEvents, trackGains, state) {
       trackGains,
       tradeResponses,
       tradeWantResponses,
+      tradeDeclinesByProposer,
       wantTells,
       standingWantExecutions,
       activeTradeResponseByResponder,
+      activeProposal,
       freeRoadGrants,
       improvementCosts,
       event
     );
   }
-  return { spend, gains, tradeResponses, tradeWantResponses, wantTells, standingWantExecutions };
+  return {
+    spend,
+    gains,
+    tradeResponses,
+    tradeWantResponses,
+    tradeDeclinesByProposer,
+    wantTells,
+    standingWantExecutions
+  };
 }
-function classifyActionApplied(spend, gains, trackGains, tradeResponses, tradeWantResponses, wantTells, standingWantExecutions, activeTradeResponseByResponder, freeRoadGrants, improvementCosts, event) {
+function classifyActionApplied(spend, gains, trackGains, tradeResponses, tradeWantResponses, tradeDeclinesByProposer, wantTells, standingWantExecutions, activeTradeResponseByResponder, activeProposal, freeRoadGrants, improvementCosts, event) {
   if (trackGains) {
     recordProductionGains(gains, event.payload.production);
   }
@@ -25876,6 +25892,7 @@ function classifyActionApplied(spend, gains, trackGains, tradeResponses, tradeWa
       removeTradeResponse(
         tradeResponses,
         tradeWantResponses,
+        tradeDeclinesByProposer,
         activeTradeResponseByResponder,
         actorId
       );
@@ -25886,10 +25903,12 @@ function classifyActionApplied(spend, gains, trackGains, tradeResponses, tradeWa
     replaceTradeResponse(
       tradeResponses,
       tradeWantResponses,
+      tradeDeclinesByProposer,
       activeTradeResponseByResponder,
       actorId,
       "accept",
-      want
+      want,
+      activeProposal.proposerId
     );
     const proposerId = readString(tradeDetails["proposerId"]);
     if (proposerId !== null && proposerId !== "") {
@@ -25905,10 +25924,12 @@ function classifyActionApplied(spend, gains, trackGains, tradeResponses, tradeWa
     replaceTradeResponse(
       tradeResponses,
       tradeWantResponses,
+      tradeDeclinesByProposer,
       activeTradeResponseByResponder,
       actorId,
       "decline",
-      want
+      want,
+      activeProposal.proposerId
     );
     return;
   }
@@ -25917,6 +25938,7 @@ function classifyActionApplied(spend, gains, trackGains, tradeResponses, tradeWa
       recordDomesticTradeSpends(spend, actorId, action);
     }
     activeTradeResponseByResponder.clear();
+    activeProposal.proposerId = null;
     return;
   }
   if (actionType === ActionType.ExecuteStandingWant) {
@@ -25937,6 +25959,7 @@ function classifyActionApplied(spend, gains, trackGains, tradeResponses, tradeWa
     tallyWantTell(wantTells, actorId, action["want"]);
     if (actionType === ActionType.DomesticTradePropose) {
       activeTradeResponseByResponder.clear();
+      activeProposal.proposerId = actorId;
     }
     return;
   }
@@ -26010,20 +26033,30 @@ function addMaterialCost(spend, actorId, cost) {
     perActor.set(type, (perActor.get(type) ?? 0) + count);
   }
 }
-function replaceTradeResponse(responses, wantResponses, active, actorId, kind, want) {
+function replaceTradeResponse(responses, wantResponses, declinesByProposer, active, actorId, kind, want, proposerId) {
   const previous = active.get(actorId);
   if (previous?.kind === kind) return;
-  removeTradeResponse(responses, wantResponses, active, actorId);
+  removeTradeResponse(responses, wantResponses, declinesByProposer, active, actorId);
   tallyTradeResponse(responses, actorId, kind, 1);
   tallyTradeWantResponse(wantResponses, actorId, want, kind, 1);
-  active.set(actorId, { kind, want });
+  if (kind === "decline" && proposerId !== null) {
+    tallyTradeDeclineByProposer(declinesByProposer, proposerId, actorId, 1);
+  }
+  active.set(actorId, { kind, want, proposerId });
 }
-function removeTradeResponse(responses, wantResponses, active, actorId) {
+function removeTradeResponse(responses, wantResponses, declinesByProposer, active, actorId) {
   const previous = active.get(actorId);
   if (previous === void 0) return;
   tallyTradeResponse(responses, actorId, previous.kind, -1);
   tallyTradeWantResponse(wantResponses, actorId, previous.want, previous.kind, -1);
+  if (previous.kind === "decline" && previous.proposerId !== null) {
+    tallyTradeDeclineByProposer(declinesByProposer, previous.proposerId, actorId, -1);
+  }
   active.delete(actorId);
+}
+function tallyTradeDeclineByProposer(index, proposerId, responderId, delta = 1) {
+  const byResponder = getOrCreate(index, proposerId, () => /* @__PURE__ */ new Map());
+  byResponder.set(responderId, (byResponder.get(responderId) ?? 0) + delta);
 }
 function recordDomesticTradeSpends(spend, proposerId, action) {
   const details = readObject(action["tradeDetails"]);
@@ -26525,6 +26558,9 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
   function recentStandingWantExecutions(executorId, posterId) {
     return getRecentEventIndexes().standingWantExecutions.get(executorId)?.get(posterId) ?? 0;
   }
+  function recentTradeDeclines(responderId) {
+    return getRecentEventIndexes().tradeDeclinesByProposer.get(playerId)?.get(responderId) ?? 0;
+  }
   function getRecentEventIndexes() {
     if (recentEventIndexes !== null) {
       return recentEventIndexes;
@@ -26975,6 +27011,7 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
   return {
     opponents,
     recentStandingWantExecutions,
+    recentTradeDeclines,
     estimatedHand,
     probabilityHoldsAtLeast,
     probabilityCanAfford,
@@ -27959,10 +27996,11 @@ var METROPOLIS_CONTENTION_LEVEL = 3;
 function selectStrategy(ctx) {
   const signals = assessOpponentCounterSignals(ctx);
   const production = ctx.productionEstimator.expectedProductionPerTurn(ctx.state, ctx.playerId);
+  const militaryEnabled = ctx.tuning.strategyMilitaryControlEnabled;
   const scores = {
     [Strategy.ScienceRush]: scoreScienceRush(ctx, signals, production),
     [Strategy.TradeEngine]: scoreTradeEngine(ctx, signals, production),
-    [Strategy.MilitaryControl]: scoreMilitary(ctx, signals),
+    [Strategy.MilitaryControl]: militaryEnabled ? scoreMilitary(ctx, signals) : Number.NEGATIVE_INFINITY,
     [Strategy.Expansion]: scoreExpansion(ctx, signals),
     [Strategy.Balanced]: scoreBalanced()
   };
@@ -33764,6 +33802,10 @@ function chooseActionWithDiagnostics(ctx, hooks) {
             humanTradeFollowup: true,
             humanTradeDeclineStop: tradeProposalPolicy.stoppedAfterHumanDeclines
           } : {},
+          ...tradeProposalPolicy.windowStopSuppressedCount > 0 ? {
+            humanTradeWindowDeclineStop: true,
+            humanTradeWindowDeclineSuppressedCount: tradeProposalPolicy.windowStopSuppressedCount
+          } : {},
           opponentNearWinTradeStop: tradeProposalPolicy.stoppedForNearWinOpponent
         }
       }
@@ -33823,7 +33865,20 @@ function tradeProposalPolicyPool(ctx) {
   if (humanIds.size === 0 && !stoppedForNearWinOpponent) return null;
   const budget = ctx.tuning.humanFacingProposalsPerTurn;
   const qualityFloor = Math.max(0, Math.min(1, ctx.tuning.humanProposalMinQuality));
-  if (budget <= 0 && qualityFloor <= 0 && !stoppedForNearWinOpponent) return null;
+  const windowStopThreshold = ctx.tuning.domesticTradeResponderDeclineWindowStop;
+  const windowStopEnabled = Number.isFinite(windowStopThreshold) && windowStopThreshold > 0;
+  if (budget <= 0 && qualityFloor <= 0 && !stoppedForNearWinOpponent && !windowStopEnabled) {
+    return null;
+  }
+  const windowStoppedHumanIds = /* @__PURE__ */ new Set();
+  if (windowStopEnabled) {
+    for (const humanId of humanIds) {
+      const declineCount = ctx.opponentModel.recentTradeDeclines?.(humanId) ?? 0;
+      if (declineCount >= windowStopThreshold) {
+        windowStoppedHumanIds.add(humanId);
+      }
+    }
+  }
   const self2 = selfPlayer(ctx.state, ctx.playerId);
   const humanFacingProposals = self2?.domesticTradeProposalsThisTurn ?? 0;
   const humanDeclines = /* @__PURE__ */ new Map();
@@ -33843,10 +33898,14 @@ function tradeProposalPolicyPool(ctx) {
   }
   const humanFacingPolicyApplied = budget > 0 && humanIds.size > 0 && (humanFacingProposals >= budget || stoppedAfterHumanDeclines);
   let lowQualityProposalCount = 0;
+  let windowStopSuppressedCount = 0;
   const stopAllProposals = stoppedForNearWinOpponent || humanFacingPolicyApplied;
   const actionPool = ctx.request.validActions.filter((candidate) => {
     if (candidate.type !== ActionType.DomesticTradePropose) return true;
+    const windowStopWouldSuppress = windowStoppedHumanIds.size > 0 && (candidate.targetPlayerId === void 0 || windowStoppedHumanIds.has(candidate.targetPlayerId));
+    if (windowStopWouldSuppress) windowStopSuppressedCount += 1;
     if (stopAllProposals) return false;
+    if (windowStopWouldSuppress) return false;
     if (qualityFloor <= 0) return true;
     const quality = humanProposalQuality(ctx, candidate, humanIds);
     if (quality === null || quality >= qualityFloor) return true;
@@ -33860,7 +33919,8 @@ function tradeProposalPolicyPool(ctx) {
     stoppedAfterHumanDeclines,
     stoppedForNearWinOpponent,
     humanFacingPolicyApplied,
-    lowQualityProposalCount
+    lowQualityProposalCount,
+    windowStopSuppressedCount
   } : null;
 }
 function chooseGameOver(ctx) {
@@ -34379,6 +34439,8 @@ var HUMANS = Object.freeze({
   // three-proposal ceiling is registered as a priced handicap in fair-ceiling.
   humanFacingProposalsPerTurn: 3,
   domesticTradeMaxDeclinesPerTurn: 5,
+  // Cross-turn human-interruption stop, armed only at the humans table.
+  domesticTradeResponderDeclineWindowStop: 4,
   domesticTradeDeclineFatiguePerDecline: 10,
   // Raise the bar for an ordinary proposal so marginal trades lose to EndTurn.
   // The high-surplus path stays cheap: when excess cards can be shed into a
