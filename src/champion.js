@@ -22006,6 +22006,69 @@ function midGameCityBonusFor(ctx) {
   return ctx.tuning.midGameBuildCityBonus;
 }
 
+// bot/src/bot/knight-expected-loss.ts
+function activationPricedByExpectedLoss(ctx) {
+  return ctx.tuning.knightExpectedLossModelEnabled && ctx.action.type === ActionType.ActivateKnight;
+}
+var ZERO = Object.freeze({
+  attackProbability: 0,
+  pillageComponent: 0,
+  rewardComponent: 0,
+  value: 0
+});
+function attackProbability(track, trackMax, playerCount) {
+  const needed = trackMax - track;
+  if (needed <= 0) return 1;
+  const rolls = Math.max(0, Math.floor(playerCount));
+  if (needed > rolls) return 0;
+  let favorable = 0;
+  let coefficient = 1;
+  for (let i = 0; i <= rolls; i++) {
+    if (i >= needed) favorable += coefficient;
+    coefficient = coefficient * (rolls - i) / (i + 1);
+  }
+  return favorable / 2 ** rolls;
+}
+function activationExpectedValue(input2) {
+  const { summary, playerId, strength, state, tuning } = input2;
+  const playerCount = Object.keys(state.players).length;
+  const probability = attackProbability(
+    state.berserkerTrackPosition,
+    state.berserkerTrackMax,
+    playerCount
+  );
+  if (probability === 0 || strength <= 0) return ZERO;
+  const berserker = summary.cityCount;
+  const defenders = summary.totalActiveStrength;
+  const own2 = summary.strengthByPlayer[playerId] ?? 0;
+  const fails = (total) => total < berserker;
+  const selfPillageable = summary.pillageableCityByPlayer[playerId] === true;
+  let minOtherPillageable = Number.POSITIVE_INFINITY;
+  for (const [pid, pillageable] of Object.entries(summary.pillageableCityByPlayer)) {
+    if (pid === playerId || pillageable !== true) continue;
+    minOtherPillageable = Math.min(minOtherPillageable, summary.strengthByPlayer[pid] ?? 0);
+  }
+  const pillaged = (mine) => selfPillageable && mine <= minOtherPillageable;
+  const maxOther = maxOtherActiveStrength(summary, playerId);
+  const drawAvailable = state.scienceDeckCount + state.tradeDeckCount + state.politicsDeckCount > 0;
+  const reward = (total, mine) => {
+    if (fails(total)) return 0;
+    if (mine > maxOther) return tuning.knightDefenderTokenValue;
+    if (mine > 0 && mine === maxOther && drawAvailable) return tuning.knightDefenderDrawValue;
+    return 0;
+  };
+  const pillagedBefore = fails(defenders) && pillaged(own2) ? 1 : 0;
+  const pillagedAfter = fails(defenders + strength) && pillaged(own2 + strength) ? 1 : 0;
+  const pillageComponent = probability * (pillagedBefore - pillagedAfter) * tuning.knightPillageLossValue;
+  const rewardComponent = probability * (reward(defenders + strength, own2 + strength) - reward(defenders, own2));
+  return {
+    attackProbability: probability,
+    pillageComponent,
+    rewardComponent,
+    value: pillageComponent + rewardComponent
+  };
+}
+
 // bot/src/bot/score-rules/knight-urgency-bonus.ts
 var FACTOR_BY_TYPE = {
   [ActionType.ActivateKnight]: 80,
@@ -22015,6 +22078,7 @@ var FACTOR_BY_TYPE = {
 function knightUrgencyBonus(ctx) {
   const factor = FACTOR_BY_TYPE[ctx.action.type];
   if (factor === void 0) return 0;
+  if (activationPricedByExpectedLoss(ctx)) return 0;
   return Math.trunc(ctx.berserkerUrgency * factor * berserkerDefenseNeedFactor(ctx));
 }
 var EXPOSED_ZERO_DEFENSE_TIE_BREAK = {
@@ -22024,6 +22088,7 @@ var EXPOSED_ZERO_DEFENSE_TIE_BREAK = {
 function exposedZeroDefenseTieBreak(ctx) {
   const bonus = EXPOSED_ZERO_DEFENSE_TIE_BREAK[ctx.action.type];
   if (bonus === void 0) return 0;
+  if (activationPricedByExpectedLoss(ctx)) return 0;
   const summary = ctx.boardIndex.berserkerSummary;
   if (summary.pillageableCityByPlayer[ctx.actingPlayerId] !== true) return 0;
   const selfStrength = summary.strengthByPlayer[ctx.actingPlayerId] ?? 0;
@@ -25024,6 +25089,12 @@ var DEFAULT_TUNING = Object.freeze({
   knightRetreatRedisplacePenalty: 60,
   metropolisPushBonus: 20,
   activateKnightBase: 40,
+  kitBreakRoadPenaltyPerTurn: 0,
+  kitBreakRoadMaxDelayTurns: 6,
+  knightExpectedLossModelEnabled: false,
+  knightPillageLossValue: 120,
+  knightDefenderTokenValue: 60,
+  knightDefenderDrawValue: 20,
   promoteKnightBase: 34,
   knightSurplusPromoteBonus: 15,
   chaseRobberBase: 44,
@@ -28867,6 +28938,32 @@ function excessRoadsAboveBuildings(state, actingPlayerId, buildingSlack) {
 }
 
 // bot/src/bot/score-rules/action-base-scorers/knight.ts
+var activationExpectedValueMemo = /* @__PURE__ */ new WeakMap();
+function scoreKnightActivationExpectedLoss(ctx, knightId) {
+  const { state, actingPlayerId, boardIndex, tuning } = ctx;
+  const knight = boardIndex.knightsById[knightId];
+  if (knight === void 0) return 0;
+  const strength = knightStrength(knight.level);
+  const summary = boardIndex.berserkerSummary;
+  const value = memoizePerRequest(
+    activationExpectedValueMemo,
+    summary,
+    `${actingPlayerId}:${String(strength)}`,
+    () => activationExpectedValue({ summary, playerId: actingPlayerId, strength, state, tuning }).value
+  );
+  let optionality = 0;
+  const location = state.board.intersections[knight.locationIntersectionId];
+  if (location !== void 0) {
+    for (const hexId of location.adjacentHexIds) {
+      if (state.board.hexes[hexId]?.robberPresent) {
+        optionality = 10;
+        break;
+      }
+    }
+  }
+  if (value === 0 && optionality === 0) return -1;
+  return value + optionality + (strength - 1);
+}
 function scoreKnightRecruitment(ctx, intersectionId) {
   const { state, actingPlayerId, boardIndex, tuning } = ctx;
   const berserkerSummary = boardIndex.berserkerSummary;
@@ -29946,7 +30043,7 @@ function actionBaseScore(ctx) {
       return tuning.recruitKnightBase + scoreKnightRecruitment(ctx, action.intersectionId);
     }
     case ActionType.ActivateKnight:
-      return tuning.activateKnightBase + scoreKnightActivation(ctx, action.knightId);
+      return tuning.knightExpectedLossModelEnabled ? scoreKnightActivationExpectedLoss(ctx, action.knightId) : tuning.activateKnightBase + scoreKnightActivation(ctx, action.knightId);
     case ActionType.PromoteKnight: {
       if (isKnightSaturated(ctx)) return -500;
       return tuning.promoteKnightBase + scoreKnightPromotion(ctx, action.knightId);
@@ -30351,6 +30448,7 @@ function knightActivationLeaderBonus(ctx) {
   const bonus = ctx.tuning.knightActivationLeaderBonus;
   if (bonus === 0) return 0;
   if (ctx.action.type !== ActionType.ActivateKnight) return 0;
+  if (activationPricedByExpectedLoss(ctx)) return 0;
   let maxOppVp = 0;
   for (const pid of ctx.nonSelfOpponentIds) {
     const vp = playerVp(ctx.state, pid);
@@ -30367,6 +30465,7 @@ function defenderTokenContest(ctx) {
   const bonus = ctx.tuning.defenderTokenContestBonus;
   if (bonus === 0) return 0;
   if (!KNIGHT_INVESTMENT_ACTIONS.has(ctx.action.type)) return 0;
+  if (activationPricedByExpectedLoss(ctx)) return 0;
   const { state, actingPlayerId } = ctx;
   const berserkerSummary = ctx.boardIndex.berserkerSummary;
   if (berserkerSummary.hasCityByPlayer[actingPlayerId] !== true) return 0;
@@ -30867,6 +30966,44 @@ function targetCoverageConsumed(action, targetCost, player) {
   return total;
 }
 
+// bot/src/bot/score-rules/kit-break-road.ts
+var ROAD_COST2 = [
+  { type: ResourceType.Brick, needed: 1 },
+  { type: ResourceType.Lumber, needed: 1 }
+];
+function kitBreakRoadStatus(ctx) {
+  if (ctx.tuning.kitBreakRoadPenaltyPerTurn <= 0) return "off";
+  if (ctx.action.type !== ActionType.BuildRoad) return "notRoad";
+  const player = selfPlayer(ctx.state, ctx.actingPlayerId);
+  if (player === null || player.settlementsInSupply <= 0) return "noKit";
+  const brick = player.resources[ResourceType.Brick] ?? 0;
+  const lumber = player.resources[ResourceType.Lumber] ?? 0;
+  const wool = player.resources[ResourceType.Wool] ?? 0;
+  const grain = player.resources[ResourceType.Grain] ?? 0;
+  if (brick < 1 || lumber < 1 || wool < 1 || grain < 1) return "noKit";
+  if (brick >= 2 && lumber >= 2) return "surplusRoad";
+  if (ctx.handPressureMagnitude > 0) return "handPressure";
+  if (ctx.immediateWinThreat) return "immediateWinThreat";
+  if (ctx.criticalOpponentThreat) return "opponentThreat";
+  if (planHold(ctx) !== 0) return "planHold";
+  return "eligible";
+}
+function kitBreakRoadDelayTurns(ctx) {
+  const player = selfPlayer(ctx.state, ctx.actingPlayerId);
+  if (player === null) return 0;
+  const afterRoad = {
+    [ResourceType.Brick]: (player.resources[ResourceType.Brick] ?? 0) - 1,
+    [ResourceType.Lumber]: (player.resources[ResourceType.Lumber] ?? 0) - 1
+  };
+  const production = ctx.productionEstimator?.expectedProductionPerTurn(ctx.state, ctx.actingPlayerId) ?? {};
+  const turns = turnsToAffordFromCounts(ROAD_COST2, afterRoad, production);
+  return Math.min(turns, ctx.tuning.kitBreakRoadMaxDelayTurns);
+}
+function kitBreakRoad(ctx) {
+  if (kitBreakRoadStatus(ctx) !== "eligible") return 0;
+  return -ctx.tuning.kitBreakRoadPenaltyPerTurn * kitBreakRoadDelayTurns(ctx);
+}
+
 // bot/src/bot/score-rules/standing-want-hold.ts
 var COMMITTED_CARD_CONSUMERS = /* @__PURE__ */ new Set([
   ActionType.RecruitKnight,
@@ -30950,6 +31087,7 @@ var SCORE_RULES = [
   immediateWinThreatAdjustments,
   criticalThreatAdjustments,
   settlementHoard,
+  kitBreakRoad,
   cityHoard,
   planHold,
   standingWantHold,
@@ -32518,7 +32656,7 @@ function costOnly(delta) {
 
 // bot/src/bot/lookahead/synthetic-followup.ts
 var SETTLEMENT_COST4 = costOnly(SETTLEMENT_DELTA);
-var ROAD_COST2 = costOnly(ROAD_DELTA);
+var ROAD_COST3 = costOnly(ROAD_DELTA);
 var SYNTHETIC_ID_PREFIX = "synthetic-";
 function syntheticId(prefix, targetId) {
   return `${SYNTHETIC_ID_PREFIX}${prefix}-${targetId}`;
@@ -32620,7 +32758,7 @@ function resourceUnlockedFollowups(ctx, projected, medicineConsumed, craneConsum
 function affordabilityFingerprint(ctx, projected, medicineConsumed, craneConsumed) {
   const player = ctx.state.players[ctx.actingPlayerId];
   let mask = 0;
-  if (canAffordHypothetical(projected, ROAD_COST2)) mask |= 1;
+  if (canAffordHypothetical(projected, ROAD_COST3)) mask |= 1;
   if (canAffordHypothetical(projected, SETTLEMENT_COST4)) mask |= 2;
   if (player !== void 0 && canAffordHypothetical(
     projected,
@@ -32669,7 +32807,7 @@ function enumerateRoadUnlockedSettlements(edgeId, ctx, projected) {
   return out;
 }
 function enumerateAffordableBuildRoads(ctx, projected) {
-  if (!canAffordHypothetical(projected, ROAD_COST2)) return [];
+  if (!canAffordHypothetical(projected, ROAD_COST3)) return [];
   const player = ctx.state.players[ctx.actingPlayerId];
   if (player === void 0 || player.roadsInSupply <= 0) return [];
   const reachableEmptyEdges = ctx.boardIndex.reachableEmptyEdgeIds[ctx.actingPlayerId];
