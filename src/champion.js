@@ -24856,6 +24856,8 @@ var DEFAULT_TUNING = Object.freeze({
   planHoldPenalty: 0,
   planHoldWindow: 2,
   planHoldMaxPenalty: 12,
+  standingWantHoldPenalty: 0,
+  standingWantHoldMaxPenalty: 24,
   nearKitSettlementHoldPenalty: 0,
   nearKitSettlementHoldBroadEnabled: false,
   nearKitSettlementActivationReservationEnabled: false,
@@ -30865,6 +30867,68 @@ function targetCoverageConsumed(action, targetCost, player) {
   return total;
 }
 
+// bot/src/bot/score-rules/standing-want-hold.ts
+var COMMITTED_CARD_CONSUMERS = /* @__PURE__ */ new Set([
+  ActionType.RecruitKnight,
+  ActionType.ActivateKnight,
+  ActionType.PromoteKnight,
+  ActionType.BuildRoad,
+  ActionType.BuildCityWall,
+  ActionType.MaritimeTrade,
+  ActionType.DomesticTradePropose,
+  ActionType.ExecuteStandingWant
+]);
+function standingWantHold(ctx) {
+  const weight = ctx.tuning.standingWantHoldPenalty;
+  if (weight === 0) return 0;
+  if (!COMMITTED_CARD_CONSUMERS.has(ctx.action.type)) return 0;
+  if (ctx.handPressureMagnitude > 0 || ctx.immediateWinThreat || ctx.criticalOpponentThreat) {
+    return 0;
+  }
+  const player = selfPlayer(ctx.state, ctx.actingPlayerId);
+  if (player === null) return 0;
+  const committed = player.standingWant?.offer;
+  if (committed === void 0 || committed === null || committed.length === 0) return 0;
+  const leaked = committedCoverageConsumed(ctx, ctx.action, committed, player);
+  if (leaked <= 0) return 0;
+  return -Math.min(weight * leaked, ctx.tuning.standingWantHoldMaxPenalty);
+}
+function committedCoverageConsumed(ctx, action, committed, player) {
+  const spent = /* @__PURE__ */ new Map();
+  const cost = actionCost(action.type);
+  for (const [type, count] of Object.entries(cost)) {
+    if (count !== void 0 && count > 0) spent.set(type, count);
+  }
+  const trade = tradeBundleForAction(action);
+  if (trade !== null) {
+    for (const item of trade.give) {
+      spent.set(item.type, (spent.get(item.type) ?? 0) + item.count);
+    }
+  }
+  if (action.type === ActionType.ExecuteStandingWant) {
+    for (const item of executedGiveSide(ctx, action)) {
+      spent.set(item.type, (spent.get(item.type) ?? 0) + item.count);
+    }
+  }
+  let total = 0;
+  for (const entry of committed) {
+    const consumed = spent.get(entry.type) ?? 0;
+    if (consumed <= 0) continue;
+    const held = heldOfMaterial(player, entry.type);
+    const coveredBefore = Math.min(held, entry.count);
+    const coveredAfter = Math.min(Math.max(0, held - consumed), entry.count);
+    total += coveredBefore - coveredAfter;
+  }
+  return total;
+}
+function executedGiveSide(ctx, action) {
+  if (action.type !== ActionType.ExecuteStandingWant) return [];
+  const targetId = action.targetPlayerId;
+  if (typeof targetId !== "string") return [];
+  const target = selfPlayer(ctx.state, targetId);
+  return target?.standingWant?.want ?? [];
+}
+
 // bot/src/bot/score-rules/index.ts
 var SCORE_RULES = [
   actionBaseScore,
@@ -30888,6 +30952,7 @@ var SCORE_RULES = [
   settlementHoard,
   cityHoard,
   planHold,
+  standingWantHold,
   nearKitSettlementHold,
   handPressure,
   knightActivationLeaderBonus,
