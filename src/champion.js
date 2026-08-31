@@ -26313,6 +26313,7 @@ function acceptancePriorStrengthFor(config2, opponentId) {
 
 // bot/src/bot/acquisition-plan.ts
 var EMPTY_ACQUISITION_PLAN = {
+  topTargetKind: null,
   topTargetIsVp: false,
   turnsToAfford: Infinity,
   topTargetCost: null,
@@ -26336,7 +26337,7 @@ function computeAcquisitionPlan(state, playerId, boardIndex, tuning, estimator) 
   let best = null;
   const tradeOnlyVpDeficits = /* @__PURE__ */ new Set();
   for (const target of targets) {
-    const { turns, tradeOnly } = targetTurns(player, target.cost, production);
+    const { turns, tradeOnly } = acquisitionTargetTurns(player, target.cost, production);
     if (target.vpScalable) {
       for (const type of tradeOnly) tradeOnlyVpDeficits.add(type);
     }
@@ -26344,26 +26345,36 @@ function computeAcquisitionPlan(state, playerId, boardIndex, tuning, estimator) 
     if (score2 > bestScore || score2 === bestScore && target.completeBonus > bestBonus) {
       bestScore = score2;
       bestBonus = target.completeBonus;
-      best = { isVp: target.vpScalable, turns, cost: target.cost };
+      best = {
+        kind: target.kind,
+        isVp: target.vpScalable,
+        turns,
+        cost: target.cost
+      };
     }
   }
   const isCitylessAfterPillage = cityTarget !== void 0 && (boardIndex.cityCountByPlayer[playerId] ?? 0) === 0 && (boardIndex.buildingsByPlayer[playerId]?.length ?? 0) > 0;
   if (isCitylessAfterPillage) {
+    const turns = acquisitionTargetTurns(player, cityTarget.cost, production).turns;
     best = {
+      kind: cityTarget.kind,
       isVp: cityTarget.vpScalable,
-      turns: targetTurns(player, cityTarget.cost, production).turns,
+      turns,
       cost: cityTarget.cost
     };
   }
   if (tuning.nearKitSettlementPriorityEnabled && nearKitSettlementCost !== null && settlementTarget !== void 0 && best !== null && best.turns > 0) {
+    const turns = acquisitionTargetTurns(player, settlementTarget.cost, production).turns;
     best = {
+      kind: settlementTarget.kind,
       isVp: settlementTarget.vpScalable,
-      turns: targetTurns(player, settlementTarget.cost, production).turns,
+      turns,
       cost: settlementTarget.cost
     };
   }
   if (best === null) return EMPTY_ACQUISITION_PLAN;
   return {
+    topTargetKind: best.kind,
     topTargetIsVp: best.isVp,
     turnsToAfford: best.turns,
     topTargetCost: best.cost,
@@ -26378,7 +26389,7 @@ function totalCardDeficit(player, cost) {
   }
   return total;
 }
-function targetTurns(player, cost, production) {
+function acquisitionTargetTurns(player, cost, production) {
   let turns = 0;
   const tradeOnly = [];
   for (const entry of cost) {
