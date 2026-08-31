@@ -5,6 +5,11 @@ var __export = (target, all) => {
     __defProp(target, name, { get: all[name], enumerable: true });
 };
 
+// bot/src/util/clamp.ts
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
 // bot/src/pending/fallback-helper.ts
 function pickFallback(ctx, best) {
   if (best !== null && best !== void 0) return best;
@@ -22585,6 +22590,20 @@ function tradeBundleForAction(action) {
   }
   return null;
 }
+function spentByMaterial(action) {
+  const spent = /* @__PURE__ */ new Map();
+  const cost = actionCost(action.type);
+  for (const [type, count] of Object.entries(cost)) {
+    if (count !== void 0 && count > 0) spent.set(type, count);
+  }
+  const trade = tradeBundleForAction(action);
+  if (trade !== null) {
+    for (const item of trade.give) {
+      spent.set(item.type, (spent.get(item.type) ?? 0) + item.count);
+    }
+  }
+  return spent;
+}
 function flipsResourceAffordability(before, after, cost) {
   return !canAffordResourceCost(before, cost) && canAffordResourceCost(after, cost);
 }
@@ -24921,7 +24940,7 @@ var DEFAULT_TUNING = Object.freeze({
   planHoldPenalty: 0,
   planHoldWindow: 2,
   planHoldMaxPenalty: 12,
-  standingWantHoldPenalty: 0,
+  standingWantHoldPenalty: 6,
   standingWantHoldMaxPenalty: 24,
   nearKitSettlementHoldPenalty: 0,
   nearKitSettlementHoldBroadEnabled: false,
@@ -25339,11 +25358,6 @@ function mergeTuningOverrides(overrides, base = DEFAULT_TUNING) {
   }) : base.setupValuationWeights;
   writable["scoreRuleScale"] = "scoreRuleScale" in overrides ? Object.freeze({ ...base.scoreRuleScale, ...overrides.scoreRuleScale }) : base.scoreRuleScale;
   return Object.freeze(merged);
-}
-
-// bot/src/util/clamp.ts
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
 }
 
 // bot/src/opponents/production-estimator.ts
@@ -26321,6 +26335,9 @@ var EMPTY_ACQUISITION_PLAN = {
   tradeOnlyVpDeficitTypes: /* @__PURE__ */ new Set()
 };
 var NO_PRODUCTION_TURNS = 99;
+function toRanked(target, turns) {
+  return { kind: target.kind, isVp: target.vpScalable, turns, cost: target.cost };
+}
 function computeAcquisitionPlan(state, playerId, boardIndex, tuning, estimator) {
   const player = selfPlayer(state, playerId);
   if (player === null) return EMPTY_ACQUISITION_PLAN;
@@ -26345,32 +26362,17 @@ function computeAcquisitionPlan(state, playerId, boardIndex, tuning, estimator) 
     if (score2 > bestScore || score2 === bestScore && target.completeBonus > bestBonus) {
       bestScore = score2;
       bestBonus = target.completeBonus;
-      best = {
-        kind: target.kind,
-        isVp: target.vpScalable,
-        turns,
-        cost: target.cost
-      };
+      best = toRanked(target, turns);
     }
   }
   const isCitylessAfterPillage = cityTarget !== void 0 && (boardIndex.cityCountByPlayer[playerId] ?? 0) === 0 && (boardIndex.buildingsByPlayer[playerId]?.length ?? 0) > 0;
   if (isCitylessAfterPillage) {
     const turns = acquisitionTargetTurns(player, cityTarget.cost, production).turns;
-    best = {
-      kind: cityTarget.kind,
-      isVp: cityTarget.vpScalable,
-      turns,
-      cost: cityTarget.cost
-    };
+    best = toRanked(cityTarget, turns);
   }
   if (tuning.nearKitSettlementPriorityEnabled && nearKitSettlementCost !== null && settlementTarget !== void 0 && best !== null && best.turns > 0) {
     const turns = acquisitionTargetTurns(player, settlementTarget.cost, production).turns;
-    best = {
-      kind: settlementTarget.kind,
-      isVp: settlementTarget.vpScalable,
-      turns,
-      cost: settlementTarget.cost
-    };
+    best = toRanked(settlementTarget, turns);
   }
   if (best === null) return EMPTY_ACQUISITION_PLAN;
   return {
@@ -28362,11 +28364,8 @@ function computeRacePosture(state, selfId, opponentIds, estimator, oneMoveSwingI
   const tempoMargin = leaderTurnsToWin - selfTurnsToWin;
   const standing = tempoMargin >= STANDING_MARGIN ? "leading" : tempoMargin <= -STANDING_MARGIN ? "trailing" : "contending";
   const soonest = Math.min(selfTurnsToWin, leaderTurnsToWin);
-  const raceUrgency = clamp01((TURNS_TO_WIN_CAP - soonest) / (TURNS_TO_WIN_CAP - 1));
+  const raceUrgency = clamp((TURNS_TO_WIN_CAP - soonest) / (TURNS_TO_WIN_CAP - 1), 0, 1);
   return { selfTurnsToWin, leaderId, leaderTurnsToWin, standing, tempoMargin, raceUrgency };
-}
-function clamp01(x) {
-  return Math.max(0, Math.min(1, x));
 }
 
 // bot/src/bot/build-score-context.ts
@@ -29480,18 +29479,18 @@ function tradeBundleKey(items) {
 // bot/src/bot/trade-decline-history.ts
 var DECLINE_KEYS_CACHE = /* @__PURE__ */ new WeakMap();
 function declineKeyRows(declines) {
-  const cached2 = DECLINE_KEYS_CACHE.get(declines);
-  if (cached2 !== void 0) return cached2;
-  const rows = declines.map((decline) => ({
-    proposerId: decline.proposerId,
-    ...decline.targetPlayerId !== void 0 ? { targetPlayerId: decline.targetPlayerId } : {},
-    offer: decline.offer,
-    want: decline.want,
-    offerKey: tradeBundleKey(decline.offer),
-    wantKey: tradeBundleKey(decline.want)
-  }));
-  DECLINE_KEYS_CACHE.set(declines, rows);
-  return rows;
+  return getOrCreate(
+    DECLINE_KEYS_CACHE,
+    declines,
+    () => declines.map((decline) => ({
+      proposerId: decline.proposerId,
+      ...decline.targetPlayerId !== void 0 ? { targetPlayerId: decline.targetPlayerId } : {},
+      offer: decline.offer,
+      want: decline.want,
+      offerKey: tradeBundleKey(decline.offer),
+      wantKey: tradeBundleKey(decline.want)
+    }))
+  );
 }
 function analyzeDomesticTradeDeclines(state, proposerId, targetPlayerId, offer, want) {
   const offerKey = tradeBundleKey(offer);
@@ -29795,7 +29794,7 @@ function generosityBonus(ctx, offerCount, wantCount, projection) {
   if (perCard === 0) return 0;
   const extra = Math.max(0, offerCount - wantCount);
   if (extra === 0) return 0;
-  const spare = Math.max(0, Math.min(1, projection.surplusOfferShare));
+  const spare = clamp(projection.surplusOfferShare, 0, 1);
   if (spare === 0) return 0;
   return Math.round(
     Math.min(Math.max(0, ctx.tuning.tradeGenerosityMaxBonus), extra * perCard) * spare
@@ -29805,7 +29804,7 @@ function buildPathTwoForOneBonus(ctx, offerCount, wantCount, projection) {
   const bonus = Math.max(0, ctx.tuning.tradeBuildPathTwoForOneBonus);
   if (bonus === 0 || offerCount !== 2 || wantCount !== 1) return 0;
   if (projection.bonus < ctx.tuning.tradeBuildPathBonusThreshold) return 0;
-  const spare = Math.max(0, Math.min(1, projection.surplusOfferShare));
+  const spare = clamp(projection.surplusOfferShare, 0, 1);
   return Math.round(bonus * spare);
 }
 function domesticTradeBankAlternativePenalty(ctx, action, projection) {
@@ -29892,7 +29891,7 @@ function domesticTradeTargetBonus(ctx, action) {
   const requestedCards = bundleCount(action.want);
   const leaderFactor = nearWinLeaderFactor(ctx, target.victoryPoints);
   const legacy = requestedCards * ctx.tuning.domesticTradeTargetHasWantBonus * leaderFactor;
-  const abundanceWeight = Math.max(0, Math.min(1, ctx.tuning.domesticTradeHumanAbundanceWeight));
+  const abundanceWeight = clamp(ctx.tuning.domesticTradeHumanAbundanceWeight, 0, 1);
   if (abundanceWeight > 0 && ctx.opponentModel !== void 0) {
     let abundantRequestedCards = 0;
     for (const item of action.want) {
@@ -30683,11 +30682,7 @@ function leaderThreatAdjustments(ctx) {
 // bot/src/bot/opponent-win-threat-plan.ts
 var planByState = /* @__PURE__ */ new WeakMap();
 function opponentWinThreatPlan(ctx) {
-  const cached2 = planByState.get(ctx.state);
-  if (cached2 !== void 0) return cached2;
-  const plan = computePlan(ctx);
-  planByState.set(ctx.state, plan);
-  return plan;
+  return getOrCreate(planByState, ctx.state, () => computePlan(ctx));
 }
 function computePlan(ctx) {
   const profile = leaderDangerProfile({
@@ -30957,17 +30952,7 @@ function nearKitSettlementHoldStatus(ctx) {
   return targetCoverageConsumed(ctx.action, targetCost, player) > 0 ? "eligible" : "noCoveredSpend";
 }
 function targetCoverageConsumed(action, targetCost, player) {
-  const spent = /* @__PURE__ */ new Map();
-  const cost = actionCost(action.type);
-  for (const [type, count] of Object.entries(cost)) {
-    if (count !== void 0 && count > 0) spent.set(type, count);
-  }
-  const trade = tradeBundleForAction(action);
-  if (trade !== null) {
-    for (const item of trade.give) {
-      spent.set(item.type, (spent.get(item.type) ?? 0) + item.count);
-    }
-  }
+  const spent = spentByMaterial(action);
   let total = 0;
   for (const entry of targetCost) {
     const type = entry.type;
@@ -31046,17 +31031,7 @@ function standingWantHold(ctx) {
   return -Math.min(weight * leaked, ctx.tuning.standingWantHoldMaxPenalty);
 }
 function committedCoverageConsumed(ctx, action, committed, player) {
-  const spent = /* @__PURE__ */ new Map();
-  const cost = actionCost(action.type);
-  for (const [type, count] of Object.entries(cost)) {
-    if (count !== void 0 && count > 0) spent.set(type, count);
-  }
-  const trade = tradeBundleForAction(action);
-  if (trade !== null) {
-    for (const item of trade.give) {
-      spent.set(item.type, (spent.get(item.type) ?? 0) + item.count);
-    }
-  }
+  const spent = spentByMaterial(action);
   if (action.type === ActionType.ExecuteStandingWant) {
     for (const item of executedGiveSide(ctx, action)) {
       spent.set(item.type, (spent.get(item.type) ?? 0) + item.count);
@@ -31416,8 +31391,8 @@ var TARGET_BONUS = /* @__PURE__ */ new Map([
   [ActionType.BuildCityWall, 14]
 ]);
 var scienceLevel3Bonus = (ctx) => {
-  const player = ctx.state.players[ctx.playerId];
-  if (player === void 0 || !isSelf(player)) {
+  const player = selfPlayer(ctx.state, ctx.playerId);
+  if (player === null) {
     return pickArgmaxByType(ctx, ActionType.ChooseScienceBonusResource, () => 0);
   }
   const suppressSettlement = hasRealBoardTopology(ctx) && !hasReachableSettlementSite(ctx);
@@ -31508,16 +31483,16 @@ var treasonPlaceKnight = (ctx) => {
     const intersectionId = action.intersectionId;
     const level = action.level;
     if (intersectionId === void 0 || level === void 0) return null;
-    let adjacency = adjacencyCountByIntersection.get(intersectionId);
-    if (adjacency === void 0) {
-      adjacency = countOwnBuildingsAdjacentToIntersection(
+    const adjacency = getOrCreate(
+      adjacencyCountByIntersection,
+      intersectionId,
+      () => countOwnBuildingsAdjacentToIntersection(
         ctx.state,
         ctx.boardIndex,
         ctx.playerId,
         intersectionId
-      );
-      adjacencyCountByIntersection.set(intersectionId, adjacency);
-    }
+      )
+    );
     return adjacency * 1e4 + knightStrength(level) * 100 + (ctx.boardIndex.pipsByIntersection[intersectionId] ?? 0);
   });
 };
@@ -31631,14 +31606,14 @@ var commercialHarborGive = ((ctx, decision2) => {
 });
 function pickTargetResponse(ctx) {
   const utilityFor = makeUtilityLookup(ctx.state, ctx.playerId);
-  const player = ctx.state.players[ctx.playerId];
+  const player = selfPlayer(ctx.state, ctx.playerId);
   return pickArgmaxByType(
     ctx,
     ActionType.ResolveOptionalCardEffect,
     (action) => {
       if (action.commodityType === void 0) return null;
       const base = utilityFor(action.commodityType);
-      if (player === void 0 || !isSelf(player)) return base;
+      if (player === null) return base;
       const held = heldOfMaterial(player, action.commodityType);
       return base + commodityMonopolyNeedBonus(commodityTrackLevel(player, action.commodityType), held) / 10 - held / 100;
     },
@@ -32112,8 +32087,8 @@ function vpTransitionVetoFor(ctx, proposerId, target, offer, want) {
 }
 function cardBalanceVetoFor(ctx, self2, offer, want, desperate, advancesBuildPath, declineCount) {
   if (desperate || advancesBuildPath) return null;
-  const giving = want.reduce((sum, entry) => sum + entry.count, 0);
-  const receiving = offer.reduce((sum, entry) => sum + entry.count, 0);
+  const giving = bundleCount(want);
+  const receiving = bundleCount(offer);
   if (ctx.tuning.tradeCardBalanceUtilityGate) {
     const cardBalanceUtilityGain = tradeUtilityGain(
       ctx,
@@ -34098,7 +34073,7 @@ function tradeProposalPolicyPool(ctx) {
   const humanIds = knownHumanSeats(ctx);
   if (humanIds.size === 0 && !stoppedForNearWinOpponent) return null;
   const budget = ctx.tuning.humanFacingProposalsPerTurn;
-  const qualityFloor = Math.max(0, Math.min(1, ctx.tuning.humanProposalMinQuality));
+  const qualityFloor = clamp(ctx.tuning.humanProposalMinQuality, 0, 1);
   const windowStopThreshold = ctx.tuning.domesticTradeResponderDeclineWindowStop;
   const windowStopEnabled = Number.isFinite(windowStopThreshold) && windowStopThreshold > 0;
   if (budget <= 0 && qualityFloor <= 0 && !stoppedForNearWinOpponent && !windowStopEnabled) {
