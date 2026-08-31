@@ -26,7 +26,7 @@ Players take two placement rounds (settlement + road, then city + road in revers
 Each turn is three phases:
 
 1. **Roll** — optional pre-roll cards, then roll the production dice and the event die. The event die may advance the berserker ship and may grant a progress-card draw based on city-improvement levels.
-2. **Production** — distribute resources and commodities from the rolled number. On a 7, players over the hand limit discard half (rounded down) and the robber moves and steals.
+2. **Production** — distribute resources and commodities from the rolled number. On a 7, players over the hand limit discard half (rounded down); after the first berserker attack has activated the robber, it also moves and steals.
 3. **Action** — any number of trades, builds, knight actions, and progress-card plays in any order.
 
 ## Trade
@@ -39,7 +39,7 @@ Roads, settlements, and cities follow standard placement rules (connectivity, di
 
 ## City Improvements
 
-Three independent tracks — science, trade, politics — each consume their matching commodity. Higher levels unlock stronger effects and access to better progress cards. The first player to reach level 4 on a track founds a metropolis there (worth 2 VP, immune to pillage). A second push to level 5 can take a metropolis from another player.
+Three independent tracks — science, trade, politics — each consume their matching commodity. Higher levels unlock stronger effects and access to better progress cards. The first player to reach level 4 on a track founds a metropolis there (+2 VP over its host city, 4 VP total, and immune to pillage). A second push to level 5 can take a metropolis from another player.
 
 ## Knights
 

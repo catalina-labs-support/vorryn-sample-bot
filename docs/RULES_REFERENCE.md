@@ -104,7 +104,7 @@ Each harbor spans 2 adjacent coastal intersections. Harbors are never placed on 
 
 ### 4.1 First-player determination
 
-Before placement begins, every player rolls two production dice. The player with the highest total sits first in the setup order; ties are broken by rolling again among the tied players, repeating until one player leads outright. A single-player game records one roll and uses that player.
+Before placement begins, every player rolls two production dice. The player with the highest total sits first in the setup order; ties are broken by rolling again among the tied players, repeating until one player leads outright. The engine treats 50 consecutive tied rounds as an invariant failure rather than looping forever. A single-player game records one roll and uses that player.
 
 ### 4.2 Round 1 — `setup1` phase
 
@@ -154,6 +154,7 @@ When `state.phase === 'roll'`, `validActions[]` contains:
 
 - **`rollDice`** — always present; submitting it resolves production and transitions to the action phase.
 - **`playProgressCard`** candidates — present only if you hold an Augury (`scienceAugury`) card. Augury has a `preRoll` timing window: playing it before rolling lets you preset both production dice to values of your choice (each 1–6). Only one Augury may be played per turn. See §14 for full Augury rules.
+- **`setStandingWant` / `clearStandingWant`** candidates — present when the game's standing-wants channel is enabled and the enumerator's posting option is on (both are on for the first-party bot path). See §12.3.
 
 ### 5.2 Production (internal — not a bot-facing phase)
 
@@ -164,7 +165,7 @@ After `rollDice` is applied, the engine resolves the roll entirely before return
 - The event die may trigger a progress-card draw, which can itself force a discard-over-limit decision (§14).
 - A berserker-ship event (`ship` face on the event die) may trigger an attack resolution (§8).
 
-When any of these force a decision, your bot receives a state with `state.pendingDecision` non-null and `validActions[]` restricted to the legal answers (see §16). Normal turn flow resumes only after all pending decisions are resolved.
+The event die resolves **before** production: a berserker attack, or a progress-card draw that pushes a non-current player over the hand limit, queues its pending decisions first, and the roll's production is deferred until they resolve. When any of these force a decision, your bot receives a state with `state.pendingDecision` non-null and `validActions[]` restricted to the legal answers (see §16). Normal turn flow resumes only after all pending decisions are resolved.
 
 ### 5.3 Action phase
 
@@ -172,9 +173,11 @@ When `state.phase === 'action'` and no pending decision is open, `validActions[]
 
 - **Maritime and domestic trades** — §12
 - **Build** road, settlement, city, city wall — §9
-- **Knight** actions (recruit, activate, promote, move, displace) — §10
+- **Knight** actions (recruit, activate, promote, move, displace — §10; chase robber — §7.4). `displaceKnight` candidates additionally require the enumerator's `displaceKnightEnabled` option, which is on for the web bot-runner path but off in some evaluation harnesses.
 - **City improvement** — §13
 - **Progress card plays** (action-phase timing window) — §14
+- **Standing wants** (`setStandingWant`, `clearStandingWant`, `executeStandingWant`) — §12.3
+- **`resolveOptionalCardEffect`** — follow-up offers left open by a card played earlier this turn (§16)
 
 There is **no general cap** on how many actions you may take in a single turn, beyond affordability and supply. You may play multiple progress cards, build multiple roads, and trade repeatedly in any order, as long as each individual action is legal at the moment you submit it.
 
@@ -195,7 +198,7 @@ When `state.pendingDecision` is non-null, **only the pending-decision responses 
 
 ### 5.6 Bot perspective
 
-Your bot never observes the internal `event`, `production`, or `resolveAttack` phases — the engine resolves them atomically inside `rollDice` before serializing the next state. After `endTurn` the next bot request may already be the next player's roll phase, skipping over your own turn entirely if you are not the next player.
+Your bot never observes any internal event/production/attack-resolution step as a phase — `state.phase` only ever carries `setup1`, `setup2`, `roll`, `action`, or `gameOver`; the engine resolves the roll atomically inside `rollDice` before serializing the next state. After `endTurn` the next bot request may already be the next player's roll phase, skipping over your own turn entirely if you are not the next player.
 
 ## 6. Dice & production
 
@@ -255,7 +258,7 @@ A shortage of one type does not affect payouts of other types. Resources and com
 
 ### 6.5 Science bonus (Aqueduct)
 
-Players with `scienceLevel >= 3` who receive **zero** production from a roll are eligible for the Aqueduct bonus: they choose one resource to take from the bank (`scienceLevel3Bonus` pending decision). This is queued after production resolves, one player at a time in seat order. See §13 for science track details, §16 for the pending-decision format.
+Players with `scienceLevel >= 3` who receive **zero** production from a roll are eligible for the Aqueduct bonus: they choose one resource to take from the bank (`scienceLevel3Bonus` pending decision). The offered list contains only resource types the bank still stocks; if every resource stack is empty, the bonus is skipped for that roll and no pending is queued. This is queued after production resolves, one player at a time in seat order. See §13 for science track details, §16 for the pending-decision format.
 
 ### 6.6 Wire fields
 
@@ -288,7 +291,7 @@ pillaged city loses its wall (§8.5), returning it to supply and lowering the th
 
 A player over their threshold must discard `floor(handSize / 2)` cards, where `handSize` counts resources plus commodities together. Players at or below their threshold discard nothing.
 
-All discards are queued simultaneously as a single `discardResources` pending decision (`pending.payload.discardId` is the engine/browser's immutable episode identity, `pending.payload.required` maps player id → required count, and `pending.actingPlayerId` is `null`, meaning any listed player may respond). **`discardId` and `required` are snapshots taken when the 7 was rolled and never change** — as players discard, only `allowedPlayerIds` narrows, so that is the authoritative "still owes a discard" list. Bot protocol v2 omits the presentation-only `discardId`. A client deriving outstanding discards from `required` will show players who have already paid. Each player chooses exactly which cards to discard; the response action type is `discardHalf`. The discard is from the player's combined resource+commodity hand; cards go back to the bank.
+All discards are queued simultaneously as a single `discardResources` pending decision (`pending.payload.discardId` is the engine/browser's immutable episode identity, `pending.payload.required` maps player id → required count, and `pending.actingPlayerId` is `null`, meaning any listed player may respond). **`discardId` and `required` are snapshots taken when the 7 was rolled and never change** — as players discard, only `allowedPlayerIds` narrows, so that is the authoritative "still owes a discard" list. Bot protocol v2 carries `discardId` too (it is optional in the schema only for cross-version rolling deploys). A client deriving outstanding discards from `required` will show players who have already paid. Each player chooses exactly which cards to discard; the response action type is `discardHalf`. The discard is from the player's combined resource+commodity hand; cards go back to the bank.
 
 After all required discards are resolved, the engine moves on to the robber step (if active — see §7.2).
 
@@ -309,7 +312,7 @@ After the robber moves, the engine resolves a steal:
 - **1 eligible target** → the engine automatically steals one random card from that player.
 - **2+ eligible targets** → a `chooseStealTarget` pending decision is queued; the current player picks a `targetPlayerId` from `eligiblePlayerIds`.
 
-The stolen card is selected uniformly at random from the target's combined hand: resources first (in enumeration order: `lumber`, `brick`, `wool`, `grain`, `ore`), then commodities (`coin`, `paper`, `cloth`). The selection is seeded by `gameState.seed + ':steal:' + version + ':' + targetId`, making it deterministic for audit purposes but opaque to the thief.
+The stolen card is selected uniformly at random from the target's combined hand: resources first (in enumeration order: `lumber`, `brick`, `wool`, `grain`, `ore`), then commodities (`coin`, `paper`, `cloth`). The selection is seeded by `gameState.seed + ':steal:' + stealOrdinal + ':' + targetId`, where `stealOrdinal` is a dedicated monotonic per-game steal counter (not `state.version`), making it deterministic for audit purposes but opaque to the thief.
 
 ### 7.4 Knight chase (moving the robber without a 7)
 
@@ -329,11 +332,7 @@ Submitting `chaseRobber` with the knight's `knightId` deactivates the knight, re
 
 ### 8.2 Berserker strength
 
-Berserker strength equals the **total number of city-type buildings** (cities and metropolises) across all players on the board at the moment of attack:
-
-```ts
-const berserkerStrength = Object.values(cityCountByPlayer).reduce((a, b) => a + b, 0);
-```
+Berserker strength equals the **total number of city-type buildings** (cities and metropolises) across all players on the board at the moment of attack — a single pass over intersections counting every building of city type.
 
 The city count includes every city intersection, including those upgraded to metropolises. Settlements do not contribute.
 
@@ -387,18 +386,18 @@ Regardless of outcome, after every attack:
 
 1. **All knights deactivate** — every knight on the board across all players is set to `KnightState.Inactive`.
 2. **Track resets** — `state.berserkerTrackPosition = 0`.
-3. **First attack:** if `state.firstBerserkerAttackResolved` was `false`, the robber is now activated (`state.robberActive = true`) and placed on the desert hex (or all desert hexes if the board has more than one, though the standard board has exactly one). `state.firstBerserkerAttackResolved` is set to `true`.
+3. **First attack:** if `state.firstBerserkerAttackResolved` was `false`, the robber is now activated (`state.robberActive = true`) and placed on the desert hex (or all desert hexes if the board has more than one, though the standard and grand boards each have exactly one). `state.firstBerserkerAttackResolved` is set to `true`. A later robber move clears every prior robber placement before marking the chosen destination, so a custom multi-desert board converges to one occupied hex.
 
 ### 8.7 Wire fields
 
-| Field                                | Description                                                         |
-| ------------------------------------ | ------------------------------------------------------------------- |
-| `state.berserkerTrackPosition`       | Current ship-advance count (0–6 between attacks)                    |
-| `state.berserkerTrackMax`            | Attack threshold (always 7)                                         |
-| `state.firstBerserkerAttackResolved` | `true` once the first attack has happened (robber active)           |
-| `state.lastBerserkerAttack`          | Summary record of the most recent attack (null before first attack) |
-| `choosePillageCity`                  | Pending type: pillaged player selects which city to downgrade       |
-| `chooseProgressDeck`                 | Pending type: tied defender chooses which deck to draw from         |
+| Field                                | Description                                                                                                                                                                                                    |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `state.berserkerTrackPosition`       | Current ship-advance count (0–6 between attacks; 7 is briefly observable between an attack's trigger and its resolution)                                                                                       |
+| `state.berserkerTrackMax`            | Attack threshold (always 7)                                                                                                                                                                                    |
+| `state.firstBerserkerAttackResolved` | `true` once the first attack has happened (robber active)                                                                                                                                                      |
+| `state.lastBerserkerAttack`          | Summary record of an attack produced by the current roll — cleared to `null` at the start of every `rollDice`, so it is non-null only while the roll that triggered the attack (and its pendings) is resolving |
+| `choosePillageCity`                  | Pending type: pillaged player selects which city to downgrade                                                                                                                                                  |
+| `chooseProgressDeck`                 | Pending type: tied defender chooses which deck to draw from                                                                                                                                                    |
 
 ## 9. Building
 
@@ -441,7 +440,7 @@ Requirements:
 3. **Road adjacency** — at least one adjacent edge must carry one of your roads. This check does **not** block on opponent pieces at the intersection — it only scans adjacent edges.
 4. **Supply** — `settlementsInSupply > 0`.
 
-After placement the longest-road holder is recomputed (a new settlement may sever an opponent's road path; §11).
+After placement the longest-road holder is recomputed when an opponent road is incident to the intersection — the only case a new settlement can affect (it may sever an opponent's road path; §11.4).
 
 ### 9.4 Cities (`buildCity`)
 
@@ -463,7 +462,7 @@ A wall may be added to **your own city** that does not already have one. Require
 
 1. The intersection holds your city (`type === 'city'`, `ownerPlayerId === actingPlayerId`).
 2. No wall is present (`cityWallPresent === false`).
-3. `cityWallsInSupply > 0`.
+3. `cityWallsInSupply > 0`, **and** fewer than 3 of your walls stand on the board — an independent per-player ceiling on placed walls, checked separately from the supply counter.
 4. Cost: 2 `brick`.
 
 Effect: `building.cityWallPresent = true`. Each wall raises your discard threshold by 2 (§7.1). If the city is pillaged by the berserker the wall piece is returned to supply alongside the city piece (§8.5). The Engineering (`scienceEngineering`) progress card builds a wall for free (§14).
@@ -501,6 +500,8 @@ The recruited knight is placed in **`inactive`** state. If the new knight's inte
 Cost: 1 `grain`. Changes an `inactive` knight to `active` and records the knight id in `knightsActivatedThisTurn`.
 
 A knight added to `knightsActivatedThisTurn` **cannot act this turn** — any act attempt (move, displace, chase) is rejected if the knight appears in that list, even though it is now active. It may contribute to berserker defense immediately (§8.3), and it may still be promoted.
+
+Recruiting and then activating a knight in the same turn is legal. A knight that began the action phase active may also act, become inactive, and then be activated again later that turn; `knightActionsUsedThisTurn` still prevents a second knight action, but the reactivated knight can defend against the berserker.
 
 ### 10.4 Promoting (`promoteKnight`)
 
@@ -554,7 +555,7 @@ On apply:
 
 The displaced knight is re-placed with its **original activation state** — an active knight remains active after retreating; only the attacking knight deactivates (step 1).
 
-The longest-road holder is recomputed after displacement and again after retreat resolves (§11). Victory waits until the displaced knight completes any mandatory retreat, because the retreat may break the route again. The same applies to Intrigue (`politicsIntrigue`).
+The longest-road holder is recomputed after displacement and again after retreat resolves (§11). Victory is checked immediately after every successful action, displacement included — a displacement that hands the actor the winning point ends the game at once, even while the retreat pending is still open. The same applies to Conspiracy (`politicsIntrigue`).
 
 ### 10.7 Other knight interactions
 
@@ -607,7 +608,9 @@ The longest-road holder is recomputed after:
 | `buildSettlement` | Only when an opponent road is incident to the intersection (`intersectionAffectsLongestRoad`) — a settlement can only sever a path that runs through it, and never changes the builder's own length |
 | `recruitKnight`   | Only if the placed knight's intersection is adjacent to any opponent road (`intersectionAffectsLongestRoad`)                                                                                        |
 | `moveKnight`      | If source or destination is adjacent to any opponent road                                                                                                                                           |
-| `displaceKnight`  | Always (both displacement and retreat resolution)                                                                                                                                                   |
+| `displaceKnight`  | If the source or target intersection is adjacent to a relevant opponent road; a retreat resolved through the `chooseKnightRetreat` pending checks its destination the same way                      |
+
+Progress-card plays that change road or knight topology also recompute: Diplomacy (`politicsDiplomacy`) road removal — deferred to the free rebuild (`buildRoad`) or its abandonment (`skipRoadBuilding`) when the actor relocates their own road — plus Conspiracy (`politicsIntrigue`) and Treason (`politicsTreason`) resolutions.
 
 `buildCity` and `buildCityWall` do **not** trigger recomputation (neither changes road topology or intersection occupancy relative to other players' roads).
 
@@ -649,11 +652,11 @@ interact with an open auction.
 
 The proposer is the pending's `actingPlayerId` and is not a member of `allowedPlayerIds`, which contains responders only.
 
-**Responder bid candidates.** With the counter family enabled (production human tables), a responder's enumerated bids are: the at-terms bid (the former accept), **sweetened bids** — the proposal's own terms plus one extra card on the want side, so the responder pays one more to outbid a rival acceptance without composing a full counter — and the bounded derived-adjustment counters. A sweetener increments an existing want line rather than duplicating its type, never uses a type already on the offer side (no type may appear on both sides), and is emitted only when the responder can pay the whole augmented want side, so the family is bounded by the material-type count.
+**Responder bid candidates.** With the counter family enabled (production human tables), a responder's enumerated bids are: the at-terms bid (the former accept), **sweetened bids** — the proposal's own terms plus one extra card on the want side, so the responder pays one more to outbid a rival acceptance without composing a full counter — and the bounded derived-adjustment counters. A sweetener increments an existing want line rather than duplicating its type, never uses a type already on the offer side (no type may appear on both sides), is emitted only when the responder can pay the whole augmented want side, and is dropped when it would produce a single-type 2-for-2 exchange; the family is bounded by the material-type count.
 
 **Award ranking is a public partial order.** Bid A _dominates_ bid B only when the proposer gives the same multiset and A gives the proposer a strict superset of what B does; bids with different give sides are incomparable and no public rule orders them. A bot proposer applies its hard eligibility gates first — it can pay the bid's give side, the responder is not within two victory points of winning (unless the bot itself is one point away and racing), and the bid clears its value floor — and only then drops dominated bids. So a strictly-dominant eligible bid always beats a plain eligible acceptance, while an **ineligible** dominant bid is still refused; a near-win responder cannot buy an award by sweetening. Bids that remain incomparable are separated by the bot's own private valuation, which is never sent to responders and never presented as an objective ranking.
 
-**Decline records:** fully-declined proposals (all opponents declined, no acceptances) push a `DomesticTradeDeclineRecord` onto `state.domesticTradeDeclinesThisTurn`. Each record holds `{ proposerId, targetPlayerId?, offer, want }`. The enumerator reads these records to avoid re-generating identical 1-for-1 proposals to the same opponent that already declined; instead it generates a 2-for-1 sweetened bid for that target — offering 2 of the same material in exchange for 1 of the wanted type. If the proposer holds 3 or more of the offered material and the wanted type is on a "build-path" shortlist, a 3-for-1 escalation is also generated. Proposals that were never declined continue to generate the standard 1-for-1 candidate (plus higher-count variants when the enumerator's escalation option is on). Candidate generation is grouped per exact terms: the enumerator emits ONE broadcast (targetless) candidate only when every opponent can fulfill the complete ask and none was already asked those terms this turn. A partial qualifying audience receives one targeted candidate per eligible opponent; zero emits nothing. This matches action semantics because a targetless proposal always opens the auction to every opponent. On the public-safe external list the fulfill check is disabled, so broadcast presence is uniform whenever every opponent is fresh for those terms and encodes no hidden holdings.
+**Decline records:** fully-declined proposals (all opponents declined, no acceptances) push a `DomesticTradeDeclineRecord` onto `state.domesticTradeDeclinesThisTurn`. Each record holds `{ proposerId, targetPlayerId?, offer, want }`. With the enumerator's escalation option on (the default; with it off the records are never read and no escalated variants are generated), the enumerator reads these records to avoid re-generating identical 1-for-1 proposals to the same opponent that already declined; instead it generates a 2-for-1 sweetened bid for that target — offering 2 of the same material in exchange for 1 of the wanted type. If the proposer holds 3 or more of the offered material and the wanted type is on a "build-path" shortlist, a 3-for-1 escalation is also generated. Proposals that were never declined continue to generate the standard 1-for-1 candidate; a 2-for-1 variant reaches never-declined responders only when the wanted type is on the build-path shortlist (the escalation option alone does not add higher-count variants for fresh responders). Candidate generation is grouped per exact terms: the enumerator emits ONE broadcast (targetless) candidate only when every opponent can fulfill the complete ask, there are at least two eligible opponents (a lone qualifying opponent receives a targeted candidate instead), and none was already asked those terms this turn. A partial qualifying audience receives one targeted candidate per eligible opponent; zero emits nothing. This matches action semantics because a targetless proposal always opens the auction to every opponent. On the public-safe external list the fulfill check is disabled, so broadcast presence is uniform whenever every opponent is fresh for those terms and encodes no hidden holdings.
 
 **Candidate truncation:** the `DomesticTradePropose` family is generated with a global cap of `MAX_GENERATED_CANDIDATES = 96` and a reserved subcap for richer bundle candidates (want-2 or mixed-surplus offers, off by default). When the family exceeds the cap, `truncatedFamilies` gains `'domesticTradePropose'` and `validActionsTruncated` is set on the wire response.
 
@@ -741,7 +744,7 @@ recheck.
 
 ### 13.1 Improving a city
 
-**Action:** `improveCity`. Requires no pending decision. Requires the acting player to own at least one city.
+**Action:** `improveCity`. Requires no pending decision. Requires the acting player to own at least one city. At level 4/5 the metropolis host requirement additionally applies: when the improvement would award or transfer a metropolis and the player has no non-metropolis city to host it, the action is rejected (`InvalidTarget`) before any cost is paid (§13.3).
 
 **Payload:** `{ "track": "science" | "trade" | "politics" }`
 
@@ -771,7 +774,7 @@ Perks activate once the player reaches the listed level. They persist until the 
 
 **Science track**
 
-- Level 3: On any non-7 production roll where the player receives zero resources or commodities (determined by before/after diff — robber-blocked counts as zero-production), a `scienceLevel3Bonus` pending is queued for that player. Via `chooseScienceBonusResource` with payload key `resource`, the player picks one resource. Multiple eligible players are queued in seat order starting from the current player.
+- Level 3: On any non-7 production roll where the player receives zero resources or commodities (the engine accumulates the actually-granted amounts during payout — robber-blocked and bank-shorted grants count as zero-production), a `scienceLevel3Bonus` pending is queued for that player. Via `chooseScienceBonusResource` with payload key `resource`, the player picks one resource from the types the bank still stocks; with every resource stack empty the bonus is skipped and no pending is queued (§6.5). Multiple eligible players are queued in seat order starting from the current player.
 
 **Trade track**
 
@@ -794,7 +797,7 @@ Perks activate once the player reaches the listed level. They persist until the 
 
 **Placement:** if the acting player has more than one eligible city, a `ChooseMetropolisCity` pending is set, offering `eligibleIntersectionIds` (non-metropolis cities only — `b.metropolisType === null`). The player places the metropolis on one of their own cities. If exactly one eligible city exists, the pending is still created with a single-element list.
 
-**If the holder is displaced:** the previous holder's building's `metropolisType` is set to `null` before the new `ChooseMetropolisCity` pending is created. The previous holder's track level is unchanged.
+**If the holder is displaced:** the previous holder keeps the marker while the new `ChooseMetropolisCity` pending is open. When the gaining player chooses a host city, the engine atomically clears the previous building's `metropolisType` and assigns the marker to the new host. This avoids a temporary unscored gap if the game ends while placement is pending. The previous holder's track level is unchanged.
 
 **VP value:** a city with a metropolis marker is worth 4 VP total (2 city + 2 metropolis bonus). Metropolises are immune to pillage (§8.5).
 
@@ -833,9 +836,11 @@ VP cards live in `revealedVpCards`, not `progressHand`, and do not count against
 
 ### Playing
 
-Play is routed through `PlayProgressCard` (action-phase or pre-roll). Every candidate in `validActions[]` already carries a full payload validated by `tryValidatePlayProgressCard`; your bot selects one without constructing payloads. A `skip: true` payload allows the card to be played with no benefit. Afterward, the card instance moves from `progressHand` beneath the matching deck.
+Play is routed through `PlayProgressCard` (action-phase or pre-roll). Every candidate in `validActions[]` already carries a full payload validated by `tryValidatePlayProgressCard`; your bot selects one without constructing payloads. A `skip: true` play is offered when the card has no legal effect payload, allowing it to be played for no benefit. It is also offered for cards whose text makes using the effect optional (Wharfage and Tempering). It cannot bypass a mandatory effect while a legal payload exists: for example, Levy must still name a resource even when no opponent holds it. Afterward, the card instance moves from `progressHand` beneath the matching deck.
 
 No per-turn cap: a player holding two copies of any card may play both in one turn. The one timing restriction is **Augury** — it is playable only before rolling and only once per turn (the engine checks `progressCardsPlayedThisTurn` for `'scienceAugury'` before allowing a second play).
+
+A progress card may be played during the same turn in which it was drawn.
 
 Cards whose effects produce multi-step interactions install a `pendingDecision`; that pending is resolved via `ResolveOptionalCardEffect` before the next free action. VP cards cannot be played or stolen.
 
@@ -862,7 +867,7 @@ The card play itself builds one selected city improvement for 1 fewer matching c
 normal (minimum 0). The level-4/5 host requirement (§13.3) applies: with no non-metropolis city
 to host the marker, the improvement — and so the card play — is refused.
 
-No pendings triggered.
+If this improvement awards or transfers a metropolis, it triggers the normal `chooseMetropolisCity` pending from §13.3. Otherwise no pending is triggered.
 
 ---
 
@@ -1025,9 +1030,11 @@ No pendings triggered.
 
 **Window:** `actionPhase`. **Payload:** `edgeId`.
 
-Removes any open road from the board, returning it to its owner's supply. A road is open if it has an owner (`roadOwnerPlayerId` is non-null) and at least one of its two endpoints is open for that owner: the endpoint has no own building, no own knight, and no other own road continuing from it (i.e., the owner's road network dead-ends there). Longest-road and victory are rechecked after removal.
+Removes any open road from the board, returning it to its owner's supply. A road is open if it has an owner (`roadOwnerPlayerId` is non-null) and at least one of its two endpoints is open for that owner: the endpoint has no own building, no own knight, and no other own road continuing from it (i.e., the owner's road network dead-ends there). Victory is rechecked after removal. Longest-road is rechecked immediately after a non-self removal; when the actor removes their own road and a legal free rebuild exists, the recompute is deferred to the rebuild (`buildRoad`) or its abandonment (`skipRoadBuilding`), so the removal-plus-rebuild resolves as one relocation (§11.4).
 
 If the removed road belonged to the actor, the actor has roads in supply, and at least one legal road placement exists (an unoccupied edge connected to the actor's network), a free road placement is granted immediately: `freeRoadsRemaining = 1` and a `roadBuildingPlace` pending is installed. With no legal placement available — e.g. the removed road was the actor's only network anchor — no pending is installed.
+
+The replacement is optional, matching the official card text: the actor may submit `skipRoadBuilding` even while a legal placement remains. Declining returns the unused grant and finalizes the longest-road recomputation. This exception applies only to Diplomacy; Causeway placements remain mandatory while legal.
 
 **Pending:** `roadBuildingPlace` (self; only when the actor's own road was removed and a legal free placement exists).
 
@@ -1063,7 +1070,7 @@ If no opponent holds a progress card, the card may still be played for no benefi
 
 **Window:** `actionPhase`. **Payload:** `targetKnightId`.
 
-Displaces a single opponent knight standing on an intersection adjacent to any of the actor's own roads, without consuming a knight action. The target knight is removed from its intersection; the engine computes retreat options via `reachableEmptyIntersections`. If retreat is possible, the target knight's owner resolves a retreat pending; if no retreat is possible, the knight is simply removed. Longest-road and victory are rechecked.
+Displaces a single opponent knight standing on an intersection adjacent to any of the actor's own roads, without consuming a knight action. The target knight is removed from its intersection; the engine computes retreat options via `reachableEmptyIntersections`. With two or more retreat options, the target knight's owner resolves a `chooseKnightRetreat` pending; with exactly one, the knight auto-relocates there and no pending is queued; with none, the knight is removed to its owner's supply. Longest-road and victory are rechecked.
 
 No additional pendings from the actor's side. (The retreating knight owner resolves their own pending if one is queued.)
 
@@ -1149,7 +1156,7 @@ Revealed immediately when drawn into `revealedVpCards`. Awards +1 VP. Cannot be 
 
 ### 15.2 Win condition
 
-**Reaching the VP target wins** — 13 in a standard game, but configurable per game via `state.victoryPointsTarget` (for example, 8 for short / guest games). Victory is checked only for `state.currentPlayerId` at the end of every applied action — off-turn VP gains (a Defender-of-Vorryn token from a berserker defense, a longest-road transfer away from another player, or an opponent drawing a VP card) do **not** immediately end the game. The player wins automatically when their next turn begins: `advanceTurn` calls `checkVictory` after switching `currentPlayerId`, so a player who silently crossed the target during someone else's turn wins as soon as the first action of their own turn resolves (which may be as early as the phase-transition into their roll phase).
+**Reaching the VP target wins** — 13 in a standard game, but configurable per game via `state.victoryPointsTarget` (for example, 8 for short / guest games). Victory is checked only for `state.currentPlayerId` at the end of every applied action — off-turn VP gains (a Defender-of-Vorryn token from a berserker defense, a longest-road transfer away from another player, or an opponent drawing a VP card) do **not** immediately end the game. The player wins automatically when their next turn begins: `advanceTurn` calls `checkVictory` after switching `currentPlayerId`, so a player who silently crossed the target during someone else's turn wins **while the outgoing player's `endTurn` (or their deferred progress-discard) is still resolving** — the crossing player never submits an action of their own, and no request will be sent for the seat that just won.
 
 On a win: `state.phase` transitions to `'gameOver'` and `state.winnerPlayerId` is set to the winning player's id.
 
@@ -1167,7 +1174,7 @@ Once `phase === 'gameOver'`, `validActions[]` is empty — no further actions ar
 
 ## 16. Forced decisions
 
-When `state.pendingDecision` is non-null, `validActions[]` contains **only** the legal answers to the open decision. Your bot must resolve it before anything else. Each pending decision has an `allowedPlayerIds` array; only a player whose id appears in that list may answer.
+When `state.pendingDecision` is non-null, `validActions[]` contains **only** the legal answers to the open decision. Your bot must resolve it before anything else. Each pending decision has an `allowedPlayerIds` array; only a player whose id appears in that list may answer. One documented exception: during a domestic-trade auction the proposer is the pending's `actingPlayerId` and is never a member of `allowedPlayerIds` (that list holds responders only), yet the proposer closes the auction with `domesticTradeAward` or `domesticTradeCancel` (§12.1).
 
 ### Queue semantics
 
@@ -1185,28 +1192,28 @@ The action type `resolveOptionalCardEffect` is the generic answer vehicle for a 
 
 The 20 pending-decision types, their triggers, which player must answer, and the legal answer action(s):
 
-| Pending type              | Triggered by                                                                                                                                                              | Who answers                                                                                                                          | Legal answer(s)                                                                                                                                                   |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `discardResources`        | Production roll of 7 (§7.1) or Sabotage card (`politicsSabotage`, §14)                                                                                                    | Each player listed in `allowedPlayerIds` (one at a time or simultaneously per the multi-player discard flow)                         | `discardHalf` with exact resource/commodity cards to discard                                                                                                      |
-| `chooseRobberHex`         | Rolling 7 when robber is active, after all discards resolve (§7.2)                                                                                                        | Current player                                                                                                                       | `chooseRobberHex` with `hexId` of the destination hex                                                                                                             |
-| `chooseStealTarget`       | Robber placed on a hex with 2+ eligible adjacent building owners (§7.3)                                                                                                   | Current player (or the chasing player for `chaseRobber`)                                                                             | `chooseStealTarget` with `targetPlayerId`                                                                                                                         |
-| `scienceLevel3Bonus`      | Non-7 roll producing zero resources/commodities for a player with `scienceLevel >= 3` (§6.5, §13.2)                                                                       | Each eligible player (one at a time, seat order from current)                                                                        | `chooseScienceBonusResource` with `resource`                                                                                                                      |
-| `chooseMetropolisCity`    | Reaching improvement level 4 or 5 and triggering a metropolis transfer (§13.3)                                                                                            | The player gaining the metropolis                                                                                                    | `chooseMetropolisCity` with `intersectionId` of own non-metropolis city                                                                                           |
-| `choosePillageCity`       | Berserker attack loss when affected player has 2+ pillage-eligible cities (§8.5)                                                                                          | The pillaged player                                                                                                                  | `choosePillageCity` with `intersectionId` of the city to downgrade                                                                                                |
-| `chooseProgressDeck`      | Berserker defense tie (§8.4) only. When every deck is empty the pending is NOT queued — the queue collapses instead, so `eligibleDecks` is never empty                    | Each tied defender (one at a time)                                                                                                   | `chooseProgressDeck` with `deck` (`'science'`, `'trade'`, or `'politics'`)                                                                                        |
-| `discardProgress`         | Non-current player exceeds 4 progress cards after a draw (§6.2, §14), or current player ends turn with more than 4 progress cards (§5.3)                                  | The over-limit player                                                                                                                | `discardProgress` with the `instanceId`(s) of cards to discard (exact `requiredCount` must be discarded)                                                          |
-| `chooseKnightRetreat`     | Displacement (`displaceKnight` or Conspiracy card) when displaced knight has 2+ valid retreat intersections (§10.6)                                                       | The displaced knight's owner                                                                                                         | `displaceKnight` with `intersectionId` from `eligibleIntersectionIds`                                                                                             |
-| `chooseRobberDestination` | `chaseRobber` — an active knight chases the robber (§7.4)                                                                                                                 | The chasing player                                                                                                                   | `chaseRobber` with `hexId` of the destination hex                                                                                                                 |
-| `placeSetupRoad`          | After each `placeSetupBuilding` action during setup phases (§4)                                                                                                           | The current player (setup placer)                                                                                                    | `placeSetupRoad` with `edgeId` adjacent to the building just placed                                                                                               |
-| `weddingGiveCards`        | Betrothal card (`politicsBetrothal`, §14)                                                                                                                                 | Each richer opponent in sequence (one at a time)                                                                                     | `resolveOptionalCardEffect` with `cards` array of `{ type, count }` to give; must total exactly `requiredCount`                                                   |
-| `commercialHarborGive`    | Commercial Harbor offer to a target who holds a commodity                                                                                                                 | The target                                                                                                                           | `resolveOptionalCardEffect` with the target's chosen `commodityType`                                                                                              |
-| `guildDuesChooseCards`    | Guild Dues card (`tradeTribute`, §14) — actor selects from target's hand                                                                                                  | **Actor** (the card player, not the target) chooses which cards to take                                                              | `resolveOptionalCardEffect` with `cards` totaling exactly `maxCards`                                                                                              |
-| `smithingPromote`         | Tempering card (`scienceTempering`, §14)                                                                                                                                  | The card player                                                                                                                      | `resolveOptionalCardEffect` with `knightId` per free promotion, or `skip: true` to stop; up to 2 steps                                                            |
-| `treasonChooseKnight`     | Treason card (`politicsTreason`, §14) when target has **2+ knights** on the board                                                                                         | The **target player** (picks which of their own knights is removed)                                                                  | `resolveOptionalCardEffect` with `targetKnightId`                                                                                                                 |
-| `treasonPlaceKnight`      | After `treasonChooseKnight` resolves (or immediately when target has 1 knight), if actor has eligible knight in supply                                                    | The **actor** (card player)                                                                                                          | `resolveOptionalCardEffect` with `intersectionId` and `level`; or `skip: true` to decline placement                                                               |
-| `roadBuildingPlace`       | Causeway card (`scienceRoadBuilding`, §14), or Diplomacy card (`politicsDiplomacy`, §14) when actor's own road is removed — only installed while a legal placement exists | The card player                                                                                                                      | `buildRoad` with `edgeId`; `skipRoadBuilding` is only a defensive escape if no placement survives                                                                 |
-| `domesticTradeResponse`   | `domesticTradePropose` (§12.1)                                                                                                                                            | Each targeted opponent may bid or pass; the proposer awards a standing bid or cancels — an open auction, no separate confirm pending | Responders: `domesticTradeBid`, `domesticTradePass`. Proposer: `domesticTradeAward` (`bidResponderId` + term echo) or `domesticTradeCancel` (current player only) |
-| `espionageChooseCard`     | Espionage card (`politicsEspionage`, §14)                                                                                                                                 | The **actor** (card player) selects which of the target's non-VP cards to steal                                                      | `resolveOptionalCardEffect` with `targetInstanceId`; or `skip: true` to decline the steal                                                                         |
+| Pending type              | Triggered by                                                                                                                                                              | Who answers                                                                                                                          | Legal answer(s)                                                                                                                                                     |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `discardResources`        | Production roll of 7 (§7.1) or Sabotage card (`politicsSabotage`, §14)                                                                                                    | Each player listed in `allowedPlayerIds` (one at a time or simultaneously per the multi-player discard flow)                         | `discardHalf` with exact resource/commodity cards to discard                                                                                                        |
+| `chooseRobberHex`         | Rolling 7 when robber is active, after all discards resolve (§7.2)                                                                                                        | Current player                                                                                                                       | `chooseRobberHex` with `hexId` of the destination hex                                                                                                               |
+| `chooseStealTarget`       | Robber placed on a hex with 2+ eligible adjacent building owners (§7.3)                                                                                                   | Current player (or the chasing player for `chaseRobber`)                                                                             | `chooseStealTarget` with `targetPlayerId`                                                                                                                           |
+| `scienceLevel3Bonus`      | Non-7 roll producing zero resources/commodities for a player with `scienceLevel >= 3` (§6.5, §13.2)                                                                       | Each eligible player (one at a time, seat order from current)                                                                        | `chooseScienceBonusResource` with `resource`                                                                                                                        |
+| `chooseMetropolisCity`    | Reaching improvement level 4 or 5 and triggering a metropolis transfer (§13.3)                                                                                            | The player gaining the metropolis                                                                                                    | `chooseMetropolisCity` with `intersectionId` of own non-metropolis city                                                                                             |
+| `choosePillageCity`       | Berserker attack loss when affected player has 2+ pillage-eligible cities (§8.5)                                                                                          | The pillaged player                                                                                                                  | `choosePillageCity` with `intersectionId` of the city to downgrade                                                                                                  |
+| `chooseProgressDeck`      | Berserker defense tie (§8.4) only. When every deck is empty the pending is NOT queued — the queue collapses instead, so `eligibleDecks` is never empty                    | Each tied defender (one at a time)                                                                                                   | `chooseProgressDeck` with `deck` (`'science'`, `'trade'`, or `'politics'`)                                                                                          |
+| `discardProgress`         | Non-current player exceeds 4 progress cards after a draw (§6.2, §14), or current player ends turn with more than 4 progress cards (§5.3)                                  | The over-limit player                                                                                                                | `discardProgress` with the `instanceId`(s) of cards to discard (exact `requiredCount` must be discarded)                                                            |
+| `chooseKnightRetreat`     | Displacement (`displaceKnight` or Conspiracy card) when displaced knight has 2+ valid retreat intersections (§10.6)                                                       | The displaced knight's owner                                                                                                         | `displaceKnight` with `intersectionId` from `eligibleIntersectionIds`                                                                                               |
+| `chooseRobberDestination` | `chaseRobber` — an active knight chases the robber (§7.4)                                                                                                                 | The chasing player                                                                                                                   | `chaseRobber` with `hexId` of the destination hex                                                                                                                   |
+| `placeSetupRoad`          | After each `placeSetupBuilding` action during setup phases (§4)                                                                                                           | The current player (setup placer)                                                                                                    | `placeSetupRoad` with `edgeId` adjacent to the building just placed                                                                                                 |
+| `weddingGiveCards`        | Betrothal card (`politicsBetrothal`, §14)                                                                                                                                 | Each opponent with more VPs than the actor (regardless of hand size or wealth), in sequence (one at a time)                          | `resolveOptionalCardEffect` with `cards` array of `{ type, count }` to give; must total exactly `requiredCount`                                                     |
+| `commercialHarborGive`    | Commercial Harbor offer to a target who holds a commodity                                                                                                                 | The target                                                                                                                           | `resolveOptionalCardEffect` with the target's chosen `commodityType`                                                                                                |
+| `guildDuesChooseCards`    | Guild Dues card (`tradeTribute`, §14) — actor selects from target's hand                                                                                                  | **Actor** (the card player, not the target) chooses which cards to take                                                              | `resolveOptionalCardEffect` with `cards` totaling exactly `maxCards`                                                                                                |
+| `smithingPromote`         | Tempering card (`scienceTempering`, §14)                                                                                                                                  | The card player                                                                                                                      | `resolveOptionalCardEffect` with `knightId` per free promotion, or `skip: true` to stop; up to 2 steps                                                              |
+| `treasonChooseKnight`     | Treason card (`politicsTreason`, §14) when target has **2+ knights** on the board                                                                                         | The **target player** (picks which of their own knights is removed)                                                                  | `resolveOptionalCardEffect` with `targetKnightId`                                                                                                                   |
+| `treasonPlaceKnight`      | After `treasonChooseKnight` resolves (or immediately when target has 1 knight), if actor has eligible knight in supply                                                    | The **actor** (card player)                                                                                                          | `resolveOptionalCardEffect` with `intersectionId` and `level`; or `skip: true` to decline placement                                                                 |
+| `roadBuildingPlace`       | Causeway card (`scienceRoadBuilding`, §14), or Diplomacy card (`politicsDiplomacy`, §14) when actor's own road is removed — only installed while a legal placement exists | The card player                                                                                                                      | `buildRoad` with `edgeId`; `skipRoadBuilding` may decline Diplomacy's optional replacement, but for Causeway it is only a defensive escape if no placement survives |
+| `domesticTradeResponse`   | `domesticTradePropose` (§12.1)                                                                                                                                            | Each targeted opponent may bid or pass; the proposer awards a standing bid or cancels — an open auction, no separate confirm pending | Responders: `domesticTradeBid`, `domesticTradePass`. Proposer: `domesticTradeAward` (`bidResponderId` + term echo) or `domesticTradeCancel` (current player only)   |
+| `espionageChooseCard`     | Espionage card (`politicsEspionage`, §14)                                                                                                                                 | The **actor** (card player) selects which of the target's non-VP cards to steal                                                      | `resolveOptionalCardEffect` with `targetInstanceId`; or `skip: true` to decline the steal                                                                           |
 
 ## 17. Appendix: quick reference
 

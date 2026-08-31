@@ -20285,7 +20285,7 @@ var PENDING_PAYLOAD_SCHEMA_BY_TYPE = {
     maxLevel: nonNegInt().optional(),
     status: KnightStateSchema
   }),
-  [PendingDecisionType.RoadBuildingPlace]: EmptyPayloadSchema,
+  [PendingDecisionType.RoadBuildingPlace]: external_exports.object({ maySkip: external_exports.boolean().optional() }),
   // Storage, engine state, and Bot API v2 share this one strict shape.
   [PendingDecisionType.DomesticTradeResponse]: DomesticTradeAuctionPayloadSchema,
   [PendingDecisionType.EspionageChooseCard]: external_exports.object({
@@ -32687,6 +32687,26 @@ function costOnly(delta) {
   return out;
 }
 
+// bot/src/bot/settlement-sites.ts
+function settlementSitesAdjacent(state, intersectionIdA, intersectionIdB) {
+  const intersection2 = state.board.intersections[intersectionIdA];
+  if (intersection2 === void 0) return false;
+  for (const edgeId of intersection2.adjacentEdgeIds) {
+    const edge = state.board.edges[edgeId];
+    if (edge?.intersectionA === intersectionIdB || edge?.intersectionB === intersectionIdB) {
+      return true;
+    }
+  }
+  return false;
+}
+function isLegalSettlementSiteAfterRoad(state, boardView, intersectionId, newlyOwnedEdgeId) {
+  const intersection2 = state.board.intersections[intersectionId];
+  if (intersection2 === void 0 || intersection2.building !== null) return false;
+  if (!canPlaceBuildingAt(boardView, intersectionId)) return false;
+  const newEdge = state.board.edges[newlyOwnedEdgeId];
+  return newEdge !== void 0 && (newEdge.intersectionA === intersectionId || newEdge.intersectionB === intersectionId);
+}
+
 // bot/src/bot/lookahead/synthetic-followup.ts
 var SETTLEMENT_COST4 = costOnly(SETTLEMENT_DELTA);
 var ROAD_COST3 = costOnly(ROAD_DELTA);
@@ -32829,7 +32849,7 @@ function enumerateRoadUnlockedSettlements(edgeId, ctx, projected) {
   if (edge === void 0) return [];
   const out = [];
   for (const intersectionId of [edge.intersectionA, edge.intersectionB]) {
-    if (isLegalSettlementSiteAfterRoad(ctx, intersectionId, edgeId)) {
+    if (isLegalSettlementSiteAfterRoad(ctx.state, ctx.boardIndex.boardView, intersectionId, edgeId)) {
       out.push({
         id: syntheticId("settlement", intersectionId),
         type: ActionType.BuildSettlement,
@@ -32953,15 +32973,6 @@ function enumerateAffordableCityImprovements(ctx, projected, craneConsumed) {
   }
   return out;
 }
-function isLegalSettlementSiteAfterRoad(ctx, intersectionId, newlyOwnedEdgeId) {
-  const intersection2 = ctx.state.board.intersections[intersectionId];
-  if (intersection2 === void 0 || intersection2.building !== null) return false;
-  if (!canPlaceBuildingAt(ctx.boardIndex.boardView, intersectionId)) {
-    return false;
-  }
-  const newEdge = ctx.state.board.edges[newlyOwnedEdgeId];
-  return newEdge !== void 0 && (newEdge.intersectionA === intersectionId || newEdge.intersectionB === intersectionId);
-}
 function enumerateSettlementUnlockedCities(intersectionId, ctx, projected, medicineConsumed) {
   const player = ctx.state.players[ctx.actingPlayerId];
   if (player === void 0 || player.citiesInSupply <= 0 || hasSidewaysCity(ctx.state, ctx.actingPlayerId)) {
@@ -32988,19 +32999,6 @@ function dedupeByActionShape(actions, excludedKey) {
     out.push(action);
   }
   return out;
-}
-
-// bot/src/bot/settlement-sites.ts
-function settlementSitesAdjacent(state, intersectionIdA, intersectionIdB) {
-  const intersection2 = state.board.intersections[intersectionIdA];
-  if (intersection2 === void 0) return false;
-  for (const edgeId of intersection2.adjacentEdgeIds) {
-    const edge = state.board.edges[edgeId];
-    if (edge?.intersectionA === intersectionIdB || edge?.intersectionB === intersectionIdB) {
-      return true;
-    }
-  }
-  return false;
 }
 
 // bot/src/bot/lookahead/turn-lookahead.ts
