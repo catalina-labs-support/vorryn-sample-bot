@@ -1,2 +1,20 @@
 allowBuilds:
   esbuild: false
+
+# fastify 5.x pulls fast-uri transitively through ajv and fast-json-stringify,
+# on both its 3.x and 4.x lines. This standalone lockfile had pinned 3.1.5 and
+# 4.1.2, and every one of the four advisories against them is high severity --
+# host confusion via percent-encoded scheme normalization and relatives
+# (GHSA-jqff-g426-hqxp, GHSA-5jgf-p345-68v8, GHSA-f65p-4m7j-42xc,
+# GHSA-fph4-wmhf-6fwf). `--frozen-lockfile` never re-resolves, so the stale tree
+# kept shipping until `pnpm audit --prod --audit-level high` -- the sample-bot CI
+# gate -- failed on it.
+#
+# 3.1.6 and 4.1.3 are the patched floors, and are what the root workspace already
+# resolves. Ranges are qualified per major because the two lines have different
+# consumers; an unqualified override would collapse both onto one version.
+# Same pattern the root pnpm-workspace.yaml uses for cookie/GHSA-pxg6-pf52-xh8x.
+# Remove each once fastify's own ranges floor fast-uri past these versions.
+overrides:
+  'fast-uri@>=3.0.0 <3.1.6': 3.1.6
+  'fast-uri@>=4.0.0 <4.1.3': 4.1.3
