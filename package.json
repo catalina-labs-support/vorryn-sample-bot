@@ -13,6 +13,7 @@
     "test": "tsx tests/contract.test.ts && tsx tests/simulator.test.ts && tsx tests/model.test.ts && tsx tests/search.test.ts",
     "simulate": "tsx src/simulate.ts",
     "evaluate": "tsx src/evaluate.ts",
+    "evaluate:corpus": "tsx src/evaluate.ts fixtures/corpus/self-play.ndjson.gz",
     "compare": "tsx src/compare.ts",
     "tune": "tsx src/tune.ts"
   },

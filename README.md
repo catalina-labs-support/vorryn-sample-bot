@@ -48,23 +48,24 @@ Fork the repo, replace `pickAction`, deploy. Let's field a champion.
 
 ## What's in here
 
-| File                              | Purpose                                                                  |
-| --------------------------------- | ------------------------------------------------------------------------ |
-| `src/app.ts`                      | Fastify handler: bearer-auth check, schema parse, `pickAction` dispatch. |
-| `src/index.ts`                    | Process entrypoint: env setup and HTTP listen.                           |
-| `src/strategy.ts`                 | The decision function and compact decision trace.                        |
-| `src/champion.js`                 | Generated standalone competitive policy used in production.              |
-| `src/public-state.ts`             | Typed, defensive projection of the redacted public game state.           |
-| `src/opponent-beliefs.ts`         | Public-event material flow and human-seat belief model.                  |
-| `src/simulator.ts`                | Seedable public-information action simulator and evaluator.              |
-| `src/search.ts`                   | Deadline-bounded lookahead over inventory, production, and plans.        |
-| `src/simulate.ts`                 | Offline CLI for ranking actions in captured requests.                    |
-| `src/evaluate.ts` / `src/tune.ts` | Corpus evaluation and guarded parameter sweep tools.                     |
-| `src/schemas.ts`                  | Zod parsers for the request/response envelopes.                          |
-| `fixtures/play-request.json`      | A small hand-readable `BotRequest` for local testing.                    |
-| `fixtures/play-request-full.json` | A full-size `BotRequest` captured from a real self-play game.            |
-| `tests/contract.test.ts`          | Contract tests that POST both fixtures to `/play` and assert a 200.      |
-| `Dockerfile`                      | Production Node image with a `/health` container check.                  |
+| File                                  | Purpose                                                                  |
+| ------------------------------------- | ------------------------------------------------------------------------ |
+| `src/app.ts`                          | Fastify handler: bearer-auth check, schema parse, `pickAction` dispatch. |
+| `src/index.ts`                        | Process entrypoint: env setup and HTTP listen.                           |
+| `src/strategy.ts`                     | The decision function and compact decision trace.                        |
+| `src/champion.js`                     | Generated standalone competitive policy used in production.              |
+| `src/public-state.ts`                 | Typed, defensive projection of the redacted public game state.           |
+| `src/opponent-beliefs.ts`             | Public-event material flow and human-seat belief model.                  |
+| `src/simulator.ts`                    | Seedable public-information action simulator and evaluator.              |
+| `src/search.ts`                       | Deadline-bounded lookahead over inventory, production, and plans.        |
+| `src/simulate.ts`                     | Offline CLI for ranking actions in captured requests.                    |
+| `src/evaluate.ts` / `src/tune.ts`     | Corpus evaluation and guarded parameter sweep tools.                     |
+| `src/schemas.ts`                      | Zod parsers for the request/response envelopes.                          |
+| `fixtures/play-request.json`          | A small hand-readable `BotRequest` for local testing.                    |
+| `fixtures/play-request-full.json`     | A full-size `BotRequest` captured from a real self-play game.            |
+| `fixtures/corpus/self-play.ndjson.gz` | 250 real decisions from 13 complete self-play games — the tuning corpus. |
+| `tests/contract.test.ts`              | Contract tests that POST both fixtures to `/play` and assert a 200.      |
+| `Dockerfile`                          | Production Node image with a `/health` container check.                  |
 
 ## Setup
 
@@ -99,21 +100,76 @@ reordering `validActions` cannot change its score. Tune the weights in
 `src/simulator.ts`, collect completed-game requests, and compare one change at
 a time over the same corpus.
 
-Run the bundled smoke corpus, or point the evaluator at your own corpus file:
+Run the bundled 250-decision self-play corpus, the two-case smoke set, or your
+own file:
 
 ```bash
-pnpm evaluate
-pnpm evaluate path/to/eval-corpus.json
-pnpm compare path/to/eval-corpus.json 0.32 0
-pnpm tune path/to/eval-corpus.json
+pnpm evaluate:corpus                       # fixtures/corpus/self-play.ndjson.gz
+pnpm evaluate fixtures/corpus/self-play.ndjson.gz --limit 40
+pnpm evaluate                              # 2-case labeled smoke set
+pnpm compare path/to/corpus 0.32 0
+pnpm tune path/to/corpus
 ```
 
-An evaluation corpus is a JSON array of cases with `requestFile` and either
-`expectedActionId` or `expectedActionType`; it may also record
-`winnerPlayerId` for downstream outcome analysis. Paths are relative to the
-corpus file. The tuning command refuses to optimize fewer than 20 labeled
-decisions—smoke fixtures prove plumbing, not playing strength. Use completed
-games, fixed holdouts, and paired comparisons before adopting a weight change.
+A corpus comes in either of two forms.
+
+**NDJSON** (`.ndjson` / `.ndjson.gz`) — one decision per line, request inline:
+
+```json
+{
+  "gameId": "...",
+  "sequence": 214,
+  "turnNumber": 11,
+  "phase": "action",
+  "playerId": "...",
+  "chosenActionId": "action-7",
+  "chosenActionType": "buildCity",
+  "winnerUserId": "...",
+  "request": {}
+}
+```
+
+This is what `fixtures/corpus/self-play.ndjson.gz` holds (250 decisions across
+13 complete games), and exactly what `GET /games/<id>/bot-requests` returns for
+your own bot's real games — so the two concatenate.
+
+**JSON** — an array of `{ requestFile, expectedActionId | expectedActionType, winnerPlayerId? }`
+cases pointing at separate request files, resolved relative to the corpus file.
+Convenient for a handful of hand-labeled scenarios.
+
+The tuning command refuses to optimize fewer than 20 labeled decisions — smoke
+fixtures prove plumbing, not playing strength. Use completed games, fixed
+holdouts, and paired comparisons before adopting a weight change.
+
+### Measuring whether you're actually strong
+
+Be clear-eyed about what the offline tools measure. `evaluate` reports how
+often your strategy picks the same action as the policy that generated the
+corpus. That is a **regression signal** — which decisions moved, and where —
+and it is genuinely useful for that. It is **not** a measure of strength:
+
+- Agreement is maximized by copying the reference policy, which caps you at
+  its strength rather than beating it.
+- Vorryn's own experiments went further: a bot fitted to imitate a strong
+  player's _decisions_ played measurably **worse** than one that wasn't. High
+  agreement is not evidence of a good bot, and low agreement is not evidence of
+  a bad one.
+- `--strict` (and any `.json` corpus) exits non-zero on a single miss, so use
+  it only for small pinning sets, never as a tuning target on real play.
+
+What actually measures strength is outcomes: paired games against a fixed
+opponent, same seeds, seats rotated, enough of them that the confidence
+interval is narrower than the effect you're claiming. Vorryn does not yet
+offer that as a service to external bots — today the honest outcome signal
+available to you is your bot's win record on the **Build a Bot** tab, which
+accumulates one real game at a time. Until then, treat every offline number as
+a description of behavior, not a verdict on quality, and be suspicious of any
+change you adopted because a corpus metric went up.
+
+The corpus does carry one outcome-linked slice: each row records
+`winnerUserId`, so `evaluate` also reports agreement restricted to decisions
+made by the seat that went on to win the game. Still weak evidence — that seat
+won for many reasons — but unlike raw agreement it at least points at winning.
 
 The contract tests inject both fixtures through the Fastify handler with the
 expected bearer header and assert each response is
@@ -402,11 +458,21 @@ from its own contents.
 Two tools. First, return an optional `decisionTrace` (keep it ≤4KB)
 with whatever you'll want later — strategy name, chosen score, the
 runner-up gap. Vorryn persists it per decision and shows it on the
-game's bot-decisions page alongside what was picked. Second, once the
-game completes, its dice seed is revealed (see the fairness question
-above), so the entire game is deterministically replayable — you can
-reconstruct any decision point your bot faced and rerun your strategy
-against it offline.
+game's bot-decisions page alongside what was picked.
+
+Second, once the game finishes, `GET /games/<id>/bot-requests` hands you
+the exact request your bot received at every decision it made, as NDJSON
+(the "Download Requests" link on the bot-decisions page). Append those
+to a corpus file and rerun your strategy over them offline — that is
+what `pnpm evaluate <corpus>` does.
+
+Note what replay does and doesn't mean here. The completed game's dice
+seed is revealed to its participants, which lets anyone at the table
+verify the rolls the game reported (see the fairness question above).
+It does **not** let you re-simulate the game: the engine that turns a
+seed into a game is Vorryn's, not something you have a copy of. The
+request export is the replay surface for a bot author — real decision
+points, exactly as your bot saw them.
 
 ### How strong is this bot relative to the first-party bot?
 

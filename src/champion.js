@@ -33770,7 +33770,7 @@ function racePostureTraceContext(base) {
     racePostureLeaderId: posture.leaderId
   };
 }
-function buildDecisionTrace(ranked, chosen, base, ctx, winningMovePoolOnly, scoredPoolSize, nonFiniteScoreCount, repeatTradeCandidateCount, verifierScalars, complementaryOfferScalars) {
+function buildDecisionTrace(ranked, chosen, base, ctx, winningMovePoolOnly, scoredPoolSize, nonFiniteScoreCount, lookaheadSuppressedByPoolSize, repeatTradeCandidateCount, verifierScalars, complementaryOfferScalars) {
   const decisionTrace = {
     strategy: base.strategy,
     candidateCount: scoredPoolSize,
@@ -33791,6 +33791,9 @@ function buildDecisionTrace(ranked, chosen, base, ctx, winningMovePoolOnly, scor
         leaderOpponentVp: ctx.state.players[ctx.leaderOpponentId]?.victoryPoints ?? null
       } : {},
       ...nonFiniteScoreCount > 0 ? { nonFiniteScoreCount } : {},
+      // Emitted only when it fires, so the key's PRESENCE is the signal and a
+      // corpus query is a key-exists filter rather than a value scan.
+      ...lookaheadSuppressedByPoolSize ? { lookaheadSuppressedByPoolSize: true } : {},
       // Verifier scalars last — namespaced `verifier*`/`plyBonus*` keys, so
       // they can't collide with (or be clobbered by) the standard keys above.
       ...verifierScalars ?? {},
@@ -34353,7 +34356,7 @@ function chooseMainScoring(ctx, hooks) {
   const observerRankedWidth = Math.max(3, Math.floor(hooks?.rankingObserver?.width ?? 3));
   const rankedWidth = Math.max(verifierRankedWidth, observerRankedWidth);
   const scored = scoreActionPool(ctx, actionPool, base, rankedWidth);
-  const { ranked: diagnosticRanked, nonFiniteScoreCount } = scored;
+  const { ranked: diagnosticRanked, nonFiniteScoreCount, lookaheadSuppressedByPoolSize } = scored;
   hooks?.rankingObserver?.observe(
     diagnosticRanked.map(
       ({
@@ -34416,6 +34419,7 @@ function chooseMainScoring(ctx, hooks) {
       winningMovePoolOnly,
       actionPool.length,
       nonFiniteScoreCount,
+      lookaheadSuppressedByPoolSize,
       replayFilter.repeatTradeCandidateCount,
       verifierScalars,
       complementaryOfferScalars
@@ -34496,7 +34500,9 @@ function chooseEndgamePlan(plan, base, request, scoredPoolSize, repeatTradeCandi
 function scoreActionPool(ctx, actionPool, base, rankedWidth) {
   const { request } = ctx;
   const truncatedFamilies = request.validActionsTruncated && request.truncatedFamilies.length > 0 ? new Set(request.truncatedFamilies) : null;
-  const lookaheadEnabled = ctx.tuning.turnLookaheadEnabled && actionPool.length <= ctx.tuning.turnLookaheadCandidateLimit && actionPool.some((action) => isTurnLookaheadCandidate(action, ctx.state, ctx.playerId));
+  const withinLookaheadPoolLimit = actionPool.length <= ctx.tuning.turnLookaheadCandidateLimit;
+  const lookaheadEnabled = ctx.tuning.turnLookaheadEnabled && withinLookaheadPoolLimit && actionPool.some((action) => isTurnLookaheadCandidate(action, ctx.state, ctx.playerId));
+  const lookaheadSuppressedByPoolSize = ctx.tuning.turnLookaheadEnabled && !withinLookaheadPoolLimit;
   const followupScoreCache = lookaheadEnabled ? /* @__PURE__ */ new Map() : null;
   const followupScorer = (followup) => {
     if (followupScoreCache !== null) {
@@ -34565,7 +34571,7 @@ function scoreActionPool(ctx, actionPool, base, rankedWidth) {
       rankedWidth
     );
   }
-  return { ranked, nonFiniteScoreCount };
+  return { ranked, nonFiniteScoreCount, lookaheadSuppressedByPoolSize };
 }
 function blunderRoll(ctx, salt) {
   const s = `${ctx.state.version}:${ctx.state.turnNumber}:${ctx.playerId}:${salt}`;

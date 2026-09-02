@@ -221,6 +221,58 @@ handler:
 pnpm test         # injects fixtures/play-request.json, asserts a 200
 ```
 
+## Building an evaluation corpus
+
+Two fixtures show you the shape of a request. To tune, you want a
+dataset. There are two sources, and they produce the same NDJSON row
+format so you can concatenate them:
+
+**1. The bundled self-play corpus.** The sample repo ships
+`fixtures/corpus/self-play.ndjson.gz` — 250 real decisions drawn from 13
+complete self-play games (setup, mid-game builds, card plays, and the
+full domestic-trade vocabulary), each with the candidate list an
+external bot would have received:
+
+```bash
+pnpm evaluate:corpus              # whole corpus
+pnpm evaluate fixtures/corpus/self-play.ndjson.gz --limit 40
+```
+
+**2. Your own bot's real games.** After a game you played finishes:
+
+```bash
+curl -b "<your session cookie>" \
+  https://vorryn.catalina-labs.com/games/<gameId>/bot-requests \
+  >> my-corpus.ndjson
+```
+
+`GET /games/:id/bot-requests` replays the game's event log and returns
+the exact envelopes **your** bot received, one JSON object per line:
+
+```json
+{ "gameId": "...", "sequence": 214, "turnNumber": 11, "phase": "action",
+  "playerId": "<your bot's seat>", "chosenActionId": "action-7",
+  "chosenActionType": "buildCity", "winnerUserId": "...", "request": { ... } }
+```
+
+Three constraints, none of them arbitrary:
+
+- **Finished games only.** A request carries that seat's own hand, and
+  the bot's owner is usually a rival at the same table. Your endpoint
+  already receives these live; the export just waits for the game to end.
+- **Your bots only.** Decisions by other seats — including other
+  people's bots — are never included.
+- `chosenActionId` is what actually got applied. It is `null` when the
+  first-party bot played that decision as a fallback for yours.
+
+**What agreement with `chosenActionId` does and doesn't tell you.**
+It is a _regression_ signal: after a change, which decisions moved, and
+in which direction. It is **not** a measure of strength — agreement is
+maximized by copying the reference policy, and Vorryn's own experiments
+found that a bot trained to imitate a strong player's decisions played
+measurably _worse_ than one that wasn't. The corpus tells you what your
+bot does. Only games tell you whether it wins.
+
 ## Going to production
 
 Anywhere you can host an HTTPS Node service works — Fly.io, Render,
@@ -252,7 +304,7 @@ actions, so a stateless bot can play perfectly well.
 any major language. The sample is TypeScript because Node has the
 shortest setup path.
 
-**Does the protocol version freeze?** Within v1, only additive changes.
+**Does the protocol version freeze?** Within v2, only additive changes.
 Codegen tools that error on unknown enum members will need to be
 relaxed; otherwise additive minor releases will break your bot
 unnecessarily. Use the schema, set `additionalProperties: true` when
