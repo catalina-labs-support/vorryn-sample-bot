@@ -27813,6 +27813,7 @@ function scoreProgressCardValueForCtx(ctx, cardId) {
   });
 }
 var SKIP_PROGRESS_CARD_SCORE = -1e6;
+var NO_BENEFIT_PLAY_SCORE = SKIP_PROGRESS_CARD_SCORE;
 function scoreProgressCardAction(args) {
   const { action, cardId } = args;
   if (action.skip === true) return SKIP_PROGRESS_CARD_SCORE;
@@ -27900,13 +27901,39 @@ function scoreAlchemyDicePayload(ctx, action) {
   if (sum < 2 || sum > 12) return null;
   const player = ctx.state.players[ctx.actingPlayerId];
   const handSize = player !== void 0 ? totalHandSize(player) : 0;
+  const redDieValue = redDieDrawValue(ctx, action.die2);
   if (sum === 7) {
-    return 8 - selfDiscardPenaltyOnSeven(ctx, handSize) + opponentDiscardValueOnSeven(ctx) + auguryRobberValue(ctx);
+    return Math.round(
+      8 - selfDiscardPenaltyOnSeven(ctx, handSize) + opponentDiscardValueOnSeven(ctx) + auguryRobberValue(ctx) + redDieValue
+    );
   }
   const handPressure2 = Math.max(0, handSize - 6);
   const productionNet = auguryProductionNet(ctx, sum);
   const observedWeight = ctx.productionEstimator.productionWeight(sum);
-  return Math.round(14 + productionNet * 18 + observedWeight * 2 + Math.min(12, handPressure2 * 3));
+  return Math.round(
+    14 + productionNet * 18 + observedWeight * 2 + Math.min(12, handPressure2 * 3) + redDieValue
+  );
+}
+var PROGRESS_DRAW_VALUE = 24;
+var OPPONENT_PROGRESS_DRAW_WEIGHT = 0.75;
+function redDieDrawValue(ctx, redDie) {
+  const self2 = ctx.state.players[ctx.actingPlayerId];
+  let value = 0;
+  for (const track of COMMODITY_TRACKS) {
+    if (self2 !== void 0 && drawsOnRed(trackLevelFor(track, self2), redDie)) {
+      value += PROGRESS_DRAW_VALUE;
+    }
+    for (const opponent of Object.values(ctx.state.players)) {
+      if (opponent.id === ctx.actingPlayerId) continue;
+      if (drawsOnRed(trackLevelFor(track, opponent), redDie)) {
+        value -= PROGRESS_DRAW_VALUE * OPPONENT_PROGRESS_DRAW_WEIGHT;
+      }
+    }
+  }
+  return value / 6;
+}
+function drawsOnRed(trackLevel, redDie) {
+  return trackLevel > 0 && redDie <= trackLevel + 1;
 }
 function opponentDiscardValueOnSeven(ctx) {
   let discarded = 0;
@@ -28045,7 +28072,8 @@ function buildingWeightOnHex(ctx, hexId, playerId) {
   return total;
 }
 function scoreMonopolyPayload(totalTaken, leaderTaken, held, needBonus, weights) {
-  return totalTaken > 0 ? 6 + totalTaken * weights.takenWeight + leaderTaken * 10 + needBonus + Math.max(0, 2 - held) * weights.shortageWeight : 5 + needBonus;
+  if (totalTaken <= 0) return NO_BENEFIT_PLAY_SCORE;
+  return 6 + totalTaken * weights.takenWeight + leaderTaken * 10 + needBonus + Math.max(0, 2 - held) * weights.shortageWeight;
 }
 function scoreResourceMonopolyPayload(ctx, type) {
   const leaderId = leaderOpponentIdFor(ctx);
@@ -28075,11 +28103,30 @@ function scoreMerchantPayload(ctx, hexId) {
   if (hex3 === void 0 || hex3.numberToken === null) return null;
   const resource = hexProducesResource(hex3.type);
   if (resource === null) return null;
+  const rateValue = merchantHexRateValue(ctx, hexId, resource);
+  if (ctx.state.merchantOwnerPlayerId === ctx.actingPlayerId) {
+    if (ctx.state.merchantHexId === hexId) return NO_BENEFIT_PLAY_SCORE;
+    const currentRateValue = currentMerchantHexRateValue(ctx);
+    const gain = rateValue - currentRateValue;
+    return gain > 0 ? Math.round(gain) : NO_BENEFIT_PLAY_SCORE;
+  }
+  const stealBonus = ctx.state.merchantOwnerPlayerId !== null ? 12 : 0;
+  return Math.round(20 + rateValue + stealBonus);
+}
+function merchantHexRateValue(ctx, hexId, resource) {
   const materialValue = resourceUtility(ctx.state, ctx.actingPlayerId, resource);
   const ownBuildingWeight = buildingWeightOnHex(ctx, hexId, ctx.actingPlayerId);
   const pipScore = ctx.boardIndex.pipsByHex[hexId] ?? 0;
-  const stealBonus = ctx.state.merchantOwnerPlayerId !== null && ctx.state.merchantOwnerPlayerId !== ctx.actingPlayerId ? 12 : 0;
-  return Math.round(20 + pipScore * 3 + materialValue * 8 + ownBuildingWeight * 5 + stealBonus);
+  return pipScore * 3 + materialValue * 8 + ownBuildingWeight * 5;
+}
+function currentMerchantHexRateValue(ctx) {
+  const currentHexId = ctx.state.merchantHexId;
+  if (currentHexId === null) return 0;
+  const currentHex = ctx.state.board.hexes[currentHexId];
+  if (currentHex === void 0 || currentHex.numberToken === null) return 0;
+  const currentResource = hexProducesResource(currentHex.type);
+  if (currentResource === null) return 0;
+  return merchantHexRateValue(ctx, currentHexId, currentResource);
 }
 function scoreMerchantFleetPayload(ctx, type) {
   const player = selfPlayer(ctx.state, ctx.actingPlayerId);
@@ -28095,6 +28142,7 @@ function scoreGuildDuesPayload(ctx, targetPlayerId) {
   const selfVp = playerVp(ctx.state, ctx.actingPlayerId);
   const targetVp = playerVp(ctx.state, targetPlayerId);
   const targetHand = totalHandSize(target);
+  if (targetHand <= 0) return NO_BENEFIT_PLAY_SCORE;
   return 8 + Math.min(24, targetHand * 4) + Math.max(0, targetVp - selfVp) * 5;
 }
 function scoreDiplomacyPayload(ctx, edgeId) {
@@ -29229,6 +29277,11 @@ function promotionBaseScore(level) {
     case KnightLevel.Mighty:
       return 0;
   }
+}
+function scoreFreeKnightPromotion(state, actingPlayerId, summary, knight) {
+  const base = promotionBaseScore(knight.level);
+  if (knight.state !== KnightState.Active) return base;
+  return base + 12 + neededActiveStrengthGap(state, actingPlayerId, summary) * 14 + berserkerContributionFlipBonus(state, actingPlayerId, summary, 1);
 }
 function scoreKnightPromotion(ctx, knightId) {
   const { state, actingPlayerId, boardIndex } = ctx;
@@ -31608,18 +31661,20 @@ function resourceGap(resources, cost) {
 
 // bot/src/pending/smithing-promote.ts
 var smithingPromote = (ctx) => {
-  const knightLocations = /* @__PURE__ */ new Map();
-  for (const knight of ctx.boardIndex.knightsByPlayer[ctx.playerId] ?? []) {
-    knightLocations.set(knight.id, knight.locationIntersectionId);
-  }
+  const knightsById = new Map(
+    (ctx.boardIndex.knightsByPlayer[ctx.playerId] ?? []).map((knight) => [knight.id, knight])
+  );
   return pickArgmaxOptionalEffectWithSkip(ctx, (action) => {
     const knightId = action.knightId;
     if (knightId === void 0) return null;
-    const intersectionId = knightLocations.get(knightId);
-    if (intersectionId === void 0) return null;
-    const knight = ctx.boardIndex.knightsById[knightId];
-    const activeBonus = knight?.state === KnightState.Active ? 12 : 0;
-    return activeBonus + (ctx.boardIndex.pipsByIntersection[intersectionId] ?? 0);
+    const knight = knightsById.get(knightId);
+    if (knight === void 0) return null;
+    return scoreFreeKnightPromotion(
+      ctx.state,
+      ctx.playerId,
+      ctx.boardIndex.berserkerSummary,
+      knight
+    );
   });
 };
 
