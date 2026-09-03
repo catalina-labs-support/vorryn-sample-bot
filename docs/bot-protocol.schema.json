@@ -2782,6 +2782,7 @@
         },
         "validActions": {
           "minItems": 1,
+          "maxItems": 8192,
           "type": "array",
           "items": {
             "oneOf": [
@@ -4242,6 +4243,7 @@
           }
         },
         "recentEvents": {
+          "maxItems": 256,
           "type": "array",
           "items": {
             "oneOf": [

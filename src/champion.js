@@ -19898,7 +19898,9 @@ var BotActionCandidateSchema = external_exports.discriminatedUnion("type", [
   gameActionHead.extend({ id: candidateId }),
   ...gameActionRest.map((variant) => variant.extend({ id: candidateId }))
 ]);
-var BotActionCandidatesSchema = external_exports.array(BotActionCandidateSchema).min(1).superRefine((actions, ctx) => {
+var MAX_BOT_VALID_ACTIONS = 8192;
+var MAX_BOT_RECENT_EVENTS = 256;
+var BotActionCandidatesSchema = external_exports.array(BotActionCandidateSchema).min(1).max(MAX_BOT_VALID_ACTIONS).superRefine((actions, ctx) => {
   const seen = /* @__PURE__ */ new Set();
   for (let index = 0; index < actions.length; index++) {
     const id = actions[index]?.id;
@@ -19945,7 +19947,7 @@ var BotRequestSchema = external_exports.object({
   validActionsTruncated: external_exports.boolean(),
   truncatedFamilies: external_exports.array(ValidActionFamilySchema),
   diceHistogram: DiceHistogramSchema,
-  recentEvents: external_exports.array(RecentEventSchema),
+  recentEvents: external_exports.array(RecentEventSchema).max(MAX_BOT_RECENT_EVENTS),
   // Optional: absent means "caller does not know which seats are human",
   // never "there are no humans". See BotRequest.humanPlayerIds.
   humanPlayerIds: external_exports.array(external_exports.string()).optional(),
@@ -25007,6 +25009,7 @@ var DEFAULT_TUNING = Object.freeze({
   endgameCloserPrepBonus: 24,
   endgameCloserDistractionPenalty: 28,
   sameTurnEndgamePlannerEnabled: true,
+  humanEndgameMultiTradeWinEnabled: false,
   racePostureWeight: 0,
   nearWinLeaderClampEnabled: false,
   leaderConvertibilityWeight: 0,
@@ -27264,7 +27267,7 @@ var knownHumanPlayerIdsCache = /* @__PURE__ */ new WeakMap();
 function cachedKnownHumanPlayerIds(request, excludePlayerId) {
   const byExclusion = getOrCreate(
     knownHumanPlayerIdsCache,
-    request,
+    request.state,
     () => /* @__PURE__ */ new Map()
   );
   return getOrCreate(
@@ -32009,7 +32012,9 @@ function resolveAtTermsAward(ctx, decision2, atTermsCandidates, cancel, preTrade
   );
   let safeAtTermsAward = safeCandidates[0] ?? null;
   let opponentTempoPenalty = safeAtTermsAward === null ? 0 : tradePartnerTempoPenalty(ctx, safeAtTermsAward.bidResponderId, offer, want);
-  for (const candidate of safeCandidates.slice(1)) {
+  for (let i = 1; i < safeCandidates.length; i++) {
+    const candidate = safeCandidates[i];
+    if (candidate === void 0) continue;
     const penalty = tradePartnerTempoPenalty(ctx, candidate.bidResponderId, offer, want);
     if (penalty < opponentTempoPenalty) {
       safeAtTermsAward = candidate;
@@ -33647,7 +33652,80 @@ function findSameTurnWinningPlan(ctx, actionPool, base) {
       if (planRanksAbove(plan, best)) best = plan;
     }
   }
+  if (ctx.tuning.humanEndgameMultiTradeWinEnabled) {
+    const multiTradePlan = findMultiTradeWinningPlan(ctx, planPool, base);
+    if (multiTradePlan !== null && planRanksAbove(multiTradePlan, best)) best = multiTradePlan;
+  }
   return best;
+}
+function findMultiTradeWinningPlan(ctx, planPool, base) {
+  const self2 = selfPlayer(ctx.state, ctx.playerId);
+  if (self2 === null) return null;
+  const trades = planPool.filter(
+    (action) => action.type === ActionType.MaritimeTrade
+  );
+  if (trades.length === 0) return null;
+  let best = null;
+  for (const setupAction of trades) {
+    const setupDelta = actionDelta(setupAction);
+    if (setupDelta === null) continue;
+    const afterSetup = applyResourceDelta(
+      { resources: self2.resources, commodities: self2.commodities },
+      setupDelta
+    );
+    for (const followupAction of trades) {
+      const followupDelta = actionDelta(followupAction);
+      if (followupDelta === null) continue;
+      if (!canAffordHypothetical(afterSetup, costOnly(followupDelta))) continue;
+      if (!bankCanExecuteAfter(ctx, setupAction, followupAction)) continue;
+      const afterFollowup = applyResourceDelta(afterSetup, followupDelta);
+      const followupCtx = buildScoreContext(ctx, followupAction, base);
+      for (const finisherAction of enumerateSyntheticFollowups(
+        followupAction,
+        followupCtx,
+        afterFollowup
+      )) {
+        const finisherDelta = actionDelta(
+          finisherAction,
+          buildActionDeltaContext(ctx.state, ctx.playerId, finisherAction)
+        );
+        if (finisherDelta === null) continue;
+        const finisherCost = costOnly(finisherDelta);
+        if (canAffordHypothetical(afterSetup, finisherCost)) continue;
+        if (!canAffordHypothetical(afterFollowup, finisherCost)) continue;
+        const finisherVpDelta = winningVpDelta(finisherAction, ctx.state, ctx.playerId, {
+          boardIndex: ctx.boardIndex
+        });
+        if (finisherVpDelta <= 0) continue;
+        if (self2.victoryPoints + finisherVpDelta < ctx.state.victoryPointsTarget) continue;
+        const plan = {
+          setupAction,
+          followupAction,
+          finisherAction,
+          setupVpDelta: 0,
+          followupVpDelta: 0,
+          finisherVpDelta,
+          setupScore: score(buildScoreContext(ctx, setupAction, base)),
+          followupScore: score(followupCtx),
+          finisherScore: score(buildScoreContext(ctx, finisherAction, base)),
+          syntheticFollowup: false,
+          syntheticFinisher: isSyntheticFollowupId(finisherAction.id)
+        };
+        if (planRanksAbove(plan, best)) best = plan;
+      }
+    }
+  }
+  return best;
+}
+function bankCanExecuteAfter(ctx, setup, followup) {
+  const wantedType = followup.want.type;
+  let available = bankMaterialCount(ctx, wantedType);
+  if (setup.offer.type === wantedType) available += setup.offer.count;
+  if (setup.want.type === wantedType) available -= setup.want.count;
+  return available >= followup.want.count;
+}
+function bankMaterialCount(ctx, type) {
+  return isCommodityType(type) ? ctx.state.bankCommodities[type] ?? 0 : ctx.state.bankResources[type] ?? 0;
 }
 function isMerchantPlay(action, self2) {
   if (action.type !== ActionType.PlayProgressCard) return false;
@@ -33749,11 +33827,14 @@ function metropolisClaimsCompeteForHost(setup, followup, setupVpDelta, followupV
 }
 function planRanksAbove(candidate, incumbent) {
   if (incumbent === null) return true;
-  const candidateDelta = candidate.setupVpDelta + candidate.followupVpDelta;
-  const incumbentDelta = incumbent.setupVpDelta + incumbent.followupVpDelta;
+  const candidateDelta = candidate.setupVpDelta + candidate.followupVpDelta + (candidate.finisherVpDelta ?? 0);
+  const incumbentDelta = incumbent.setupVpDelta + incumbent.followupVpDelta + (incumbent.finisherVpDelta ?? 0);
   if (candidateDelta !== incumbentDelta) return candidateDelta > incumbentDelta;
-  const candidateScore = candidate.setupScore + candidate.followupScore;
-  const incumbentScore = incumbent.setupScore + incumbent.followupScore;
+  const candidateLength = candidate.finisherAction === void 0 ? 2 : 3;
+  const incumbentLength = incumbent.finisherAction === void 0 ? 2 : 3;
+  if (candidateLength !== incumbentLength) return candidateLength < incumbentLength;
+  const candidateScore = candidate.setupScore + candidate.followupScore + (candidate.finisherScore ?? 0);
+  const incumbentScore = incumbent.setupScore + incumbent.followupScore + (incumbent.finisherScore ?? 0);
   if (candidateScore !== incumbentScore) return candidateScore > incumbentScore;
   return candidate.setupAction.id < incumbent.setupAction.id;
 }
@@ -33889,14 +33970,14 @@ function filterRedundantTradeCandidates(ctx, actionPool) {
     return { actionPool, repeatTradeCandidateCount: 0 };
   }
   const repeatedKeys = sameTurnTradeReplayKeys(ctx);
+  if (repeatedKeys.size === 0 && ctx.tuning.domesticTradeReversalLookback <= 0) {
+    return { actionPool, repeatTradeCandidateCount: 0 };
+  }
   const reversalGuard = buildDomesticTradeReversalGuard(
     ctx.request.recentEvents,
     ctx.playerId,
     ctx.tuning.domesticTradeReversalLookback
   );
-  if (repeatedKeys.size === 0 && ctx.tuning.domesticTradeReversalLookback <= 0) {
-    return { actionPool, repeatTradeCandidateCount: 0 };
-  }
   const filtered = [];
   let repeatTradeCandidateCount = 0;
   for (const action of actionPool) {
@@ -34380,14 +34461,20 @@ function chooseMainScoring(ctx, hooks) {
   const blundered = selectWithBlunder(ctx, ranked, suppressBlunder);
   let chosenEntry = blundered;
   let verifierScalars = null;
+  let verifierReachedVerdict = false;
   if (verifier !== void 0 && blundered !== void 0 && blundered === ranked[0]) {
     try {
       const result = verifier({ ctx, ranked, base, winningMovePoolOnly });
       if (result !== null) {
         verifierScalars = result.scalars;
+        if (result.scalars["verifierTriggered"] === true) verifierReachedVerdict = true;
         const overrideId = result.overrideEntry?.action.id;
         if (overrideId !== void 0) {
-          chosenEntry = ranked.find((e) => e.action.id === overrideId) ?? blundered;
+          const overridden = ranked.find((e) => e.action.id === overrideId);
+          if (overridden !== void 0) {
+            chosenEntry = overridden;
+            verifierReachedVerdict = true;
+          }
         }
       }
     } catch {
@@ -34395,7 +34482,15 @@ function chooseMainScoring(ctx, hooks) {
     }
   }
   let complementaryOfferScalars = null;
-  if (ctx.tuning.domesticTradeComplementaryOfferWeight > 0 && chosenEntry !== void 0 && !winningMovePoolOnly && verifierScalars === null) {
+  if (ctx.tuning.domesticTradeComplementaryOfferWeight > 0 && chosenEntry !== void 0 && !winningMovePoolOnly && // Stand down only when the verifier reached a verdict. Gating on
+  // `verifierScalars === null` meant arming the verifier switched this
+  // shipped selector off on every contested decision — including the ones it
+  // abstained on having evaluated nothing (no determinizer, infeasible world,
+  // budget expiry, hook throw). An affirming verdict still wins: the verifier
+  // deliberated over these finalists and endorsed this one. Masked twice
+  // today — the verifier is dark, and the weight is 0 in DEFAULT_TUNING and
+  // every preset.
+  !verifierReachedVerdict) {
     const selection = selectComplementaryOffer({
       chosenEntry,
       ranked,
@@ -34473,6 +34568,12 @@ function chooseEndgamePlan(plan, base, request, scoredPoolSize, repeatTradeCandi
         endgamePlanSyntheticFollowup: plan.syntheticFollowup,
         endgamePlanSetupVpDelta: plan.setupVpDelta,
         endgamePlanFollowupVpDelta: plan.followupVpDelta,
+        ...plan.finisherAction === void 0 ? {} : {
+          endgamePlanFinisherActionType: plan.finisherAction.type,
+          endgamePlanFinisherCandidateId: plan.finisherAction.id,
+          endgamePlanSyntheticFinisher: plan.syntheticFinisher === true,
+          endgamePlanFinisherVpDelta: plan.finisherVpDelta ?? 0
+        },
         chosenActionType: chosen.type,
         chosenCandidateId: chosen.id,
         validActionCount: request.validActions.length,
@@ -34490,7 +34591,13 @@ function chooseEndgamePlan(plan, base, request, scoredPoolSize, repeatTradeCandi
             followupType: plan.followupAction.type,
             followupCandidateId: plan.followupAction.id,
             followupScore: round2(plan.followupScore),
-            syntheticFollowup: plan.syntheticFollowup
+            syntheticFollowup: plan.syntheticFollowup,
+            ...plan.finisherAction === void 0 ? {} : {
+              finisherType: plan.finisherAction.type,
+              finisherCandidateId: plan.finisherAction.id,
+              finisherScore: round2(plan.finisherScore ?? 0),
+              syntheticFinisher: plan.syntheticFinisher === true
+            }
           }
         }
       ]
@@ -34826,6 +34933,9 @@ var HUMANS = Object.freeze({
   // action contract or cloning engine state.
   turnLookaheadSecondPlyK: 2,
   turnLookaheadSecondPlyDiscount: 0.55,
+  // A guaranteed two-bank-trade -> winning-build line is the narrow third
+  // ply the ordinary setup+followup endgame planner cannot see.
+  humanEndgameMultiTradeWinEnabled: true,
   // Response side: accept marginal-positive offers a human would rationally
   // take, while the near-win and leader-trade guards stay intact.
   domesticTradeAcceptStrongProjection: 8,
