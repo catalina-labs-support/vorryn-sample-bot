@@ -1841,7 +1841,11 @@
                         },
                         "payload": {
                           "type": "object",
-                          "properties": {},
+                          "properties": {
+                            "maySkip": {
+                              "type": "boolean"
+                            }
+                          },
                           "additionalProperties": false
                         }
                       },
