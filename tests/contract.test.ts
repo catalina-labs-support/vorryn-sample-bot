@@ -91,8 +91,9 @@ if (humanTableBody.decisionTrace?.externalStrengthProfile !== 'maximum-strength'
 // still emitted the retired knob. Two stale artifacts agreeing with each other,
 // under a green CI job. Asserting the WHOLE set rather than a two-item subset is
 // what makes the next divergence fail loudly instead of silently agreeing.
+// The restored three-proposal cap is a retained product constraint, so it must
+// not appear among the handicaps this champion disables.
 const EXPECTED_DISABLED_HANDICAPS = [
-  'humanFacingProposalsPerTurn',
   'domesticTradeProposeOverheadDefault',
   'tradeBuildPathTwoForOneBonus',
 ];
