@@ -33670,7 +33670,7 @@ function findSameTurnWinningPlan(ctx, actionPool, base) {
   const target = ctx.state.victoryPointsTarget;
   if (self2.victoryPoints < target - THREE_FROM_WIN) return null;
   const planPool = actionPool.length > ENDGAME_PLAN_POOL_LIMIT ? actionPool.filter((a) => PLAN_RELEVANT_TYPES.has(a.type)) : actionPool;
-  if (planPool.length > ENDGAME_PLAN_POOL_LIMIT) return null;
+  if (planPool.length > ENDGAME_PLAN_POOL_LIMIT) return findThreeRoadWinningPlan(ctx, actionPool);
   const vpDeltaByActionId = /* @__PURE__ */ new Map();
   for (const action of planPool) {
     vpDeltaByActionId.set(
@@ -33779,7 +33779,64 @@ function findSameTurnWinningPlan(ctx, actionPool, base) {
     const multiTradePlan = findMultiTradeWinningPlan(ctx, planPool, base);
     if (multiTradePlan !== null && planRanksAbove(multiTradePlan, best)) best = multiTradePlan;
   }
-  return best;
+  return best ?? findThreeRoadWinningPlan(ctx, actionPool);
+}
+function findThreeRoadWinningPlan(ctx, actionPool) {
+  const self2 = selfPlayer(ctx.state, ctx.playerId);
+  if (self2 === null || self2.victoryPoints + 2 < ctx.state.victoryPointsTarget || ctx.state.longestRoadHolderPlayerId === ctx.playerId || self2.roadsInSupply < 3 || (self2.resources.brick ?? 0) < 3 || (self2.resources.lumber ?? 0) < 3 || ctx.state.pendingDecision !== null)
+    return null;
+  for (const first of actionPool) {
+    if (first.type !== ActionType.BuildRoad) continue;
+    const edgeA = ctx.state.board.edges[first.edgeId];
+    if (edgeA === void 0) continue;
+    const afterFirst = withEdgeOwnerOverride(ctx.state.board, edgeA, ctx.playerId);
+    const firstView = recordBoardView(afterFirst);
+    for (const endpoint of [edgeA.intersectionA, edgeA.intersectionB]) {
+      for (const secondId of ctx.state.board.intersections[endpoint]?.adjacentEdgeIds ?? []) {
+        const edgeB = afterFirst.edges[secondId];
+        if (edgeB === void 0 || edgeB.roadOwnerPlayerId !== null || !isRoadConnected(firstView, ctx.playerId, secondId))
+          continue;
+        const afterSecond = withEdgeOwnerOverride(afterFirst, edgeB, ctx.playerId);
+        const secondView = recordBoardView(afterSecond);
+        for (const nextEndpoint of [edgeB.intersectionA, edgeB.intersectionB]) {
+          for (const thirdId of ctx.state.board.intersections[nextEndpoint]?.adjacentEdgeIds ?? []) {
+            const edgeC = afterSecond.edges[thirdId];
+            if (edgeC === void 0 || edgeC.roadOwnerPlayerId !== null || !isRoadConnected(secondView, ctx.playerId, thirdId))
+              continue;
+            const finisher = {
+              id: `synthetic-endgame-third-road-${thirdId}`,
+              type: ActionType.BuildRoad,
+              edgeId: thirdId
+            };
+            const delta = winningVpDelta(
+              finisher,
+              { ...ctx.state, board: afterSecond },
+              ctx.playerId
+            );
+            if (delta !== 2) continue;
+            return {
+              setupAction: first,
+              followupAction: {
+                id: `synthetic-endgame-second-road-${secondId}`,
+                type: ActionType.BuildRoad,
+                edgeId: secondId
+              },
+              finisherAction: finisher,
+              setupVpDelta: 0,
+              followupVpDelta: 0,
+              finisherVpDelta: 2,
+              setupScore: 0,
+              followupScore: 0,
+              finisherScore: 0,
+              syntheticFollowup: true,
+              syntheticFinisher: true
+            };
+          }
+        }
+      }
+    }
+  }
+  return null;
 }
 function findMultiTradeWinningPlan(ctx, planPool, base) {
   const self2 = selfPlayer(ctx.state, ctx.playerId);

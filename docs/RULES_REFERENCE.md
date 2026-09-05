@@ -1109,6 +1109,7 @@ Targets an opponent who has at least one knight on the board. The target player 
 After the knight is removed:
 
 - The actor may optionally place one of their own knights of equal or lesser strength at an intersection adjacent to their own road network, inheriting the removed knight's active/inactive status.
+- The removed knight's level is the only ceiling. The actor does **not** need the Fortress (politics level 3) to place a mighty knight this way — the rulebook exempts Treason explicitly: _"If the other player removes a mighty knight, you may place a mighty knight, even if you have not built that level of city improvement."_ This is why `politics-treason.ts` has no `politicsLevel` check where `validatePromoteKnight` does.
 - If the actor has no eligible knight in supply, the placement step is skipped.
 
 **Pendings:**
