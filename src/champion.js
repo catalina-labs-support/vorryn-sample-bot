@@ -21701,7 +21701,6 @@ function buildBoardIndex(state, viewerPlayerId) {
   const roadConnectedIntersections = emptyStringRecord();
   const metroBonusByPlayer = emptyStringRecord();
   const heldMetroTracksByPlayer = emptyStringRecord();
-  const basicKnightCountByPlayer = emptyStringRecord();
   const roadReachSeedsByPlayer = emptyStringRecord();
   for (const playerId of Object.keys(state.players)) {
     knightsByPlayer[playerId] = [];
@@ -21709,7 +21708,6 @@ function buildBoardIndex(state, viewerPlayerId) {
     cityCountByPlayer[playerId] = 0;
     metroBonusByPlayer[playerId] = 0;
     heldMetroTracksByPlayer[playerId] = /* @__PURE__ */ new Set();
-    basicKnightCountByPlayer[playerId] = 0;
     roadReachSeedsByPlayer[playerId] = [];
   }
   const metropolisOwnerByTrack = {
@@ -21761,9 +21759,6 @@ function buildBoardIndex(state, viewerPlayerId) {
       const ownerKnights = knightsByPlayer[knight.ownerPlayerId] ?? [];
       ownerKnights.push(knight);
       knightsByPlayer[knight.ownerPlayerId] = ownerKnights;
-      if (knight.level === KnightLevel.Basic) {
-        basicKnightCountByPlayer[knight.ownerPlayerId] = (basicKnightCountByPlayer[knight.ownerPlayerId] ?? 0) + 1;
-      }
       if (knight.state === KnightState.Active) {
         const strength = knightStrength(knight.level);
         activeKnightStrengthByPlayer[knight.ownerPlayerId] = (activeKnightStrengthByPlayer[knight.ownerPlayerId] ?? 0) + strength;
@@ -21888,7 +21883,6 @@ function buildBoardIndex(state, viewerPlayerId) {
     threatScoreByPlayer,
     metroBonusByPlayer,
     heldMetroTracksByPlayer,
-    basicKnightCountByPlayer,
     anyMetropolisPlaced,
     metropolisOwnerByTrack,
     commodityProductionByTrack,
@@ -22916,15 +22910,6 @@ function lateGameNonVpPenalty(ctx) {
   return -ctx.tuning.lateGameNonVpPenalty;
 }
 
-// bot/src/bot/score-rules/knight-surplus-adjustment.ts
-var BASIC_SURPLUS_THRESHOLD = 2;
-function knightSurplusAdjustment(ctx) {
-  if (ctx.action.type !== ActionType.PromoteKnight) return 0;
-  const basicCount = ctx.boardIndex.basicKnightCountByPlayer[ctx.actingPlayerId] ?? 0;
-  if (basicCount < BASIC_SURPLUS_THRESHOLD) return 0;
-  return ctx.tuning.knightSurplusPromoteBonus;
-}
-
 // bot/src/bot/score-rules/immediate-win-threat-adjustments.ts
 function immediateWinThreatAdjustments(ctx) {
   if (!ctx.immediateWinThreat) return 0;
@@ -23455,17 +23440,7 @@ function displaceKnightWinDelta(knightId, targetId, state, playerId, deps) {
       deps
     ) === playerId ? 2 : 0;
   }
-  for (const retreatId of retreatIds) {
-    const retreatedBoard = withKnightPlaced(
-      displacedBoard,
-      retreatId,
-      displacedKnight.ownerPlayerId
-    );
-    if (projectedLongestRoadHolder(state, retreatedBoard, initialHolder, deps) !== playerId) {
-      return 0;
-    }
-  }
-  return 2;
+  return initialHolder === playerId ? 2 : 0;
 }
 function projectedLongestRoadHolder(state, board, currentHolder, deps) {
   const calc = deps.calculateLongestRoad ?? calculateLongestRoadFromClient;
@@ -25093,6 +25068,7 @@ var DEFAULT_TUNING = Object.freeze({
   standingWantHoldMaxPenalty: 24,
   nearKitSettlementHoldPenalty: 0,
   nearKitSettlementHoldBroadEnabled: false,
+  nearKitSettlementHoldMaxDeficit: 1,
   nearKitSettlementActivationReservationEnabled: false,
   nearKitSettlementPriorityEnabled: false,
   // Turns-saved trade bonus: off by default. Humans arm it.
@@ -25264,7 +25240,6 @@ var DEFAULT_TUNING = Object.freeze({
   knightDefenderTokenValue: 60,
   knightDefenderDrawValue: 20,
   promoteKnightBase: 34,
-  knightSurplusPromoteBonus: 15,
   chaseRobberBase: 44,
   // Inert until an expansion-gate discovery and disjoint confirmation justify
   // arming it in a personality preset.
@@ -25312,19 +25287,6 @@ var DEFAULT_TUNING = Object.freeze({
   // stays comparable. The `humans`/aggressive presets may opt in once swept.
   turnLookaheadSecondPlyK: 0,
   turnLookaheadSecondPlyDiscount: 0.5,
-  // Decision-time ply verifier: OFF by default (kill switch ⇒ bit-identical).
-  // Difficulty presets pin enginePlyEnabled explicitly (easy/normal false,
-  // hard inherits); arming is an M3 gated decision. The remaining knobs are
-  // starting points — per-preset G1 calibration is normative for
-  // enginePlyGapThreshold / enginePlyOverrideMargin.
-  enginePlyEnabled: false,
-  enginePlyTopK: 5,
-  enginePlyGapThreshold: 25,
-  enginePlyDiscount: 0.2,
-  enginePlyChanceWorlds: 3,
-  enginePlyQuiescenceCap: 8,
-  enginePlyBudgetMs: 250,
-  enginePlyOverrideMargin: 2,
   vpTransitionTradeGuardEnabled: true,
   opponentTradeFairnessGuardEnabled: true,
   opponentTradeFairnessRatio: 1.25,
@@ -26491,7 +26453,8 @@ function computeAcquisitionPlan(state, playerId, boardIndex, tuning, estimator) 
   const cityTarget = targets.find((target) => target.kind === "city");
   const settlementTarget = targets.find((target) => target.kind === "settlement");
   const hasReachableSettlementSite2 = (boardIndex.buildableSettlementSiteIdsByPlayer[playerId]?.size ?? 0) > 0;
-  const nearKitSettlementCost = settlementTarget !== void 0 && hasReachableSettlementSite2 && totalCardDeficit(player, settlementTarget.cost) === 1 ? settlementTarget.cost : null;
+  const settlementDeficit = settlementTarget === void 0 ? null : totalCardDeficit(player, settlementTarget.cost);
+  const nearKitSettlementCost = settlementTarget !== void 0 && hasReachableSettlementSite2 && settlementDeficit !== null && settlementDeficit >= 1 && settlementDeficit <= tuning.nearKitSettlementHoldMaxDeficit ? settlementTarget.cost : null;
   const production = estimator?.expectedProductionPerTurn(state, playerId) ?? {};
   let bestScore = -Infinity;
   let bestBonus = -Infinity;
@@ -31354,7 +31317,6 @@ var SCORE_RULES = [
   winningBuildResourceTradeBonus,
   lateGameNonVpPenalty,
   endgameCloserMode,
-  knightSurplusAdjustment,
   immediateWinThreatAdjustments,
   criticalThreatAdjustments,
   settlementHoard,
@@ -33920,7 +33882,7 @@ function enumerateFollowups(ctx, setupCtx, setupAction, actionPool, projected) {
   const medicineConsumed = plannedSetup.type === ActionType.BuildCity && self2 !== null && self2.medicinePlayed;
   const craneConsumed = plannedSetup.type === ActionType.ImproveCity && self2 !== null && self2.cranePlayed;
   for (const followup of actionPool) {
-    if (followup.id === setupAction.id) continue;
+    if (followup.id === setupAction.id && followup.type !== ActionType.ImproveCity) continue;
     if (progressCardPlaysConflict(setupAction, followup)) continue;
     if (!hasSupplyAfterSetup(ctx, setupAction, followup, supplyScratch)) continue;
     const plannedFollowup = planningActionForCandidate(followup, ctx.state, ctx.playerId);
@@ -33957,6 +33919,28 @@ function enumerateFollowups(ctx, setupCtx, setupAction, actionPool, projected) {
     craneConsumed
   )) {
     addFollowup(out, seen, followup);
+  }
+  if (setupAction.type === ActionType.BuildRoad && self2 !== null && self2.victoryPoints + 2 >= ctx.state.victoryPointsTarget && self2.roadsInSupply >= 2) {
+    const roadDelta = actionDelta(setupAction);
+    const firstEdge = ctx.state.board.edges[setupAction.edgeId];
+    if (firstEdge !== void 0 && roadDelta !== null && canAffordHypothetical(projected, costOnly(roadDelta))) {
+      const ownedEdge = { ...firstEdge, roadOwnerPlayerId: ctx.playerId };
+      const view = {
+        intersection: (id) => ctx.boardIndex.boardView.intersection(id),
+        edge: (id) => id === firstEdge.id ? ownedEdge : ctx.boardIndex.boardView.edge(id)
+      };
+      for (const endpoint of [firstEdge.intersectionA, firstEdge.intersectionB]) {
+        for (const edgeId of ctx.state.board.intersections[endpoint]?.adjacentEdgeIds ?? []) {
+          if (edgeId === firstEdge.id || view.edge(edgeId)?.roadOwnerPlayerId !== null) continue;
+          if (!isRoadConnected(view, ctx.playerId, edgeId)) continue;
+          addFollowup(out, seen, {
+            id: `synthetic-endgame-road-${edgeId}`,
+            type: ActionType.BuildRoad,
+            edgeId
+          });
+        }
+      }
+    }
   }
   return out;
 }
@@ -34029,7 +34013,7 @@ function racePostureTraceContext(base) {
     racePostureLeaderId: posture.leaderId
   };
 }
-function buildDecisionTrace(ranked, chosen, base, ctx, winningMovePoolOnly, scoredPoolSize, nonFiniteScoreCount, lookaheadSuppressedByPoolSize, repeatTradeCandidateCount, verifierScalars, complementaryOfferScalars) {
+function buildDecisionTrace(ranked, chosen, base, ctx, winningMovePoolOnly, scoredPoolSize, nonFiniteScoreCount, lookaheadSuppressedByPoolSize, repeatTradeCandidateCount, complementaryOfferScalars) {
   const decisionTrace = {
     strategy: base.strategy,
     candidateCount: scoredPoolSize,
@@ -34053,14 +34037,11 @@ function buildDecisionTrace(ranked, chosen, base, ctx, winningMovePoolOnly, scor
       // Emitted only when it fires, so the key's PRESENCE is the signal and a
       // corpus query is a key-exists filter rather than a value scan.
       ...lookaheadSuppressedByPoolSize ? { lookaheadSuppressedByPoolSize: true } : {},
-      // Verifier scalars last — namespaced `verifier*`/`plyBonus*` keys, so
-      // they can't collide with (or be clobbered by) the standard keys above.
-      ...verifierScalars ?? {},
       ...complementaryOfferScalars ?? {},
       ...chosenTradeProposalTrace(ranked, chosen)
     },
-    // The emitted trace stays 3-wide regardless of the verifier's ranked
-    // width (trace size + analytics-join stability — recorded decision).
+    // The emitted trace stays 3-wide regardless of an observer-widened ranked
+    // list (trace size + analytics-join stability — recorded decision).
     top3: ranked.slice(0, 3).map((e) => {
       const breakdown = scoreWithBreakdown(e.ctx);
       const rounded = {};
@@ -34618,10 +34599,9 @@ function chooseMainScoring(ctx, hooks) {
       );
     }
   }
-  const verifier = hooks?.verifier;
-  const verifierRankedWidth = verifier !== void 0 && ctx.tuning.enginePlyEnabled ? Math.max(3, Math.floor(ctx.tuning.enginePlyTopK)) : 3;
+  const productionRankedWidth = 3;
   const observerRankedWidth = Math.max(3, Math.floor(hooks?.rankingObserver?.width ?? 3));
-  const rankedWidth = Math.max(verifierRankedWidth, observerRankedWidth);
+  const rankedWidth = Math.max(productionRankedWidth, observerRankedWidth);
   const scored = scoreActionPool(ctx, actionPool, base, rankedWidth, proposalScoreContexts);
   const { ranked: diagnosticRanked, nonFiniteScoreCount, lookaheadSuppressedByPoolSize } = scored;
   hooks?.rankingObserver?.observe(
@@ -34642,41 +34622,12 @@ function chooseMainScoring(ctx, hooks) {
     ),
     { poolSize: actionPool.length }
   );
-  const ranked = diagnosticRanked.length > verifierRankedWidth ? diagnosticRanked.slice(0, verifierRankedWidth) : diagnosticRanked;
+  const ranked = diagnosticRanked.length > productionRankedWidth ? diagnosticRanked.slice(0, productionRankedWidth) : diagnosticRanked;
   const suppressBlunder = winningMovePoolOnly || base.immediateWinThreat || base.criticalOpponentThreat;
   const blundered = selectWithBlunder(ctx, ranked, suppressBlunder);
   let chosenEntry = blundered;
-  let verifierScalars = null;
-  let verifierReachedVerdict = false;
-  if (verifier !== void 0 && blundered !== void 0 && blundered === ranked[0]) {
-    try {
-      const result = verifier({ ctx, ranked, base, winningMovePoolOnly });
-      if (result !== null) {
-        verifierScalars = result.scalars;
-        if (result.scalars["verifierTriggered"] === true) verifierReachedVerdict = true;
-        const overrideId = result.overrideEntry?.action.id;
-        if (overrideId !== void 0) {
-          const overridden = ranked.find((e) => e.action.id === overrideId);
-          if (overridden !== void 0) {
-            chosenEntry = overridden;
-            verifierReachedVerdict = true;
-          }
-        }
-      }
-    } catch {
-      verifierScalars = { verifierTriggered: false, verifierError: "hookException" };
-    }
-  }
   let complementaryOfferScalars = null;
-  if (ctx.tuning.domesticTradeComplementaryOfferWeight > 0 && chosenEntry !== void 0 && !winningMovePoolOnly && // Stand down only when the verifier reached a verdict. Gating on
-  // `verifierScalars === null` meant arming the verifier switched this
-  // shipped selector off on every contested decision — including the ones it
-  // abstained on having evaluated nothing (no determinizer, infeasible world,
-  // budget expiry, hook throw). An affirming verdict still wins: the verifier
-  // deliberated over these finalists and endorsed this one. Masked twice
-  // today — the verifier is dark, and the weight is 0 in DEFAULT_TUNING and
-  // every preset.
-  !verifierReachedVerdict) {
+  if (ctx.tuning.domesticTradeComplementaryOfferWeight > 0 && chosenEntry !== void 0 && !winningMovePoolOnly) {
     const selection = selectComplementaryOffer({
       chosenEntry,
       ranked,
@@ -34702,7 +34653,6 @@ function chooseMainScoring(ctx, hooks) {
       nonFiniteScoreCount,
       lookaheadSuppressedByPoolSize,
       replayFilter.repeatTradeCandidateCount,
-      verifierScalars,
       complementaryOfferScalars
     );
     if (nearKitReservation.suppressedCount > 0) {
@@ -34921,11 +34871,10 @@ var DIFFICULTY_PRESETS = Object.freeze({
   easy: Object.freeze({
     blunderProbability: 0.3,
     turnLookaheadSecondPlyK: 0,
-    turnLookaheadCandidateLimit: 70,
-    enginePlyEnabled: false
+    turnLookaheadCandidateLimit: 70
   }),
   // Normal (default): strongest validated policy, with no deliberate mistakes.
-  normal: Object.freeze({ blunderProbability: 0, enginePlyEnabled: false }),
+  normal: Object.freeze({ blunderProbability: 0 }),
   // Hard: zero decision noise, and NO validated strength premium over Normal.
   //
   // MEASURED 2026-08-09, humans base, 150 seeds x 3 rotations (450 games, 0
@@ -34948,7 +34897,6 @@ var DIFFICULTY_PRESETS = Object.freeze({
   // only points one way (weaker). Making Hard genuinely harder needs a
   // mechanism that does not yet exist — not a bigger search budget.
   //
-  // Deliberately does NOT pin enginePlyEnabled — hard inherits the
   // personality-resolved arming state.
   hard: Object.freeze({ blunderProbability: 0 })
 });
@@ -35124,6 +35072,19 @@ var HUMANS = Object.freeze({
   // A guaranteed two-bank-trade -> winning-build line is the narrow third
   // ply the ordinary setup+followup endgame planner cannot see.
   humanEndgameMultiTradeWinEnabled: true,
+  // Armed on PRODUCT grounds, not strength. Promoting a reachable
+  // one-card-short settlement into the acquisition plan points the existing
+  // turns-saved trade policy at the card actually needed, which cuts
+  // scattershot proposals at humans: -0.607 proposals/seed (95% CI
+  // -1.029..-0.186) with seed take-rate +0.084pp (n.s.) — the bot proposes
+  // less and targets slightly better.
+  //
+  // Strength is a MEASURED ZERO, not an assumption: humans-knob-ab over 2200
+  // paired seeds returned +0.00pp (95% CI -0.61..+0.61), discordant 214/214,
+  // McNemar p=1.00, MDE80 0.88pp. See docs/bot-tuning-findings.md 2026-09-04.
+  // If a future change makes this flag non-neutral, that ledger entry is the
+  // baseline to re-measure against.
+  nearKitSettlementPriorityEnabled: true,
   // Response side: accept marginal-positive offers a human would rationally
   // take, while the near-win and leader-trade guards stay intact.
   domesticTradeAcceptStrongProjection: 8,
