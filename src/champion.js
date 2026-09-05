@@ -32926,6 +32926,32 @@ function syntheticId(prefix, targetId) {
 function isSyntheticFollowupId(id) {
   return id.startsWith(SYNTHETIC_ID_PREFIX);
 }
+function enumerateAffordableProgressBuilds(ctx, projected) {
+  const self2 = selfPlayer(ctx.state, ctx.actingPlayerId);
+  if (self2 === null) return [];
+  const out = [];
+  for (const card2 of self2.progressHand) {
+    const builds = card2.cardId === "scienceMedicine" ? enumerateAffordableCities(ctx, projected, false, true) : card2.cardId === "scienceMason" ? enumerateAffordableCityImprovements(ctx, projected, false, true) : [];
+    for (const build of builds) {
+      if (build.type === ActionType.BuildCity) {
+        out.push({
+          id: syntheticId("progress-city", `${card2.instanceId}-${build.intersectionId}`),
+          type: ActionType.PlayProgressCard,
+          instanceId: card2.instanceId,
+          intersectionId: build.intersectionId
+        });
+      } else if (build.type === ActionType.ImproveCity) {
+        out.push({
+          id: syntheticId("progress-improvement", `${card2.instanceId}-${build.track}`),
+          type: ActionType.PlayProgressCard,
+          instanceId: card2.instanceId,
+          track: build.track
+        });
+      }
+    }
+  }
+  return out;
+}
 function enumerateSyntheticFollowups(candidate, ctx, projected, medicineConsumed = false, craneConsumed = false) {
   const out = [];
   const plannedCandidate = candidate.type === ActionType.PlayProgressCard ? planningActionForCandidate(candidate, ctx.state, ctx.actingPlayerId) : candidate;
@@ -33127,10 +33153,10 @@ function mapSettlementSiteCandidates(siteIds) {
   }
   return out;
 }
-function enumerateAffordableCities(ctx, projected, medicineConsumed) {
+function enumerateAffordableCities(ctx, projected, medicineConsumed, embeddedMedicine = false) {
   const player = ctx.state.players[ctx.actingPlayerId];
   if (player === void 0) return [];
-  const medicinePlayed = !medicineConsumed && isSelf(player) && player.medicinePlayed;
+  const medicinePlayed = embeddedMedicine || !medicineConsumed && isSelf(player) && player.medicinePlayed;
   if (!canAffordHypothetical(projected, cityCostFor(medicinePlayed))) return [];
   const settlements = (ctx.boardIndex.buildingsByPlayer[ctx.actingPlayerId] ?? []).filter(
     (entry) => entry.building.type === BuildingType.Settlement
@@ -33148,7 +33174,7 @@ function enumerateAffordableCities(ctx, projected, medicineConsumed) {
   }
   return out;
 }
-function enumerateAffordableCityImprovements(ctx, projected, craneConsumed) {
+function enumerateAffordableCityImprovements(ctx, projected, craneConsumed, embeddedMason = false) {
   const player = ctx.state.players[ctx.actingPlayerId];
   if (player === void 0) return [];
   const hasCity = (ctx.boardIndex.buildingsByPlayer[ctx.actingPlayerId] ?? []).some(
@@ -33166,7 +33192,7 @@ function enumerateAffordableCityImprovements(ctx, projected, craneConsumed) {
     };
     const delta = actionDelta(
       action,
-      buildActionDeltaContext(ctx.state, ctx.actingPlayerId, action, craneConsumed)
+      embeddedMason ? { currentLevel: trackLevelFor(track, player), cranePlayed: true } : buildActionDeltaContext(ctx.state, ctx.actingPlayerId, action, craneConsumed)
     );
     if (delta === null) continue;
     if (!canAffordHypothetical(projected, costOnly(delta))) continue;
@@ -33860,11 +33886,10 @@ function findMultiTradeWinningPlan(ctx, planPool, base) {
       if (!bankCanExecuteAfter(ctx, setupAction, followupAction)) continue;
       const afterFollowup = applyResourceDelta(afterSetup, followupDelta);
       const followupCtx = buildScoreContext(ctx, followupAction, base);
-      for (const finisherAction of enumerateSyntheticFollowups(
-        followupAction,
-        followupCtx,
-        afterFollowup
-      )) {
+      for (const finisherAction of [
+        ...enumerateSyntheticFollowups(followupAction, followupCtx, afterFollowup),
+        ...enumerateAffordableProgressBuilds(followupCtx, afterFollowup)
+      ]) {
         const finisherDelta = actionDelta(
           finisherAction,
           buildActionDeltaContext(ctx.state, ctx.playerId, finisherAction)
@@ -33976,6 +34001,11 @@ function enumerateFollowups(ctx, setupCtx, setupAction, actionPool, projected) {
     craneConsumed
   )) {
     addFollowup(out, seen, followup);
+  }
+  if (setupAction.type === ActionType.MaritimeTrade) {
+    for (const followup of enumerateAffordableProgressBuilds(setupCtx, projected)) {
+      addFollowup(out, seen, followup);
+    }
   }
   if (setupAction.type === ActionType.BuildRoad && self2 !== null && self2.victoryPoints + 2 >= ctx.state.victoryPointsTarget && self2.roadsInSupply >= 2) {
     const roadDelta = actionDelta(setupAction);
