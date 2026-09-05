@@ -35355,25 +35355,18 @@ function mergeTableProfile(profile, base) {
 }
 
 // bot/src/fair-ceiling.ts
-var NO_PROPOSAL_CAP = 0;
 var PRICED_HANDICAPS = Object.freeze([
-  {
-    knob: "humanFacingProposalsPerTurn",
-    handicapValue: 3,
-    ceilingValue: NO_PROPOSAL_CAP,
-    ledgerRow: "| Human trade proposal cap     | human-facing hard | +3.26pp uncapped (6,600 pairs)               | Limit repeated trade dialogs        | Retired 2026-08-27 (ceiling served)                   |"
-  },
   {
     knob: "domesticTradeProposeOverheadDefault",
     handicapValue: 12,
     ceilingValue: 8,
-    ledgerRow: "| Ordinary proposal restraint  | human-facing hard | Unmeasured                                   | Prefer holding over marginal trades | Retired 2026-08-27 (ceiling served)                   |"
+    ledgerRow: "| Ordinary proposal restraint  | human-facing hard    | Unmeasured                                   | Prefer holding over marginal trades | Retired 2026-08-27 (ceiling served)                              |"
   },
   {
     knob: "tradeBuildPathTwoForOneBonus",
     handicapValue: 12,
     ceilingValue: 0,
-    ledgerRow: "| Build-path 2-for-1 bonus     | human-facing hard | Joint bundle: \u22125.73..\u22127.85pp (3\xD73,300 pairs) | Make surplus sweeteners competitive | Retired 2026-08-27 (ceiling served)                   |"
+    ledgerRow: "| Build-path 2-for-1 bonus     | human-facing hard    | Joint bundle: \u22125.73..\u22127.85pp (3\xD73,300 pairs) | Make surplus sweeteners competitive | Retired 2026-08-27 (ceiling served)                              |"
   }
 ]);
 function handicappedHumanHardTuning(seatPersonality = null, base = DEFAULT_TUNING) {
