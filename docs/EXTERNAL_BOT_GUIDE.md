@@ -247,11 +247,14 @@ curl -b "<your session cookie>" \
 ```
 
 `GET /games/:id/bot-requests` replays the game's event log and returns
-the exact envelopes **your** bot received, one JSON object per line:
+requests prepared for **your** external bot, pairing the recorded public candidate list,
+event window, and histogram with the replayed pre-action seat view. This is a
+reconstructed corpus, not proof of endpoint receipt. One JSON object per line:
 
 ```json
 { "gameId": "...", "sequence": 214, "turnNumber": 11, "phase": "action",
   "playerId": "<your bot's seat>", "chosenActionId": "action-7",
+  "requestKind": "reconstructed", "provenance": "external",
   "chosenActionType": "buildCity", "winnerUserId": "...", "request": { ... } }
 ```
 
@@ -262,8 +265,15 @@ Three constraints, none of them arbitrary:
   already receives these live; the export just waits for the game to end.
 - **Your bots only.** Decisions by other seats — including other
   people's bots — are never included.
-- `chosenActionId` is what actually got applied. It is `null` when the
-  first-party bot played that decision as a fallback for yours.
+- `chosenActionId` identifies the applied action in the recorded public
+  candidate list, or is `null` if that action has no match. `provenance`
+  separately records `external` or `fallback`; a fallback can still match.
+
+Actions without recorded external-dispatch context are omitted, including
+automated auction resolutions and actions predating this recording support.
+The `x-vorryn-omitted-actions` response header counts omitted owned-bot actions;
+it does not count requests delivered to an endpoint. Failed or abstained
+external attempts followed by a committed fallback carry `provenance: fallback`.
 
 **What agreement with `chosenActionId` does and doesn't tell you.**
 It is a _regression_ signal: after a change, which decisions moved, and

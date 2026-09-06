@@ -34954,7 +34954,6 @@ var DIFFICULTY_PRESETS = Object.freeze({
   // only points one way (weaker). Making Hard genuinely harder needs a
   // mechanism that does not yet exist — not a bigger search budget.
   //
-  // personality-resolved arming state.
   hard: Object.freeze({ blunderProbability: 0 })
 });
 validateTuningPresetRegistry("difficulty", DIFFICULTY_PRESETS);

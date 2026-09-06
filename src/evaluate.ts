@@ -19,16 +19,12 @@
 
 import { loadEvaluationCorpus } from './evaluation.js';
 import { searchActions } from './search.js';
+import { parseEvaluateOptions } from './evaluate-options.js';
 
-const args = process.argv.slice(2);
-const positional = args.filter((a) => !a.startsWith('--'));
-const corpusPath = positional[0] ?? 'fixtures/eval-corpus.json';
-const limitFlag = args.indexOf('--limit');
-const limit = limitFlag >= 0 ? Number(args[limitFlag + 1] ?? '0') : 0;
 // A hand-labeled JSON corpus is a pinning test: every case is supposed to
 // match, so a miss is a failure. A real-play NDJSON corpus never reaches 100%
 // agreement, and exiting 1 on that would be a gate that always fires.
-const strict = args.includes('--strict') || corpusPath.endsWith('.json');
+const { corpusPath, limit, strict } = parseEvaluateOptions(process.argv.slice(2));
 
 const corpus = loadEvaluationCorpus(corpusPath);
 const cases = limit > 0 ? corpus.slice(0, limit) : corpus;

@@ -10,7 +10,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "tsx tests/contract.test.ts && tsx tests/simulator.test.ts && tsx tests/model.test.ts && tsx tests/search.test.ts",
+    "test": "tsx tests/contract.test.ts && tsx tests/simulator.test.ts && tsx tests/model.test.ts && tsx tests/search.test.ts && tsx tests/evaluate-options.test.ts",
     "simulate": "tsx src/simulate.ts",
     "evaluate": "tsx src/evaluate.ts",
     "evaluate:corpus": "tsx src/evaluate.ts fixtures/corpus/self-play.ndjson.gz",
