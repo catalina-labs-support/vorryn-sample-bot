@@ -19928,7 +19928,7 @@ var VALID_ACTION_FAMILIES = [
   PendingDecisionType.TreasonPlaceKnight
 ];
 var ValidActionFamilySchema = external_exports.enum(VALID_ACTION_FAMILIES);
-var BOT_STYLE_KEYS = ["aggressive", "builder", "trader"];
+var BOT_STYLE_KEYS = ["aggressive", "builder"];
 var PROTOCOL_VERSION = 2;
 var BotDecisionMemorySchema = external_exports.object({
   version: external_exports.literal(1),
@@ -19953,8 +19953,8 @@ var BotRequestSchema = external_exports.object({
   // never "there are no humans". See BotRequest.humanPlayerIds.
   humanPlayerIds: external_exports.array(external_exports.string()).optional(),
   decisionMemory: BotDecisionMemorySchema.nullish(),
-  // Style axis assigned to this seat at game creation (aggressive/builder/
-  // trader — bot/src/personalities.ts owns the registry). Absent means "use
+  // Style axis assigned to this seat at game creation (aggressive/builder —
+  // bot/src/personalities.ts owns the registry). Absent means "use
   // the fair-ceiling default", never "no personality" vs an empty string.
   //
   // Deliberately a TOLERANT `z.string()`, not `z.enum(BOT_STYLE_KEYS)`. The
@@ -35000,32 +35000,6 @@ var BUILDER = Object.freeze({
   lateGameNonVpPenalty: 12,
   settlementHoardRoadPenalty: 88
 });
-var TRADER = Object.freeze({
-  opponentTradeAppetiteBaseline: 0.34,
-  opponentTradeAppetiteDeltaWeight: 1,
-  opponentTradeAppetitePriorStrength: 12,
-  opponentTradeSameWantResponseWeight: 1,
-  domesticTradeBotProposalLimit: 2,
-  domesticTradeProposeOverheadDefault: 8,
-  domesticTradeProposeOverheadHighSurplus: 4,
-  tradeBuildPathBonusThreshold: 16,
-  tradeNeedFloorCap: 12,
-  domesticLookaheadFloor: 0.35,
-  maritimeLowRateLookaheadMultiplier: 0.7,
-  maritimeLowRateDomesticOpportunityPenalty: 7,
-  domesticTradeTargetHasWantBonus: 9,
-  domesticTradeDeclineSweetenPerExtraCardBonus: 12,
-  domesticTradePostDeclineMinScore: 6,
-  domesticTradeBankAlternativePenalty: 5,
-  domesticTradeLeaderNonBuildPenalty: 12,
-  domesticTradeAcceptStrongProjection: 8,
-  domesticTradeAcceptModerateProjection: 3,
-  domesticTradeAcceptModerateUtility: 10,
-  domesticTradeAcceptUtilityFloor: 30,
-  surplusDumpAcceptEnabled: true,
-  counterProposeMargin: 16,
-  counterTakeMargin: 14
-});
 var HUMANS = Object.freeze({
   // Smooth appetite curve, NOT the corpus threshold-veto model. 9d3bdab4
   // replaced this 0.42 curve with `opponentTradeUtilityThresholdMode` + a 0.21
@@ -35062,11 +35036,11 @@ var HUMANS = Object.freeze({
   opponentTradeAppetiteBaseline: 0.42,
   // Pinned to DEFAULT 0 rather than merely omitted. HUMANS is a TABLE overlay
   // merged over a style preset, so an omitted key is not "left at default" —
-  // it is "whatever the style set". TRADER sets this to 1.0, and it was the one
-  // trader knob HUMANS did not overwrite, so choosing the trader personality at
-  // a human table armed exactly the lever measured above as harmful. Pinning it
-  // makes the omission explicit and unleakable; TRADER keeps its 1.0 at
-  // bot-only tables, where it is untested but also unmeasured-harmful.
+  // it is "whatever the style set". The retired TRADER style set this to 1.0,
+  // and it was the one trader knob HUMANS did not overwrite, so choosing that
+  // personality at a human table armed exactly the lever measured above as
+  // harmful. The style is gone, but the pin STAYS: it is what makes the
+  // omission explicit and unleakable for any future style that sets it.
   opponentTradeAppetiteDeltaWeight: 0,
   // Explicitly dark until the scarcity-aware humanface judge clears a weight.
   // Pinning prevents a style overlay from arming this human-table mechanism.
@@ -35311,8 +35285,7 @@ var HUMANS = Object.freeze({
 });
 var STYLE_PRESETS = Object.freeze({
   aggressive: AGGRESSIVE,
-  builder: BUILDER,
-  trader: TRADER
+  builder: BUILDER
 });
 var TABLE_PRESETS = Object.freeze({
   humans: HUMANS
