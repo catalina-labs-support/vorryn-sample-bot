@@ -19956,7 +19956,18 @@ var BotRequestSchema = external_exports.object({
   // Style axis assigned to this seat at game creation (aggressive/builder/
   // trader — bot/src/personalities.ts owns the registry). Absent means "use
   // the fair-ceiling default", never "no personality" vs an empty string.
-  personality: external_exports.string().optional()
+  //
+  // Deliberately a TOLERANT `z.string()`, not `z.enum(BOT_STYLE_KEYS)`. The
+  // bot's /play route answers a schema-parse failure with 400, and the web
+  // client turns any bot error into its fallback pick (validActions[0]) --
+  // so rejecting an unknown style would trade a seat that plays the default
+  // fair ceiling (indistinguishable from a correct default seat) for one that
+  // plays the first legal action every turn. Strictness here is strictly worse
+  // than tolerance. The vocabulary is published through .describe() instead,
+  // so external bot authors can read it off docs/bot-protocol.schema.json.
+  personality: external_exports.string().describe(
+    `Seat style axis. Known values: ${BOT_STYLE_KEYS.join(" | ")}. Tolerant reader: an unrecognized value is served the default fair ceiling, never rejected.`
+  ).optional()
 });
 var BotDecisionTraceSchema = external_exports.object({
   strategy: external_exports.string().optional(),

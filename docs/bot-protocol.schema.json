@@ -5462,7 +5462,8 @@
           ]
         },
         "personality": {
-          "type": "string"
+          "type": "string",
+          "description": "Seat style axis. Known values: aggressive | builder | trader. Tolerant reader: an unrecognized value is served the default fair ceiling, never rejected."
         }
       },
       "required": [
