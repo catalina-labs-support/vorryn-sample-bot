@@ -19928,6 +19928,7 @@ var VALID_ACTION_FAMILIES = [
   PendingDecisionType.TreasonPlaceKnight
 ];
 var ValidActionFamilySchema = external_exports.enum(VALID_ACTION_FAMILIES);
+var BOT_STYLE_KEYS = ["aggressive", "builder", "trader"];
 var PROTOCOL_VERSION = 2;
 var BotDecisionMemorySchema = external_exports.object({
   version: external_exports.literal(1),
@@ -19951,7 +19952,11 @@ var BotRequestSchema = external_exports.object({
   // Optional: absent means "caller does not know which seats are human",
   // never "there are no humans". See BotRequest.humanPlayerIds.
   humanPlayerIds: external_exports.array(external_exports.string()).optional(),
-  decisionMemory: BotDecisionMemorySchema.nullish()
+  decisionMemory: BotDecisionMemorySchema.nullish(),
+  // Style axis assigned to this seat at game creation (aggressive/builder/
+  // trader — bot/src/personalities.ts owns the registry). Absent means "use
+  // the fair-ceiling default", never "no personality" vs an empty string.
+  personality: external_exports.string().optional()
 });
 var BotDecisionTraceSchema = external_exports.object({
   strategy: external_exports.string().optional(),
@@ -34963,7 +34968,7 @@ function tuningForDifficulty(difficulty, base = DEFAULT_TUNING) {
 }
 
 // bot/src/personalities.ts
-var STYLE_KEYS = ["aggressive", "builder", "trader"];
+var STYLE_KEYS = BOT_STYLE_KEYS;
 var isStyleKey = createKeyGuard(STYLE_KEYS);
 var TABLE_PROFILE_KEYS = ["humans"];
 var isTableProfileKey = createKeyGuard(TABLE_PROFILE_KEYS);

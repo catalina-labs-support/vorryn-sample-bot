@@ -5460,6 +5460,9 @@
               "type": "null"
             }
           ]
+        },
+        "personality": {
+          "type": "string"
         }
       },
       "required": [
