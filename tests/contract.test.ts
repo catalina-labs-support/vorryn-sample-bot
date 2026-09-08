@@ -91,9 +91,19 @@ if (humanTableBody.decisionTrace?.externalStrengthProfile !== 'maximum-strength'
 // still emitted the retired knob. Two stale artifacts agreeing with each other,
 // under a green CI job. Asserting the WHOLE set rather than a two-item subset is
 // what makes the next divergence fail loudly instead of silently agreeing.
-// The restored three-proposal cap is a retained product constraint, so it must
-// not appear among the handicaps this champion disables.
+// It then happened AGAIN, the same way, on 2026-09-08. The owner retired the
+// 3/turn human-facing proposal cap on 2026-09-07 by registering
+// `humanFacingProposalsPerTurn` in PRICED_HANDICAPS (3 -> NO_PROPOSAL_CAP), but
+// neither mirrored artifact moved: the committed champion.js still predated the
+// reversal, and this list still described the cap as retained. Two stale
+// artifacts agreeing again, green again. Regenerating the champion is what broke
+// the agreement and surfaced it — so this guard did its job, twice, and both
+// times the tell was that the champion had not been rebuilt.
+//
+// `humanFacingProposalsPerTurn` therefore belongs here now: the cap is retired,
+// not retained, and the champion correctly reports it as disabled.
 const EXPECTED_DISABLED_HANDICAPS = [
+  'humanFacingProposalsPerTurn',
   'domesticTradeProposeOverheadDefault',
   'tradeBuildPathTwoForOneBonus',
 ];
