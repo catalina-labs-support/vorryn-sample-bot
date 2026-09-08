@@ -25233,6 +25233,7 @@ var DEFAULT_TUNING = Object.freeze({
   maritimeLowRateLookaheadMultiplier: 1,
   domesticTradeTargetHasWantBonus: 6,
   domesticTradeHumanAbundanceWeight: 0,
+  domesticTradeAudienceDiscriminationEnabled: false,
   domesticTradeComplementaryOfferWeight: 0,
   domesticTradeHumanLowResponseShapePenalty: 0,
   domesticTradeDeclineSweetenPerExtraCardBonus: 8,
@@ -25958,7 +25959,7 @@ function toRecordTable(spec, free, freeCells) {
   const out = emptyStringRecord();
   for (let r = 0; r < spec.rowIds.length; r++) {
     const rowId = spec.rowIds[r] ?? "";
-    const row = {};
+    const row = emptyStringRecord();
     for (let c = 0; c < spec.colIds.length; c++) {
       const colId = spec.colIds[c] ?? "";
       row[colId] = (freeCells[r]?.[c] ?? 0) + (free.floors[r]?.[c] ?? 0);
@@ -27041,7 +27042,7 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
       (entry) => entry[1] !== void 0 && entry[1] > 0
     );
     if (entries.length === 0) return 1;
-    let key = opponentId;
+    let key = `${opponentId.length}:${opponentId}`;
     for (const type of MATERIAL_TYPES) {
       const needed = cost[type];
       if (needed !== void 0 && needed > 0) key += `|${type}:${needed}`;
@@ -29946,6 +29947,7 @@ function computeDomesticTradeProposalVerdict(ctx, action) {
   const offerCount = bundleCount(action.offer);
   const wantCount = bundleCount(action.want);
   if (wantCount > offerCount) return HARD_REJECTED_DOMESTIC_TRADE;
+  if (isSuppressedAudienceAlternate(ctx, action)) return HARD_REJECTED_DOMESTIC_TRADE;
   const tradeCtx = buildProposeTradeCtx(ctx);
   const projection = evaluateTradeProjection(tradeCtx, action.want, action.offer);
   if (proposalWouldBeConfirmCanceled(ctx, action, projection)) {
@@ -30127,6 +30129,51 @@ function computeCoreScore(ctx, projection, pAccept, utilityDelta) {
     pAccept * (utilityDelta * utilityWeight + ctx.tuning.tradeProposeSocialConstant + projection.bonus) + needFloor - failedTradeOverhead
   );
 }
+var BROADCAST_TWIN_KEYS = /* @__PURE__ */ new WeakMap();
+function broadcastTwinKeys(ctx) {
+  return memoizePerRequest(BROADCAST_TWIN_KEYS, ctx.validActions, "", () => {
+    const keys = /* @__PURE__ */ new Set();
+    for (const candidate of ctx.validActions) {
+      if (candidate.type !== ActionType.DomesticTradePropose) continue;
+      const propose = candidate;
+      if (propose.targetPlayerId !== void 0) continue;
+      keys.add(
+        `${tradeEvaluationBundleKey(propose.offer)}=>${tradeEvaluationBundleKey(propose.want)}`
+      );
+    }
+    return keys;
+  });
+}
+function isAudienceAlternate(ctx, action) {
+  if (action.targetPlayerId === void 0) return false;
+  const key = `${tradeEvaluationBundleKey(action.offer)}=>${tradeEvaluationBundleKey(action.want)}`;
+  return broadcastTwinKeys(ctx).has(key);
+}
+function isSuppressedAudienceAlternate(ctx, action) {
+  if (ctx.tuning.domesticTradeAudienceDiscriminationEnabled) return false;
+  return isAudienceAlternate(ctx, action);
+}
+function audienceConcentrationBonus(ctx, action, leaderFactor) {
+  const { opponentModel } = ctx;
+  const targetPlayerId = action.targetPlayerId;
+  if (opponentModel === void 0 || targetPlayerId === void 0) return 0;
+  let marginCards = 0;
+  for (const item of action.want) {
+    const pTarget = opponentModel.probabilityHoldsAtLeast(
+      targetPlayerId,
+      item.type,
+      item.count + 1
+    );
+    let pBestOther = 0;
+    for (const opponentId of ctx.nonSelfOpponentIds) {
+      if (opponentId === targetPlayerId) continue;
+      const p = opponentModel.probabilityHoldsAtLeast(opponentId, item.type, item.count + 1);
+      if (p > pBestOther) pBestOther = p;
+    }
+    marginCards += item.count * (pTarget - pBestOther);
+  }
+  return Math.round(marginCards * ctx.tuning.domesticTradeTargetHasWantBonus * leaderFactor);
+}
 function domesticTradeTargetBonus(ctx, action) {
   const targetPlayerId = action.targetPlayerId;
   if (targetPlayerId === void 0 || targetPlayerId === ctx.actingPlayerId) return 0;
@@ -30134,6 +30181,8 @@ function domesticTradeTargetBonus(ctx, action) {
   if (target === void 0) return 0;
   const requestedCards = bundleCount(action.want);
   const leaderFactor = nearWinLeaderFactor(ctx, target.victoryPoints);
+  if (isAudienceAlternate(ctx, action))
+    return audienceConcentrationBonus(ctx, action, leaderFactor);
   const legacy = requestedCards * ctx.tuning.domesticTradeTargetHasWantBonus * leaderFactor;
   const abundanceWeight = clamp(ctx.tuning.domesticTradeHumanAbundanceWeight, 0, 1);
   if (abundanceWeight > 0 && ctx.opponentModel !== void 0) {
