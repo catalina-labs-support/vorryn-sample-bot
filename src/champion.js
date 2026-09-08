@@ -5,6 +5,22 @@ var __export = (target, all) => {
     __defProp(target, name, { get: all[name], enumerable: true });
 };
 
+// packages/core/src/math.ts
+function integerPower(base, exponent) {
+  if (!Number.isSafeInteger(exponent) || exponent < 0) {
+    throw new RangeError("integerPower exponent must be a non-negative safe integer");
+  }
+  let result = 1;
+  let factor = base;
+  let remaining = exponent;
+  while (remaining > 0) {
+    if (remaining % 2 === 1) result *= factor;
+    remaining = Math.floor(remaining / 2);
+    if (remaining > 0) factor *= factor;
+  }
+  return result;
+}
+
 // bot/src/util/clamp.ts
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -19374,9 +19390,9 @@ var HarborStateSchema = external_exports.object({
   intersectionIds: external_exports.array(external_exports.string())
 });
 var ClientBoardStateSchema = external_exports.object({
-  hexes: external_exports.record(external_exports.string(), HexStateSchema),
-  intersections: external_exports.record(external_exports.string(), IntersectionStateSchema),
-  edges: external_exports.record(external_exports.string(), EdgeStateSchema),
+  hexes: prototypeSafeRecordSchema(HexStateSchema),
+  intersections: prototypeSafeRecordSchema(IntersectionStateSchema),
+  edges: prototypeSafeRecordSchema(EdgeStateSchema),
   harbors: external_exports.array(HarborStateSchema)
 });
 var ProgressCardInstanceSchema = external_exports.object({
@@ -20008,9 +20024,11 @@ function countDomesticTradeCountersThisTurn(state, responderId, proposerId) {
   if (proposerId === null) {
     return 0;
   }
-  return state.domesticTradeCountersThisTurn.filter(
-    (counter) => counter.responderId === responderId && counter.proposerId === proposerId
-  ).length;
+  let count = 0;
+  for (const counter of state.domesticTradeCountersThisTurn) {
+    if (counter.responderId === responderId && counter.proposerId === proposerId) count++;
+  }
+  return count;
 }
 
 // packages/core/src/wire/recent-event-redaction.ts
@@ -20340,9 +20358,9 @@ var HarborSerializedSchema = external_exports.object({
   intersectionIds: external_exports.array(external_exports.string())
 });
 var BoardSerializedSchema = external_exports.object({
-  hexes: external_exports.record(external_exports.string(), HexSerializedSchema),
-  intersections: external_exports.record(external_exports.string(), IntersectionSerializedSchema),
-  edges: external_exports.record(external_exports.string(), EdgeSerializedSchema),
+  hexes: prototypeSafeRecordSchema(HexSerializedSchema),
+  intersections: prototypeSafeRecordSchema(IntersectionSerializedSchema),
+  edges: prototypeSafeRecordSchema(EdgeSerializedSchema),
   harbors: external_exports.array(HarborSerializedSchema)
 });
 var DiceSerializedSchema = external_exports.object({
@@ -21139,18 +21157,6 @@ function maritimeRateInfo(inputs) {
   return { rate: 4, source: "default" };
 }
 
-// bot/src/bot/berserker-summary.ts
-function computePillageableCityByPlayer(hasNonMetropolisCityByPlayer) {
-  return cloneStringRecord(hasNonMetropolisCityByPlayer);
-}
-function maxOtherActiveStrength(summary, playerId) {
-  let max = 0;
-  for (const [pid, strength] of Object.entries(summary.strengthByPlayer)) {
-    if (pid !== playerId && strength > max) max = strength;
-  }
-  return max;
-}
-
 // bot/src/bot/vp-thresholds.ts
 var ONE_FROM_WIN = 1;
 var TWO_FROM_WIN = 2;
@@ -21611,7 +21617,7 @@ function convertibilityBias(state, playerId, boardIndex, opponentModel, weight) 
   if (vp < state.victoryPointsTarget - FOUR_FROM_WIN) return 0;
   return weight * opponentPlanConvertibility(state, playerId, boardIndex, opponentModel);
 }
-function baseThreatScore(state, playerId, metroBonus, heldTracks, metropolisOwnerByTrack) {
+function baseThreatScore(state, playerId, metroBonus, heldTracks, metropolisOwnerByTrack, buildingIndex) {
   const player = state.players[playerId];
   const vp = player?.victoryPoints ?? 0;
   const politicsWeight = 1 + Math.max(0, (player?.politicsLevel ?? 0) - 2) * 0.25;
@@ -21620,7 +21626,13 @@ function baseThreatScore(state, playerId, metroBonus, heldTracks, metropolisOwne
   const deckMix = (politicsWeight + scienceWeight + tradeWeight) / 3;
   const progressHandCount = player === void 0 ? 0 : progressHandSize(player);
   const hiddenProxy = Math.floor(Math.min(4, progressHandCount) * 0.8 * deckMix);
-  const metroPending = pendingMetropolisCount(state, player, heldTracks, metropolisOwnerByTrack);
+  const metroPending = pendingMetropolisCount(
+    state,
+    player,
+    heldTracks,
+    metropolisOwnerByTrack,
+    buildingIndex
+  );
   const merchantBoost = state.merchantOwnerPlayerId === playerId ? 8 : 0;
   const longestRoadBoost = state.longestRoadHolderPlayerId === playerId ? 10 : 0;
   const swingBoost = vp >= state.victoryPointsTarget - TWO_FROM_WIN ? (merchantBoost > 0 ? 8 : 0) + (longestRoadBoost > 0 ? 10 : 0) : 0;
@@ -21703,7 +21715,14 @@ function threatScore(state, opponentId, estimator, boardIndex, nearWinClampEnabl
     boardIndex
   ) > 0;
   const urgencyBonus = (TURNS_TO_WIN_CAP - estimateTurnsToWin(state, opponentId, estimator, oneMoveVpAway)) * 3;
-  return baseThreatScore(state, opponentId, metroBonus, heldTracks, boardIndex.metropolisOwnerByTrack) + urgencyBonus;
+  return baseThreatScore(
+    state,
+    opponentId,
+    metroBonus,
+    heldTracks,
+    boardIndex.metropolisOwnerByTrack,
+    boardIndex
+  ) + urgencyBonus;
 }
 var EMPTY_HELD_TRACKS = /* @__PURE__ */ new Set();
 
@@ -21751,7 +21770,7 @@ function buildBoardIndex(state, viewerPlayerId) {
   let anyMetropolisPlaced = false;
   const activeKnightStrengthByPlayer = emptyStringRecord();
   const hasCityByPlayer = emptyStringRecord();
-  const hasNonMetropolisCityByPlayer = emptyStringRecord();
+  const pillageableCityByPlayer = emptyStringRecord();
   let totalActiveKnightStrength = 0;
   let berserkerCityCount = 0;
   const pipsByHex = emptyStringRecord();
@@ -21792,7 +21811,7 @@ function buildBoardIndex(state, viewerPlayerId) {
         berserkerCityCount += 1;
         hasCityByPlayer[building.ownerPlayerId] = true;
         if (building.metropolisType === null) {
-          hasNonMetropolisCityByPlayer[building.ownerPlayerId] = true;
+          pillageableCityByPlayer[building.ownerPlayerId] = true;
         }
       }
       const metroType = building.metropolisType;
@@ -21874,13 +21893,15 @@ function buildBoardIndex(state, viewerPlayerId) {
     buildableSettlementSiteIdsByPlayer[playerId] = siteIds;
   }
   const threatScoreByPlayer = emptyStringRecord();
+  const buildingIndex = { buildingsByPlayer };
   for (const playerId of playerIds) {
     threatScoreByPlayer[playerId] = baseThreatScore(
       state,
       playerId,
       metroBonusByPlayer[playerId] ?? 0,
       heldMetroTracksByPlayer[playerId] ?? /* @__PURE__ */ new Set(),
-      metropolisOwnerByTrack
+      metropolisOwnerByTrack,
+      buildingIndex
     );
   }
   return Object.freeze({
@@ -21909,7 +21930,7 @@ function buildBoardIndex(state, viewerPlayerId) {
       totalActiveStrength: totalActiveKnightStrength,
       cityCount: berserkerCityCount,
       hasCityByPlayer,
-      pillageableCityByPlayer: computePillageableCityByPlayer(hasNonMetropolisCityByPlayer)
+      pillageableCityByPlayer
     },
     intersectionExpansionNeighborhoodPips,
     buildableSettlementSiteIdsByPlayer,
@@ -22135,6 +22156,15 @@ function midGameCityBonusFor(ctx) {
   if (player === void 0) return 0;
   if (player.citiesInSupply < 2) return 0;
   return ctx.tuning.midGameBuildCityBonus;
+}
+
+// bot/src/bot/berserker-summary.ts
+function maxOtherActiveStrength(summary, playerId) {
+  let max = 0;
+  for (const [pid, strength] of Object.entries(summary.strengthByPlayer)) {
+    if (pid !== playerId && strength > max) max = strength;
+  }
+  return max;
 }
 
 // bot/src/bot/knight-expected-loss.ts
@@ -25773,13 +25803,19 @@ function buildBucketConstraints(label, types, columnAggregates, rowTotals, oppon
   };
 }
 
+// packages/core/src/dice/fnv1a.ts
+function fnv1aUtf16(value) {
+  let hash2 = 2166136261;
+  for (let index = 0; index < value.length; index++) {
+    hash2 ^= value.charCodeAt(index);
+    hash2 = Math.imul(hash2, 16777619);
+  }
+  return hash2 >>> 0;
+}
+
 // bot/src/util/seeded-rng.ts
 function createLcg(seedText) {
-  let state = 2166136261;
-  for (let i = 0; i < seedText.length; i++) {
-    state ^= seedText.charCodeAt(i);
-    state = Math.imul(state, 16777619) >>> 0;
-  }
+  let state = fnv1aUtf16(seedText);
   return () => {
     state = Math.imul(state, 1664525) + 1013904223 >>> 0;
     return state / 4294967296;
@@ -26701,19 +26737,24 @@ function binomialTailProbability(trials, successProbability, minimumSuccesses) {
   if (successProbability >= 1) {
     return 1;
   }
+  if (Number.isNaN(successProbability)) return Number.NaN;
   const failureProbability = 1 - successProbability;
-  let current = failureProbability ** trials;
-  let tail = 0;
-  for (let k = 0; k <= trials; k++) {
-    if (k >= minimumSuccesses) {
-      tail += current;
-    }
-    if (k === trials) {
-      break;
-    }
-    current *= (trials - k) / (k + 1) * (successProbability / failureProbability);
+  const mode = Math.min(trials, Math.floor((trials + 1) * successProbability));
+  let total = 1;
+  let tail = mode >= minimumSuccesses ? 1 : 0;
+  let current = 1;
+  for (let k = mode; k > 0; k--) {
+    current *= k / (trials - k + 1) * (failureProbability / successProbability);
+    total += current;
+    if (k - 1 >= minimumSuccesses) tail += current;
   }
-  return tail;
+  current = 1;
+  for (let k = mode; k < trials; k++) {
+    current *= (trials - k) / (k + 1) * (successProbability / failureProbability);
+    total += current;
+    if (k + 1 >= minimumSuccesses) tail += current;
+  }
+  return tail / total;
 }
 
 // bot/src/opponents/opponent-model.ts
@@ -28246,17 +28287,20 @@ function priorStrategyMemory(request) {
 
 // bot/src/bot/strategy-selector.ts
 var METROPOLIS_CONTENTION_LEVEL = 3;
-function selectStrategy(ctx) {
+function scoreStrategies(ctx) {
   const signals = assessOpponentCounterSignals(ctx);
   const production = ctx.productionEstimator.expectedProductionPerTurn(ctx.state, ctx.playerId);
   const militaryEnabled = ctx.tuning.strategyMilitaryControlEnabled;
-  const scores = {
+  return {
     [Strategy.ScienceRush]: scoreScienceRush(ctx, signals, production),
     [Strategy.TradeEngine]: scoreTradeEngine(ctx, signals, production),
     [Strategy.MilitaryControl]: militaryEnabled ? scoreMilitary(ctx, signals) : Number.NEGATIVE_INFINITY,
     [Strategy.Expansion]: scoreExpansion(ctx, signals),
     [Strategy.Balanced]: scoreBalanced()
   };
+}
+function selectStrategy(ctx) {
+  const scores = scoreStrategies(ctx);
   let topStrategy = Strategy.Balanced;
   let topScore = -Infinity;
   let secondScore = -Infinity;
@@ -34496,7 +34540,7 @@ function humanProposalQuality(ctx, action, humanIds) {
       );
     }
     const extraOffered = Math.max(0, bundleCount(action.offer) - bundleCount(action.want));
-    let oddsMultiplier = EXTRA_OFFER_CARD_ACCEPTANCE_ODDS_RATIO ** extraOffered;
+    let oddsMultiplier = integerPower(EXTRA_OFFER_CARD_ACCEPTANCE_ODDS_RATIO, extraOffered);
     if (action.want.some((item) => isCommodityType(item.type))) {
       oddsMultiplier *= COMMODITY_ASK_ACCEPTANCE_ODDS_RATIO;
     }
@@ -35069,12 +35113,17 @@ var HUMANS = Object.freeze({
   // as a warning against casually raising these legacy limits, and re-measure
   // with a production-shaped roster-aware harness before tuning them.
   // Legacy proposal ceiling retained for all-bot/offline uses of this preset.
-  // At a live mixed table `choose-action` applies the stricter humans-facing
-  // budget below, which supersedes this number entirely.
+  // Since 2026-09-07 this is the binding proposal limit at a served human
+  // table: the stricter humans-facing budget below is a priced handicap that
+  // `stripPricedHandicaps` removes, so it no longer supersedes this number in
+  // production. It still supersedes it in the handicapped control composition.
   domesticTradeBotProposalLimit: 5,
-  // Product-facing interruption budget. The engine permits five proposals per
-  // turn, but a person should not have to dismiss all five. This deliberate
-  // three-proposal ceiling is registered as a priced handicap in fair-ceiling.
+  // Product-facing interruption budget, RETIRED FROM THE SERVED POLICY
+  // 2026-09-07 (owner). The value stays here because the HUMANS overlay is what
+  // `handicappedHumanHardTuning` composes, and that capped composition is the
+  // control pre-2026-08-30 verdicts were paired against. `PRICED_HANDICAPS` in
+  // `fair-ceiling.ts` strips it to 0 for every served and gate-facing tuning —
+  // edit the registry, not this line, to change what production runs.
   humanFacingProposalsPerTurn: 3,
   domesticTradeMaxDeclinesPerTurn: 5,
   // Cross-turn human-interruption stop, armed only at the humans table.
@@ -35343,18 +35392,25 @@ function mergeTableProfile(profile, base) {
 }
 
 // bot/src/fair-ceiling.ts
+var NO_PROPOSAL_CAP = 0;
 var PRICED_HANDICAPS = Object.freeze([
+  {
+    knob: "humanFacingProposalsPerTurn",
+    handicapValue: 3,
+    ceilingValue: NO_PROPOSAL_CAP,
+    ledgerRow: "| Human trade proposal cap     | human-facing hard | +3.26pp uncapped (6,600 pairs)               | Limit repeated trade dialogs        | Retired 2026-09-07 (owner reversal, price taken)      |"
+  },
   {
     knob: "domesticTradeProposeOverheadDefault",
     handicapValue: 12,
     ceilingValue: 8,
-    ledgerRow: "| Ordinary proposal restraint  | human-facing hard    | Unmeasured                                   | Prefer holding over marginal trades | Retired 2026-08-27 (ceiling served)                              |"
+    ledgerRow: "| Ordinary proposal restraint  | human-facing hard | Unmeasured                                   | Prefer holding over marginal trades | Retired 2026-08-27 (ceiling served)                   |"
   },
   {
     knob: "tradeBuildPathTwoForOneBonus",
     handicapValue: 12,
     ceilingValue: 0,
-    ledgerRow: "| Build-path 2-for-1 bonus     | human-facing hard    | Joint bundle: \u22125.73..\u22127.85pp (3\xD73,300 pairs) | Make surplus sweeteners competitive | Retired 2026-08-27 (ceiling served)                              |"
+    ledgerRow: "| Build-path 2-for-1 bonus     | human-facing hard | Joint bundle: \u22125.73..\u22127.85pp (3\xD73,300 pairs) | Make surplus sweeteners competitive | Retired 2026-08-27 (ceiling served)                   |"
   }
 ]);
 function handicappedHumanHardTuning(seatPersonality = null, base = DEFAULT_TUNING) {
