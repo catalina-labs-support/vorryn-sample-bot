@@ -24021,6 +24021,7 @@ function isHoardingForSettlement(player) {
 }
 
 // bot/src/bot/score-rules/action-base-scorers/city.ts
+var METROPOLIS_CONTEST_LEVEL = 3;
 var IMPROVE_CITY_BASE = {
   [CommodityTrack.Science]: 78,
   [CommodityTrack.Trade]: 72,
@@ -24073,12 +24074,12 @@ function scoreImproveCityAction(ctx, track) {
   if (level <= 2 && state.turnNumber >= 15 && !boardIndex.anyMetropolisPlaced) {
     score2 += tuning.metropolisHungerBonus;
   }
+  const uncontestedTopClimb = level === 4 && boardIndex.metropolisOwnerByTrack[track] === actingPlayerId && boardIndex.maxOpponentTrackLevelByTrack[track] < METROPOLIS_CONTEST_LEVEL;
   if (level === 4) {
     const metroOwner = boardIndex.metropolisOwnerByTrack[track];
     if (metroOwner === actingPlayerId) {
-      score2 += tuning.metropolisSecureOrStealBonus;
-      if (boardIndex.maxOpponentTrackLevelByTrack[track] >= 3) {
-        score2 += tuning.metropolisDefendOwnedBonus;
+      if (!uncontestedTopClimb) {
+        score2 += tuning.metropolisSecureOrStealBonus + tuning.metropolisDefendOwnedBonus;
       }
     } else if (metroOwner === null) {
       score2 += tuning.metropolisUnclaimedRaceBonus;
@@ -28863,13 +28864,14 @@ function removeDistanceBlocked(state, remaining, intersectionId) {
 }
 
 // bot/src/bot/score-rules/action-base-scorers/road.ts
+var LR_OBJECTIVE_MAX_GAP = 3;
 function midGameLongestRoadObjective(ctx, projectedRoadLength, lengthToTake, roadLengthGain) {
   if (ctx.selfVp + 2 >= ctx.state.victoryPointsTarget) return 0;
   if (ctx.state.longestRoadHolderPlayerId === ctx.actingPlayerId) return 0;
   if (roadLengthGain <= 0) return 0;
   if (projectedRoadLength < LONGEST_ROAD_MIN - 2) return 0;
   const gap = Math.max(0, lengthToTake - projectedRoadLength);
-  if (gap < 1 || gap > 3) return 0;
+  if (gap < 1 || gap > LR_OBJECTIVE_MAX_GAP) return 0;
   if (projectedRoadLength >= LONGEST_ROAD_MIN && gap <= 1) return 0;
   return (4 - gap) * ctx.tuning.lrMidGameObjectiveStep;
 }
@@ -28896,6 +28898,7 @@ function scoreRoadAction(ctx, edgeId) {
   ];
   let score2 = 0;
   let expansionPathScore = 0;
+  let blockingScore = 0;
   const dedupScratch = /* @__PURE__ */ new Set();
   for (const { id: intersectionId, intersection: intersection2 } of endpoints) {
     if (intersection2 === void 0) continue;
@@ -28949,7 +28952,9 @@ function scoreRoadAction(ctx, edgeId) {
     }
     if (strongestBlockingMultiplier > 0) {
       const intersectionValue = boardIndex.pipsByIntersection[intersectionId] ?? 0;
-      score2 += Math.floor(intersectionValue / 3 * strongestBlockingMultiplier);
+      const contribution = Math.floor(intersectionValue / 3 * strongestBlockingMultiplier);
+      blockingScore += contribution;
+      score2 += contribution;
     }
   }
   score2 += 10;
@@ -28960,10 +28965,13 @@ function scoreRoadAction(ctx, edgeId) {
     bothEndpointsBuilt = false;
   }
   if (bothEndpointsBuilt) score2 -= 15;
-  if (state.longestRoadHolderPlayerId !== actingPlayerId && currentRoadLength >= LONGEST_ROAD_MIN && roadLengthGain <= 0 && expansionPathScore <= 0) {
+  const defenseBonus = longestRoadDefenseBonus(ctx, edgeId, dedupScratch);
+  score2 += defenseBonus;
+  const titleInReach = state.longestRoadHolderPlayerId === actingPlayerId || longestRoadClaimTarget - projectedRoadLength <= LR_OBJECTIVE_MAX_GAP;
+  const usefulLengthGain = roadLengthGain > 0 && titleInReach;
+  if (!usefulLengthGain && expansionPathScore <= 0 && blockingScore <= 0 && defenseBonus <= 0) {
     score2 -= 18;
   }
-  score2 += longestRoadDefenseBonus(ctx, edgeId, dedupScratch);
   const excessRoads = excessRoadsAboveBuildings(state, actingPlayerId, 3);
   if (excessRoads >= 4) score2 -= 35;
   else if (excessRoads >= 2) score2 -= 18;
