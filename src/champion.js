@@ -22349,18 +22349,26 @@ var EMPTY_TRADE_CACHE = {
   maxProtectedByType: /* @__PURE__ */ new Map()
 };
 function getTradeCache(ctx) {
-  return memoizePerRequest(tradeCacheByState, ctx.state, ctx.playerId, () => {
-    const player = selfPlayer(ctx.state, ctx.playerId);
-    if (player === null) return EMPTY_TRADE_CACHE;
+  const byPlayer = requestScopedCache(tradeCacheByState, ctx.state);
+  const existing = byPlayer.get(ctx.playerId);
+  const requirePlacement = ctx.tuning.tradeTargetsRequirePlacement;
+  if (existing?.boardIndex === ctx.boardIndex && existing.requirePlacement === requirePlacement) {
+    return existing.cache;
+  }
+  const player = selfPlayer(ctx.state, ctx.playerId);
+  let cache2 = EMPTY_TRADE_CACHE;
+  if (player !== null) {
     const materialCounts = materialCountsFor(player);
     const targets = computeTradeTargets(ctx, player);
-    return {
+    cache2 = {
       materialCounts,
       targets,
       beforeStats: targets.map((target) => targetStats(materialCounts, target.cost)),
       maxProtectedByType: /* @__PURE__ */ new Map()
     };
-  });
+  }
+  byPlayer.set(ctx.playerId, { boardIndex: ctx.boardIndex, requirePlacement, cache: cache2 });
+  return cache2;
 }
 function handCoversCost(hand, cost) {
   for (const entry of cost) {
@@ -22379,7 +22387,8 @@ function topAffordableBuildCost(ctx) {
 }
 function tradeCostEntries(cost) {
   const out = [];
-  for (const [type, needed] of Object.entries(cost)) {
+  for (const type of Object.keys(cost)) {
+    const needed = cost[type];
     if (needed !== void 0) out.push({ type, needed });
   }
   return out;
@@ -22688,7 +22697,7 @@ function addImprovementTarget(targets, commodity, level, cranePlayed, metropolis
     surplusReliefWeight: 1,
     // Win-proximity markup (B1) applies only when completing this improvement
     // would actually grant/steal the metropolis (+2 VP) — gated by the caller on
-    // holder + best-opponent track level. A non-granting improvement isn't VP-
+    // the actual holder and an available city host. A non-granting improvement isn't VP-
     // bearing, so it carries no markup.
     vpScalable: metropolisScalable2
   });
@@ -23011,6 +23020,7 @@ function withSettlementPlaced(board, intersection2, playerId) {
   };
 }
 function withKnightPlaced(board, intersectionId, ownerPlayerId) {
+  if (!Object.hasOwn(board.intersections, intersectionId)) return board;
   const intersection2 = board.intersections[intersectionId];
   if (intersection2 === void 0) return board;
   const knight = {
@@ -23029,6 +23039,7 @@ function withKnightPlaced(board, intersectionId, ownerPlayerId) {
   };
 }
 function withKnightCleared(board, intersectionId) {
+  if (!Object.hasOwn(board.intersections, intersectionId)) return board;
   const intersection2 = board.intersections[intersectionId];
   if (intersection2 === void 0 || intersection2.knight === null) return board;
   return {
@@ -23041,25 +23052,32 @@ function withKnightCleared(board, intersectionId) {
 }
 var PROJECTED_LR_CACHE = /* @__PURE__ */ new WeakMap();
 var SETTLEMENT_PROJECTED_LR_CACHE = /* @__PURE__ */ new WeakMap();
+function memoizedProjection(cache2, board, target, owner, query, compute) {
+  const byTarget = getOrCreate(cache2, board, () => /* @__PURE__ */ new WeakMap());
+  const byOwner = getOrCreate(byTarget, target, () => /* @__PURE__ */ new Map());
+  const byQuery = getOrCreate(byOwner, owner, () => /* @__PURE__ */ new Map());
+  return getOrCreate(byQuery, query, compute);
+}
 function projectedLongestRoadWithEdgeOverride(board, edge, overrideOwnerId, queryPlayerId) {
-  const key = `${edge.id}|${overrideOwnerId ?? "\u2205"}|${queryPlayerId}`;
-  const cached2 = memoizePerRequest(
+  return memoizedProjection(
     PROJECTED_LR_CACHE,
     board,
-    key,
+    edge,
+    overrideOwnerId,
+    queryPlayerId,
     () => calculateLongestRoadFromClient(
       withEdgeOwnerOverride(board, edge, overrideOwnerId),
       queryPlayerId
     )
   );
-  return cached2;
 }
 function projectedLongestRoadWithSettlement(board, intersection2, settlementOwnerId, queryPlayerId) {
-  const key = `${intersection2.id}|${settlementOwnerId}|${queryPlayerId}`;
-  return memoizePerRequest(
+  return memoizedProjection(
     SETTLEMENT_PROJECTED_LR_CACHE,
     board,
-    key,
+    intersection2,
+    settlementOwnerId,
+    queryPlayerId,
     () => calculateLongestRoadFromClient(
       withSettlementPlaced(board, intersection2, settlementOwnerId),
       queryPlayerId
@@ -23725,8 +23743,8 @@ var CITY_COST2 = actionCost(ActionType.BuildCity);
 var SETTLEMENT_COST3 = actionCost(ActionType.BuildSettlement);
 var ROAD_COST = actionCost(ActionType.BuildRoad);
 function leaderDangerProfile(ctx) {
-  const leaderId = ctx.leaderOpponentId ?? criticalOpponentId(ctx.state, ctx.actingPlayerId);
-  if (leaderId === null) return null;
+  const leaderId = ctx.leaderOpponentId ?? criticalOpponentId(ctx.state, ctx.actingPlayerId, ctx.tuning);
+  if (leaderId === null || !Object.hasOwn(ctx.state.players, leaderId)) return null;
   const player = ctx.state.players[leaderId];
   if (player === void 0) return null;
   const target = ctx.state.victoryPointsTarget;
@@ -23865,9 +23883,11 @@ function leaderWinLiveness(ctx, floors) {
   return clamp(best, floor, 1);
 }
 function leaderLongestRoadPressure(ctx, leaderId) {
+  if (!Object.hasOwn(ctx.state.players, leaderId)) return 0;
   const leader = ctx.state.players[leaderId];
   if (leader === void 0) return 0;
-  const leaderRoadLength = ctx.roadLengthByPlayer?.[leaderId] ?? Math.max(0, ROADS_PER_PLAYER - leader.roadsInSupply);
+  const knownLength = ctx.roadLengthByPlayer !== void 0 && Object.hasOwn(ctx.roadLengthByPlayer, leaderId) ? ctx.roadLengthByPlayer[leaderId] : void 0;
+  const leaderRoadLength = knownLength ?? Math.max(0, ROADS_PER_PLAYER - leader.roadsInSupply);
   const target = ctx.state.victoryPointsTarget;
   if (ctx.state.longestRoadHolderPlayerId === leaderId) {
     return leader.victoryPoints >= target - TWO_FROM_WIN ? 2 : 1;
@@ -26507,8 +26527,8 @@ function computeAcquisitionPlan(state, playerId, boardIndex, tuning, estimator) 
   const cityTarget = targets.find((target) => target.kind === "city");
   const settlementTarget = targets.find((target) => target.kind === "settlement");
   const hasReachableSettlementSite2 = (boardIndex.buildableSettlementSiteIdsByPlayer[playerId]?.size ?? 0) > 0;
-  const settlementDeficit = settlementTarget === void 0 ? null : totalCardDeficit(player, settlementTarget.cost);
-  const nearKitSettlementCost = settlementTarget !== void 0 && hasReachableSettlementSite2 && settlementDeficit !== null && settlementDeficit >= 1 && settlementDeficit <= tuning.nearKitSettlementHoldMaxDeficit ? settlementTarget.cost : null;
+  const settlementDeficit2 = settlementTarget === void 0 ? null : totalCardDeficit(player, settlementTarget.cost);
+  const nearKitSettlementCost = settlementTarget !== void 0 && hasReachableSettlementSite2 && settlementDeficit2 !== null && settlementDeficit2 >= 1 && settlementDeficit2 <= tuning.nearKitSettlementHoldMaxDeficit ? settlementTarget.cost : null;
   const production = estimator?.expectedProductionPerTurn(state, playerId) ?? {};
   let bestScore = -Infinity;
   let bestBonus = -Infinity;
@@ -26526,7 +26546,7 @@ function computeAcquisitionPlan(state, playerId, boardIndex, tuning, estimator) 
       best = toRanked(target, turns);
     }
   }
-  const isCitylessAfterPillage = cityTarget !== void 0 && (boardIndex.cityCountByPlayer[playerId] ?? 0) === 0 && (boardIndex.buildingsByPlayer[playerId]?.length ?? 0) > 0;
+  const isCitylessAfterPillage = cityTarget !== void 0 && (boardIndex.cityCountByPlayer[playerId] ?? 0) === 0;
   if (isCitylessAfterPillage) {
     const turns = acquisitionTargetTurns(player, cityTarget.cost, production).turns;
     best = toRanked(cityTarget, turns);
@@ -27353,13 +27373,17 @@ function buildBotContext(request, tuning) {
 }
 var knownHumanPlayerIdsCache = /* @__PURE__ */ new WeakMap();
 function cachedKnownHumanPlayerIds(request, excludePlayerId) {
-  const byExclusion = getOrCreate(
-    knownHumanPlayerIdsCache,
-    request.state,
-    () => /* @__PURE__ */ new Map()
-  );
+  let entry = knownHumanPlayerIdsCache.get(request.state);
+  if (entry === void 0 || entry.recentEvents !== request.recentEvents || entry.humanPlayerIds !== request.humanPlayerIds) {
+    entry = {
+      recentEvents: request.recentEvents,
+      humanPlayerIds: request.humanPlayerIds,
+      byExclusion: /* @__PURE__ */ new Map()
+    };
+    knownHumanPlayerIdsCache.set(request.state, entry);
+  }
   return getOrCreate(
-    byExclusion,
+    entry.byExclusion,
     excludePlayerId,
     () => knownHumanPlayerIds(request, Object.keys(request.state.players), excludePlayerId)
   );
@@ -28453,6 +28477,7 @@ function bfsDistancesFromIntersection(state, actingPlayerId, startId) {
     if (cur === void 0) break;
     const d = dist.get(cur);
     if (d === void 0) continue;
+    if (!Object.hasOwn(state.board.intersections, cur)) continue;
     const intersection2 = state.board.intersections[cur];
     if (intersection2 === void 0) continue;
     for (const edgeId of intersection2.adjacentEdgeIds) {
@@ -28471,6 +28496,7 @@ function bfsDistancesFromIntersection(state, actingPlayerId, startId) {
   return dist;
 }
 function computeRoadFocusIntersectionId(state, actingPlayerId, boardIndex) {
+  if (!Object.hasOwn(state.players, actingPlayerId)) return null;
   const player = state.players[actingPlayerId];
   if (player === void 0 || player.settlementsInSupply <= 0) {
     return null;
@@ -28482,8 +28508,6 @@ function computeRoadFocusIntersectionId(state, actingPlayerId, boardIndex) {
   let bestId = null;
   let bestPips = -1;
   for (const iid of reach) {
-    const inter = state.board.intersections[iid];
-    if (inter === void 0 || inter.building !== null || inter.knight !== null) continue;
     if (boardIndex.isBuildableByIntersection[iid] !== true) continue;
     const pips = boardIndex.pipsByIntersection[iid] ?? 0;
     if (pips > bestPips) {
@@ -28534,6 +28558,7 @@ function buildSettlementScoringBase(state, playerId, boardIndex) {
 }
 function accumulateAdjacentHexEconomy(state, adjacentHexIds, existingResourceTypes, hotNumberResourceTypes, existingPipsByResource, existingHexIds) {
   for (const hexId of adjacentHexIds) {
+    if (!Object.hasOwn(state.board.hexes, hexId)) continue;
     const hex3 = state.board.hexes[hexId];
     if (hex3 === void 0) continue;
     const resource = hexProducesResource(hex3.type);
@@ -34175,6 +34200,108 @@ function planRanksAbove(candidate, incumbent) {
   return candidate.setupAction.id < incumbent.setupAction.id;
 }
 
+// bot/src/bot/causeway-win-plan.ts
+var SETTLEMENT_COST5 = actionCost(ActionType.BuildSettlement);
+function findCausewayWinPlan(ctx, pool) {
+  const self2 = selfPlayer(ctx.state, ctx.playerId);
+  const pending = ctx.state.pendingDecision;
+  if (!ctx.tuning.sameTurnEndgamePlannerEnabled || self2 === null || ctx.state.phase !== Phase.Action || ctx.state.currentPlayerId !== ctx.playerId || self2.victoryPoints !== ctx.state.victoryPointsTarget - ONE_FROM_WIN || self2.settlementsInSupply < 1 || pending !== null && pending.type !== PendingDecisionType.RoadBuildingPlace)
+    return null;
+  const card2 = pending === null ? pool.find(
+    (a) => a.type === ActionType.PlayProgressCard && self2.progressHand.some(
+      (c) => c.instanceId === a.instanceId && c.cardId === "scienceRoadBuilding"
+    )
+  ) : void 0;
+  if (pending === null && card2 === void 0) return null;
+  const roadCount = pending === null ? 2 : self2.freeRoadsRemaining;
+  if (roadCount < 1 || roadCount > 2 || self2.roadsInSupply < roadCount) return null;
+  const hand = { resources: self2.resources, commodities: self2.commodities };
+  let funding = canAffordHypothetical(hand, SETTLEMENT_COST5) ? [] : null;
+  if (funding === null && pending === null) {
+    const trades = pool.filter(
+      (a) => a.type === ActionType.MaritimeTrade && !isCommodityType(a.want.type) && a.want.count === 1 && (self2.resources[a.want.type] ?? 0) < (SETTLEMENT_COST5[a.want.type] ?? 0)
+    );
+    for (const first of trades) {
+      const delta = actionDelta(first);
+      if (delta === null || !canAffordHypothetical(hand, costOnly(delta))) continue;
+      const bank = { resources: ctx.state.bankResources, commodities: ctx.state.bankCommodities };
+      if (!canAffordHypothetical(bank, { [first.want.type]: first.want.count })) continue;
+      const afterFirst = applyResourceDelta(hand, delta);
+      if (settlementDeficit(afterFirst.resources) >= settlementDeficit(hand.resources)) continue;
+      if (canAffordHypothetical(afterFirst, SETTLEMENT_COST5)) {
+        funding = [first];
+        break;
+      }
+      const bankAfterFirst = applyResourceDelta(bank, {
+        [first.offer.type]: first.offer.count,
+        [first.want.type]: -first.want.count
+      });
+      for (const second of trades) {
+        const secondDelta = actionDelta(second);
+        if (secondDelta === null || !canAffordHypothetical(afterFirst, costOnly(secondDelta)) || !canAffordHypothetical(bankAfterFirst, { [second.want.type]: second.want.count }))
+          continue;
+        if (canAffordHypothetical(applyResourceDelta(afterFirst, secondDelta), SETTLEMENT_COST5)) {
+          funding = [first, second];
+          break;
+        }
+      }
+      if (funding !== null) break;
+    }
+  }
+  if (funding === null) return null;
+  const roads = roadSettlementPath(
+    ctx.state.board,
+    ctx.playerId,
+    roadCount,
+    pending === null ? null : pool
+  );
+  if (roads === null) return null;
+  return [...funding, ...card2 === void 0 ? [] : [card2], ...roads];
+}
+function settlementDeficit(resources) {
+  return Math.max(0, 1 - (resources.brick ?? 0)) + Math.max(0, 1 - (resources.lumber ?? 0)) + Math.max(0, 1 - (resources.wool ?? 0)) + Math.max(0, 1 - (resources.grain ?? 0));
+}
+function roadSettlementPath(board, playerId, remaining, firstPool) {
+  const view = recordBoardView(board);
+  if (remaining === 0) {
+    for (const site of Object.values(board.intersections)) {
+      if (canPlaceBuildingAt(view, site.id) && hasOwnRoadAdjacentToIntersection(view, playerId, site.id)) {
+        return [
+          {
+            id: `synthetic-causeway-settlement-${site.id}`,
+            type: ActionType.BuildSettlement,
+            intersectionId: site.id
+          }
+        ];
+      }
+    }
+    return null;
+  }
+  for (const edge of Object.values(board.edges)) {
+    if (edge.roadOwnerPlayerId !== null || !isRoadConnected(view, playerId, edge.id)) continue;
+    const supplied = firstPool?.find(
+      (a) => a.type === ActionType.BuildRoad && a.edgeId === edge.id
+    );
+    if (firstPool !== null && supplied === void 0) continue;
+    const tail = roadSettlementPath(
+      withEdgeOwnerOverride(board, edge, playerId),
+      playerId,
+      remaining - 1,
+      null
+    );
+    if (tail !== null)
+      return [
+        supplied ?? {
+          id: `synthetic-causeway-road-${edge.id}`,
+          type: ActionType.BuildRoad,
+          edgeId: edge.id
+        },
+        ...tail
+      ];
+  }
+  return null;
+}
+
 // bot/src/bot/decision-trace.ts
 function racePostureTraceContext(base) {
   const posture = base.racePosture;
@@ -34702,6 +34829,10 @@ function chooseGameOver(ctx) {
 function choosePending(ctx, pending) {
   const winningMoves = immediateWinningMoves(ctx);
   const winningMovePoolOnly = winningMoves.length > 0;
+  if (!winningMovePoolOnly) {
+    const causeway = chooseCausewayWin(ctx, ctx.request.validActions);
+    if (causeway !== null) return causeway;
+  }
   const resolverCtx = winningMovePoolOnly ? withValidActions(ctx, winningMoves) : ctx;
   const {
     action: chosen,
@@ -34772,6 +34903,8 @@ function chooseMainScoring(ctx, hooks) {
         replayFilter.repeatTradeCandidateCount
       );
     }
+    const causeway = chooseCausewayWin(ctx, actionPool);
+    if (causeway !== null) return causeway;
   }
   const productionRankedWidth = 3;
   const observerRankedWidth = Math.max(3, Math.floor(hooks?.rankingObserver?.width ?? 3));
@@ -34860,6 +34993,24 @@ function applyNearKitActivationReservation(ctx, actionPool, base) {
   );
   const suppressedCount = actionPool.length - filtered.length;
   return suppressedCount > 0 && filtered.length > 0 ? { actionPool: filtered, suppressedCount } : { actionPool, suppressedCount: 0 };
+}
+function chooseCausewayWin(ctx, pool) {
+  const plan = findCausewayWinPlan(ctx, pool);
+  const chosen = plan?.[0];
+  if (chosen === void 0) return null;
+  return {
+    chosen,
+    decisionTrace: {
+      candidateCount: ctx.request.validActions.length,
+      context: {
+        chosenActionType: chosen.type,
+        chosenCandidateId: chosen.id,
+        causewaySettlementWin: true,
+        winningPlanActionsRemaining: plan?.length ?? 0
+      },
+      top3: [{ type: chosen.type, score: 0, extra: { candidateId: chosen.id } }]
+    }
+  };
 }
 function chooseEndgamePlan(plan, base, request, scoredPoolSize, repeatTradeCandidateCount) {
   const chosen = plan.setupAction;
