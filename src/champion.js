@@ -23424,7 +23424,7 @@ function knightLongestRoadWinDelta(state, playerId, projectedBoard, deps, myLeng
     return memoizePerRequest(
       KNIGHT_PROJECTED_LR_CACHE,
       state.board,
-      `${projectionKey}|${rivalId}`,
+      JSON.stringify([playerId, projectionKey, rivalId]),
       () => calc(projectedBoard, rivalId)
     );
   }) ? 2 : 0;
@@ -23439,7 +23439,7 @@ function recruitKnightWinDelta(intersectionId, state, playerId, deps) {
     withKnightPlaced(state.board, intersectionId, playerId),
     deps,
     myLength,
-    `recruit:${intersectionId}`
+    ["recruit", intersectionId]
   );
 }
 function moveKnightWinDelta(knightId, destinationId, state, playerId, deps) {
@@ -23454,14 +23454,11 @@ function moveKnightWinDelta(knightId, destinationId, state, playerId, deps) {
     destinationId,
     playerId
   );
-  return knightLongestRoadWinDelta(
-    state,
-    playerId,
-    projected,
-    deps,
-    myLength,
-    `move:${sourceId}:${destinationId}`
-  );
+  return knightLongestRoadWinDelta(state, playerId, projected, deps, myLength, [
+    "move",
+    sourceId,
+    destinationId
+  ]);
 }
 function displaceKnightWinDelta(knightId, targetId, state, playerId, deps) {
   if (state.longestRoadHolderPlayerId === playerId || knightId === void 0) return 0;
