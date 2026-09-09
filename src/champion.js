@@ -22097,18 +22097,24 @@ function underbuiltRecovery(ctx) {
   return 0;
 }
 function tradeAdvancesRecoveryPlan(ctx) {
+  const { action } = ctx;
+  if (action.type !== ActionType.MaritimeTrade && action.type !== ActionType.DomesticTradePropose) {
+    return false;
+  }
   const cost = ctx.acquisitionPlan.topTargetCost;
   const player = ctx.state.players[ctx.actingPlayerId];
   if (cost === null || player === void 0) return false;
-  const closesDeficit = (type) => {
-    const target = cost.find((entry) => entry.type === type);
-    return target !== void 0 && heldOfMaterial(player, type) < target.needed;
-  };
-  if (ctx.action.type === ActionType.MaritimeTrade) {
-    return closesDeficit(ctx.action.want.type);
+  if (action.type === ActionType.MaritimeTrade) {
+    return hasRecoveryDeficit(cost, player, action.want.type);
   }
-  if (ctx.action.type === ActionType.DomesticTradePropose) {
-    return ctx.action.want.some((item) => closesDeficit(item.type));
+  for (const item of action.want) {
+    if (hasRecoveryDeficit(cost, player, item.type)) return true;
+  }
+  return false;
+}
+function hasRecoveryDeficit(cost, player, type) {
+  for (const target of cost) {
+    if (target.type === type) return heldOfMaterial(player, type) < target.needed;
   }
   return false;
 }
@@ -22262,7 +22268,9 @@ function berserkerDefenseNeedFactor(ctx) {
     return 0.15;
   }
   const selfStrength = berserkerSummary.strengthByPlayer[ctx.actingPlayerId] ?? 0;
-  for (const playerId of Object.keys(berserkerSummary.pillageableCityByPlayer)) {
+  const pillageable = berserkerSummary.pillageableCityByPlayer;
+  for (const playerId in pillageable) {
+    if (!Object.hasOwn(pillageable, playerId)) continue;
     if (playerId === ctx.actingPlayerId) continue;
     if ((berserkerSummary.strengthByPlayer[playerId] ?? 0) < selfStrength) return 0.15;
   }
@@ -23162,7 +23170,7 @@ var VP_CAPABLE_ACTION_TYPES = /* @__PURE__ */ new Set([
   ActionType.PlayProgressCard,
   ActionType.ResolveOptionalCardEffect,
   // Knight placement/movement can cut a rival's road path and transfer Longest
-  // Road (+2); a displacement qualifies only when every retreat preserves it.
+  // Road (+2), evaluated after automatic retreats and before pending choices.
   ActionType.RecruitKnight,
   ActionType.MoveKnight,
   ActionType.DisplaceKnight
@@ -23714,25 +23722,34 @@ function hasImmediateOpponentWinThreat(state, playerId, tuning) {
   const immediateThreshold = state.victoryPointsTarget - ONE_FROM_WIN;
   return effectiveMaxOpponentVp(state, playerId, tuning) >= immediateThreshold;
 }
-function isVpRewardingAction(action, state, playerId, boardIndex) {
-  if (action.type === ActionType.BuildCity || action.type === ActionType.BuildSettlement) {
-    return true;
-  }
+function populateVpActionFacts(target, action, state, playerId, boardIndex) {
+  target.isVpAction = false;
+  target.vpDelta = 0;
+  let buildFamily = action.type === ActionType.BuildCity || action.type === ActionType.BuildSettlement;
   if (action.type === ActionType.BuildRoad) {
     const holder = state.longestRoadHolderPlayerId;
-    if (holder === playerId) return false;
+    if (holder === playerId) return;
     if (holder === null) {
       const roadsBuilt = ROADS_PER_PLAYER - (state.players[playerId]?.roadsInSupply ?? ROADS_PER_PLAYER);
-      if (roadsBuilt + 1 < LONGEST_ROAD_MIN) return false;
+      if (roadsBuilt + 1 < LONGEST_ROAD_MIN) return;
     }
-    return winningVpDelta(action, state, playerId, boardIndex === void 0 ? {} : { boardIndex }) > 0;
   }
   if (action.type === ActionType.ImproveCity) {
     const player = state.players[playerId];
-    return player !== void 0 && trackLevelFor(action.track, player) >= 3;
+    if (player === void 0 || !(trackLevelFor(action.track, player) >= 3)) return;
+    buildFamily = true;
   }
-  if (!VP_CAPABLE_ACTION_TYPES.has(action.type)) return false;
-  return winningVpDelta(action, state, playerId, boardIndex === void 0 ? {} : { boardIndex }) > 0;
+  if (!VP_CAPABLE_ACTION_TYPES.has(action.type)) return;
+  const delta = winningVpDelta(
+    action,
+    state,
+    playerId,
+    boardIndex === void 0 ? {} : { boardIndex }
+  );
+  if (buildFamily || delta > 0) {
+    target.isVpAction = true;
+    target.vpDelta = delta;
+  }
 }
 
 // bot/src/bot/leader-danger.ts
@@ -28138,6 +28155,10 @@ function scoreMerchantPayload(ctx, hexId) {
   const rateValue = merchantHexRateValue(ctx, hexId, resource);
   if (ctx.state.merchantOwnerPlayerId === ctx.actingPlayerId) {
     if (ctx.state.merchantHexId === hexId) return NO_BENEFIT_PLAY_SCORE;
+    const currentHex = ctx.state.merchantHexId === null ? void 0 : ctx.state.board.hexes[ctx.state.merchantHexId];
+    if (currentHex !== void 0 && hexProducesResource(currentHex.type) === resource) {
+      return NO_BENEFIT_PLAY_SCORE;
+    }
     const currentRateValue = currentMerchantHexRateValue(ctx);
     const gain = rateValue - currentRateValue;
     return gain > 0 ? Math.round(gain) : NO_BENEFIT_PLAY_SCORE;
@@ -28724,8 +28745,7 @@ function buildScoreContext(ctx, action, base) {
   out.validActions = ctx.request.validActions;
   out.tuning = ctx.tuning;
   out.boardIndex = ctx.boardIndex;
-  out.isVpAction = isVpRewardingAction(action, ctx.state, ctx.playerId, ctx.boardIndex);
-  out.vpDelta = out.isVpAction ? winningVpDelta(action, ctx.state, ctx.playerId, { boardIndex: ctx.boardIndex }) : 0;
+  populateVpActionFacts(out, action, ctx.state, ctx.playerId, ctx.boardIndex);
   out.productionEstimator = ctx.productionEstimator;
   out.opponentModel = ctx.opponentModel;
   out.leaderOpponentId = ctx.leaderOpponentId ?? null;
@@ -30826,28 +30846,24 @@ function defenderTokenContest(ctx) {
 }
 
 // bot/src/bot/score-rules/hidden-vp-defense.ts
+var PRESSURE_MULTIPLIERS = /* @__PURE__ */ new Map([
+  [ActionType.ChaseRobber, 1.4],
+  [ActionType.DisplaceKnight, 1.1],
+  [ActionType.MoveKnight, 0.7],
+  [ActionType.BuildRoad, 0.7],
+  [ActionType.DomesticTradePropose, -0.8],
+  [ActionType.EndTurn, -0.6]
+]);
 function hiddenVpDefense(ctx) {
   const weight = ctx.tuning.hiddenVpThreatWeight;
   if (weight === 0) return 0;
+  const multiplier = ctx.isVpAction ? 1 : PRESSURE_MULTIPLIERS.get(ctx.action.type);
+  if (multiplier === void 0) return 0;
   const maxThreat = hiddenVpThreatMargin(ctx);
   if (maxThreat === 0) return 0;
   const scaled = Math.round(weight * maxThreat);
-  if (ctx.isVpAction) return scaled;
-  switch (ctx.action.type) {
-    case ActionType.ChaseRobber:
-      return Math.round(scaled * 1.4);
-    case ActionType.DisplaceKnight:
-      return Math.round(scaled * 1.1);
-    case ActionType.MoveKnight:
-    case ActionType.BuildRoad:
-      return Math.round(scaled * 0.7);
-    case ActionType.DomesticTradePropose:
-      return -Math.round(scaled * 0.8);
-    case ActionType.EndTurn:
-      return -Math.round(scaled * 0.6);
-    default:
-      return 0;
-  }
+  if (multiplier === 1) return scaled;
+  return multiplier < 0 ? -Math.round(scaled * -multiplier) : Math.round(scaled * multiplier);
 }
 function hiddenVpThreatMargin(ctx) {
   const { state } = ctx;
@@ -30856,9 +30872,9 @@ function hiddenVpThreatMargin(ctx) {
   for (const pid of ctx.nonSelfOpponentIds) {
     const player = state.players[pid];
     if (player === void 0) continue;
+    if (player.victoryPoints < visibleThreshold) continue;
     const hiddenEstimate = hiddenVpEstimateForPlayer(player);
     if (hiddenEstimate <= 0) continue;
-    if (player.victoryPoints < visibleThreshold) continue;
     const margin = player.victoryPoints + hiddenEstimate - visibleThreshold + 1;
     if (margin > maxThreat) maxThreat = margin;
   }
@@ -32984,21 +33000,6 @@ function projectedTrackLevel(state, playerId, track, priorActions) {
   return level;
 }
 
-// bot/src/bot/lookahead/action-shape-key.ts
-function actionShapeKey(action) {
-  switch (action.type) {
-    case ActionType.BuildRoad:
-      return `${action.type}:${action.edgeId}`;
-    case ActionType.BuildSettlement:
-    case ActionType.BuildCity:
-      return `${action.type}:${action.intersectionId}`;
-    case ActionType.ImproveCity:
-      return `${action.type}:${action.track}`;
-    default:
-      return `${action.type}:${action.id}`;
-  }
-}
-
 // bot/src/bot/lookahead/hypothetical-state.ts
 function applyResourceDelta(state, delta) {
   let resources = state.resources;
@@ -33054,6 +33055,94 @@ function isLegalSettlementSiteAfterRoad(state, boardView, intersectionId, newlyO
   if (!canPlaceBuildingAt(boardView, intersectionId)) return false;
   const newEdge = state.board.edges[newlyOwnedEdgeId];
   return newEdge !== void 0 && (newEdge.intersectionA === intersectionId || newEdge.intersectionB === intersectionId);
+}
+
+// bot/src/bot/road-settlement-city-plan.ts
+function cityUpgradeFollowups(state, playerId, intersectionId, projected, medicineConsumed = false) {
+  const player = selfPlayer(state, playerId);
+  if (player === null || player.citiesInSupply <= 0 || hasSidewaysCity(state, playerId)) return [];
+  const out = [];
+  if (canAffordHypothetical(projected, cityCostFor(!medicineConsumed && player.medicinePlayed))) {
+    out.push({
+      id: `synthetic-city-${intersectionId}`,
+      type: ActionType.BuildCity,
+      intersectionId
+    });
+  }
+  if (canAffordHypothetical(projected, cityCostFor(true))) {
+    for (const card2 of player.progressHand) {
+      if (ALL_CARDS_BY_ID.get(card2.cardId)?.effectHandler !== "buildCityReducedCost") continue;
+      out.push({
+        id: `synthetic-medicine-${card2.instanceId}-${intersectionId}`,
+        type: ActionType.PlayProgressCard,
+        instanceId: card2.instanceId,
+        intersectionId
+      });
+    }
+  }
+  return out;
+}
+function findRoadSettlementCityWinningPlan(ctx, actionPool) {
+  const player = selfPlayer(ctx.state, ctx.playerId);
+  if (player === null || ctx.state.pendingDecision !== null || player.victoryPoints < ctx.state.victoryPointsTarget - TWO_FROM_WIN || player.roadsInSupply <= 0 || player.settlementsInSupply <= 0 || player.citiesInSupply <= 0 || hasSidewaysCity(ctx.state, ctx.playerId) || !canAffordHypothetical(player, costOnly(ROAD_DELTA)))
+    return null;
+  const afterRoad = applyResourceDelta(player, ROAD_DELTA);
+  if (!canAffordHypothetical(afterRoad, costOnly(SETTLEMENT_DELTA))) return null;
+  const afterSettlement = applyResourceDelta(afterRoad, SETTLEMENT_DELTA);
+  for (const road of actionPool) {
+    if (road.type !== ActionType.BuildRoad) continue;
+    const edge = ctx.state.board.edges[road.edgeId];
+    if (edge === void 0) continue;
+    for (const intersectionId of [edge.intersectionA, edge.intersectionB]) {
+      if (!isLegalSettlementSiteAfterRoad(
+        ctx.state,
+        ctx.boardIndex.boardView,
+        intersectionId,
+        road.edgeId
+      ))
+        continue;
+      const finisher = cityUpgradeFollowups(
+        ctx.state,
+        ctx.playerId,
+        intersectionId,
+        afterSettlement
+      )[0];
+      if (finisher === void 0) continue;
+      return {
+        setupAction: road,
+        followupAction: {
+          id: `synthetic-settlement-${intersectionId}`,
+          type: ActionType.BuildSettlement,
+          intersectionId
+        },
+        finisherAction: finisher,
+        setupVpDelta: 0,
+        followupVpDelta: 1,
+        finisherVpDelta: 1,
+        setupScore: 0,
+        followupScore: 0,
+        finisherScore: 0,
+        syntheticFollowup: true,
+        syntheticFinisher: true
+      };
+    }
+  }
+  return null;
+}
+
+// bot/src/bot/lookahead/action-shape-key.ts
+function actionShapeKey(action) {
+  switch (action.type) {
+    case ActionType.BuildRoad:
+      return `${action.type}:${action.edgeId}`;
+    case ActionType.BuildSettlement:
+    case ActionType.BuildCity:
+      return `${action.type}:${action.intersectionId}`;
+    case ActionType.ImproveCity:
+      return `${action.type}:${action.track}`;
+    default:
+      return `${action.type}:${action.id}`;
+  }
 }
 
 // bot/src/bot/lookahead/synthetic-followup.ts
@@ -33315,19 +33404,13 @@ function enumerateAffordableCityImprovements(ctx, projected, craneConsumed) {
   return out;
 }
 function enumerateSettlementUnlockedCities(intersectionId, ctx, projected, medicineConsumed) {
-  const player = ctx.state.players[ctx.actingPlayerId];
-  if (player === void 0 || player.citiesInSupply <= 0 || hasSidewaysCity(ctx.state, ctx.actingPlayerId)) {
-    return [];
-  }
-  const medicinePlayed = !medicineConsumed && isSelf(player) && player.medicinePlayed;
-  if (!canAffordHypothetical(projected, cityCostFor(medicinePlayed))) return [];
-  return [
-    {
-      id: syntheticId("city", intersectionId),
-      type: ActionType.BuildCity,
-      intersectionId
-    }
-  ];
+  return cityUpgradeFollowups(
+    ctx.state,
+    ctx.actingPlayerId,
+    intersectionId,
+    projected,
+    medicineConsumed
+  );
 }
 function dedupeByActionShape(actions, excludedKey) {
   const out = [];
@@ -33810,7 +33893,9 @@ function findSameTurnWinningPlan(ctx, actionPool, base) {
   const target = ctx.state.victoryPointsTarget;
   if (self2.victoryPoints < target - THREE_FROM_WIN) return null;
   const planPool = actionPool.length > ENDGAME_PLAN_POOL_LIMIT ? actionPool.filter((a) => PLAN_RELEVANT_TYPES.has(a.type)) : actionPool;
-  if (planPool.length > ENDGAME_PLAN_POOL_LIMIT) return findThreeRoadWinningPlan(ctx, actionPool);
+  if (planPool.length > ENDGAME_PLAN_POOL_LIMIT) {
+    return findRoadSettlementCityWinningPlan(ctx, actionPool) ?? findThreeRoadWinningPlan(ctx, actionPool);
+  }
   const vpDeltaByActionId = /* @__PURE__ */ new Map();
   for (const action of planPool) {
     vpDeltaByActionId.set(
@@ -33919,7 +34004,7 @@ function findSameTurnWinningPlan(ctx, actionPool, base) {
     const multiTradePlan = findMultiTradeWinningPlan(ctx, planPool, base);
     if (multiTradePlan !== null && planRanksAbove(multiTradePlan, best)) best = multiTradePlan;
   }
-  return best ?? findThreeRoadWinningPlan(ctx, actionPool);
+  return best ?? findRoadSettlementCityWinningPlan(ctx, actionPool) ?? findThreeRoadWinningPlan(ctx, actionPool);
 }
 function findThreeRoadWinningPlan(ctx, actionPool) {
   const self2 = selfPlayer(ctx.state, ctx.playerId);
