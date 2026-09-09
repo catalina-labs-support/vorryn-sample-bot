@@ -28694,7 +28694,8 @@ function buildPendingScoringBase(ctx) {
         leaderOpponentId: ctx.leaderOpponentId ?? null,
         boardIndex,
         opponentModel: ctx.opponentModel,
-        roadLengthByPlayer
+        roadLengthByPlayer,
+        tuning: ctx.tuning
       },
       {
         floor: ctx.tuning.threatAffordabilityFloor,
