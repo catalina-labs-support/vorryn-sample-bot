@@ -21541,12 +21541,14 @@ function selfScarcityFactors(estimator, state, playerId, weight) {
   if (estimator === void 0 || weight <= 0) return void 0;
   const perPlayer = requestScopedCache(scarcityFactorsByState, state);
   const cached2 = perPlayer.get(playerId);
-  if (cached2 !== void 0 && cached2.weight === weight) return cached2.factors;
+  if (cached2 !== void 0 && cached2.weight === weight && cached2.estimator === estimator) {
+    return cached2.factors;
+  }
   const production = estimator.expectedProductionPerTurn(state, playerId);
   const factors = {};
   addGroupScarcity(factors, production, RESOURCE_TYPES, weight);
   addGroupScarcity(factors, production, COMMODITY_TYPES, weight);
-  perPlayer.set(playerId, { weight, factors });
+  perPlayer.set(playerId, { weight, estimator, factors });
   return factors;
 }
 function addGroupScarcity(out, production, types, weight) {
@@ -22058,7 +22060,6 @@ var KNIGHT_RECRUIT_IDLE_PENALTY_PER_KNIGHT = 12;
 var KNIGHT_ACTIVATE_IMMINENT_SHIP_BONUS = 20;
 var KNIGHT_SATURATION_SAFETY_MARGIN = 1;
 var KNIGHT_MIN_CAP = 2;
-var LR_DEFENSE_HIGH_PRESSURE_FLOOR = 20;
 var SETUP2_TARGET_RESOURCE_PIPS = {
   [ResourceType.Brick]: 3,
   [ResourceType.Lumber]: 3,
@@ -24840,8 +24841,17 @@ function roadLengthFor(state, playerId, precomputed) {
 // bot/src/bot/robber-hex-scorer.ts
 var CITY_KIT_COST = cityCostFor(false);
 var SETTLEMENT_KIT_COST = actionCost(ActionType.BuildSettlement);
-var threatByState = /* @__PURE__ */ new WeakMap();
+var threatByEstimator = /* @__PURE__ */ new WeakMap();
 function createRobberHexScorer(boardIndex, productionEstimator, opponentModel, tuning, opts = {}) {
+  const threatByState = getOrCreate(
+    getOrCreate(
+      threatByEstimator,
+      productionEstimator,
+      () => /* @__PURE__ */ new WeakMap()
+    ),
+    boardIndex,
+    () => /* @__PURE__ */ new WeakMap()
+  );
   function currentLeaderId(state, actingPlayerId) {
     if (opts.leaderOpponentId !== void 0) return opts.leaderOpponentId;
     return leaderOpponentId(state, actingPlayerId, productionEstimator, boardIndex, {
@@ -24877,7 +24887,8 @@ function createRobberHexScorer(boardIndex, productionEstimator, opponentModel, t
         boardIndex,
         productionEstimator,
         opponentModel,
-        tuning
+        tuning,
+        threatByState
       );
       if (score2 > bestScore) {
         bestScore = score2;
@@ -24902,13 +24913,14 @@ function createRobberHexScorer(boardIndex, productionEstimator, opponentModel, t
       productionEstimator,
       opponentModel,
       tuning,
+      threatByState,
       breakdown
     );
     return { score: score2, breakdown, touchesOwnBuilding };
   }
   return { chooseBest, explain };
 }
-function scoreHex(state, actingPlayerId, hexId, leaderId, boardIndex, productionEstimator, opponentModel, tuning, breakdown) {
+function scoreHex(state, actingPlayerId, hexId, leaderId, boardIndex, productionEstimator, opponentModel, tuning, threatByState, breakdown) {
   const hex3 = state.board.hexes[hexId];
   const productionWeight = hex3 !== void 0 && hex3.numberToken !== null ? productionEstimator.productionWeight(hex3.numberToken) : 0;
   let score2 = 0;
@@ -29208,8 +29220,6 @@ function longestRoadDefenseBonus(ctx, edgeId, opponentIds) {
     let candidate = gain * urgency;
     if (highPressure) candidate *= 4;
     if (leaderPressure > 0) candidate *= 1 + leaderPressure;
-    if (highPressure && currentLength >= 4)
-      candidate = Math.max(candidate, LR_DEFENSE_HIGH_PRESSURE_FLOOR);
     if (candidate > bestBonus) bestBonus = candidate;
   }
   return bestBonus;
@@ -29754,7 +29764,8 @@ function declineKeyRows(declines) {
       offer: decline.offer,
       want: decline.want,
       offerKey: tradeBundleKey(decline.offer),
-      wantKey: tradeBundleKey(decline.want)
+      wantKey: tradeBundleKey(decline.want),
+      offerSummary: summarizeBundle(decline.offer)
     }))
   );
 }
@@ -29767,6 +29778,7 @@ function analyzeDomesticTradeDeclines(state, proposerId, targetPlayerId, offer, 
   let hasDominatedBundle = false;
   const candidateResponderDelta = targetPlayerId === void 0 ? null : tradePerspectiveDelta(state, targetPlayerId, offer, want);
   let bestPriorResponderDelta = null;
+  let candidateSummary;
   for (const row of declineKeyRows(state.domesticTradeDeclinesThisTurn)) {
     if (row.proposerId !== proposerId) continue;
     if (targetPlayerId !== void 0 && row.targetPlayerId !== void 0 && row.targetPlayerId !== targetPlayerId) {
@@ -29775,7 +29787,7 @@ function analyzeDomesticTradeDeclines(state, proposerId, targetPlayerId, offer, 
     matchingDeclines++;
     if (row.offerKey === offerKey && row.wantKey === wantKey) {
       hasRepeatedBundle = true;
-    } else if (row.wantKey === wantKey && bundleDominates(row.offer, offer)) {
+    } else if (row.wantKey === wantKey && bundleDominates(row.offerSummary, candidateSummary ??= summarizeBundle(offer))) {
       hasDominatedBundle = true;
     }
     if (row.wantKey !== wantKey) continue;
@@ -29794,23 +29806,20 @@ function analyzeDomesticTradeDeclines(state, proposerId, targetPlayerId, offer, 
     bestPriorResponderDelta
   };
 }
+function summarizeBundle(bundle) {
+  const counts = /* @__PURE__ */ new Map();
+  let total = 0;
+  for (const item of bundle) {
+    counts.set(item.type, (counts.get(item.type) ?? 0) + item.count);
+    total += item.count;
+  }
+  return { counts, total };
+}
 function bundleDominates(prior, candidate) {
-  const priorCounts = /* @__PURE__ */ new Map();
-  const candidateCounts = /* @__PURE__ */ new Map();
-  let priorTotal = 0;
-  let candidateTotal = 0;
-  for (const item of prior) {
-    priorCounts.set(item.type, (priorCounts.get(item.type) ?? 0) + item.count);
-    priorTotal += item.count;
+  for (const [type, count] of candidate.counts) {
+    if ((prior.counts.get(type) ?? 0) < count) return false;
   }
-  for (const item of candidate) {
-    candidateCounts.set(item.type, (candidateCounts.get(item.type) ?? 0) + item.count);
-    candidateTotal += item.count;
-  }
-  for (const [type, count] of candidateCounts) {
-    if ((priorCounts.get(type) ?? 0) < count) return false;
-  }
-  return priorTotal > candidateTotal;
+  return prior.total > candidate.total;
 }
 
 // bot/src/bot/score-rules/action-base-scorers/trade.ts
@@ -29884,12 +29893,20 @@ function standingWantTradeScore(ctx, receive, give) {
 }
 var currentStandingWantScores = /* @__PURE__ */ new WeakMap();
 function currentStandingWantScore(ctx, current) {
-  return memoizePerRequest(
-    currentStandingWantScores,
-    ctx.state,
-    ctx.actingPlayerId,
-    () => standingWantTradeScore(ctx, current.want, current.offer)
-  );
+  const byPlayer = requestScopedCache(currentStandingWantScores, ctx.state);
+  const cached2 = byPlayer.get(ctx.actingPlayerId);
+  if (cached2 !== void 0 && cached2.boardIndex === ctx.boardIndex && cached2.tuning === ctx.tuning && cached2.productionEstimator === ctx.productionEstimator && cached2.acquisitionPlan === ctx.acquisitionPlan) {
+    return cached2.score;
+  }
+  const score2 = standingWantTradeScore(ctx, current.want, current.offer);
+  byPlayer.set(ctx.actingPlayerId, {
+    boardIndex: ctx.boardIndex,
+    tuning: ctx.tuning,
+    productionEstimator: ctx.productionEstimator,
+    acquisitionPlan: ctx.acquisitionPlan,
+    score: score2
+  });
+  return score2;
 }
 function scoreSetStandingWant(ctx, action) {
   if (!ctx.tuning.standingWantPostingEnabled) return STANDING_WANT_DISABLED_SCORE;
@@ -31911,6 +31928,23 @@ var treasonPlaceKnight = (ctx) => {
   });
 };
 
+// bot/src/pending/discard-utility.ts
+function discardUtilityLosses(perUnit, held) {
+  const losses = new Array(held + 1);
+  losses[held] = 0;
+  let full = 0;
+  let factor = 1;
+  for (let count = 1; count <= held; count++) {
+    full += perUnit * Math.max(0.25, factor);
+    factor -= 0.25;
+    losses[held - count] = full;
+  }
+  for (let discarded = 0; discarded <= held; discarded++) {
+    losses[discarded] = full - (losses[discarded] ?? 0);
+  }
+  return { full, losses };
+}
+
 // bot/src/pending/discard-resources.ts
 var discardResources = (ctx) => {
   const { state, playerId } = ctx;
@@ -31939,15 +31973,9 @@ var discardResources = (ctx) => {
     if (held <= 0) continue;
     const material = type;
     const perUnit = resourceUtility(state, playerId, material);
-    const full = stackedUtility(perUnit, held);
+    const { full, losses } = discardUtilityLosses(perUnit, held);
     fullHandRawUtility += full;
-    utilityLossByType.set(
-      material,
-      Array.from(
-        { length: held + 1 },
-        (_, discarded) => full - stackedUtility(perUnit, held - discarded)
-      )
-    );
+    utilityLossByType.set(material, losses);
   }
   return pickArgmaxByType(
     ctx,
