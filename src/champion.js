@@ -29643,19 +29643,22 @@ function metropolisTracksClaimableWithHand(state, boardIndex, playerId, projecte
     const commodity = trackCommodity(track);
     const projected = projectedHand[commodity] ?? 0;
     if (projected < cost) continue;
-    const holderId = boardIndex.metropolisOwnerByTrack[track];
-    if (holderId !== null) {
-      if (holderId === playerId) continue;
-      const holder = state.players[holderId];
-      if (holder !== void 0 && trackLevelFor(track, holder) >= newLevel) continue;
-    }
+    if (!metropolisOwnershipAllowsClaim(state, boardIndex, playerId, track, newLevel)) continue;
     claimable.add(track);
   }
   return claimable;
 }
+function metropolisOwnershipAllowsClaim(state, boardIndex, playerId, track, newLevel) {
+  const holderId = boardIndex.metropolisOwnerByTrack[track];
+  if (holderId === null) return true;
+  if (holderId === playerId) return false;
+  const holder = state.players[holderId];
+  return holder === void 0 || trackLevelFor(track, holder) < newLevel;
+}
 function tradeCouldUnlockOpponentMetropolis(state, boardIndex, playerId, offer, want, opponentModel, probabilityFloor) {
   const player = state.players[playerId];
   if (player === void 0) return false;
+  if (!hasNonMetropolisCity(boardIndex, playerId)) return false;
   const netReceived = {};
   for (const entry of offer) {
     netReceived[entry.type] = (netReceived[entry.type] ?? 0) + entry.count;
@@ -29670,15 +29673,12 @@ function tradeCouldUnlockOpponentMetropolis(state, boardIndex, playerId, offer, 
     const gain = netReceived[commodity] ?? 0;
     if (gain <= 0) continue;
     const cost = level + 1;
+    if (!metropolisOwnershipAllowsClaim(state, boardIndex, playerId, track, cost)) continue;
     const cardsNeededBeforeTrade = Math.max(0, cost - gain);
     if (opponentModel.probabilityHoldsAtLeast(playerId, commodity, cardsNeededBeforeTrade) < probabilityFloor) {
       continue;
     }
-    if (metropolisTracksClaimableWithHand(state, boardIndex, playerId, {
-      [commodity]: cost
-    }).has(track)) {
-      return true;
-    }
+    return true;
   }
   return false;
 }
@@ -31826,20 +31826,14 @@ var scienceLevel3Bonus = (ctx) => {
   }
   const suppressSettlement = hasRealBoardTopology(ctx) && !hasReachableSettlementSite(ctx);
   const canStillSettle = player.settlementsInSupply > 0;
+  const targets = prepareBuildTargets(ctx, player.resources, suppressSettlement, canStillSettle);
   return pickArgmaxByType(
     ctx,
     ActionType.ChooseScienceBonusResource,
-    (action) => scoreResourceChoice(
-      ctx,
-      player.resources,
-      player.commodities,
-      action.resource,
-      suppressSettlement,
-      canStillSettle
-    )
+    (action) => scoreResourceChoice(ctx, player.resources, player.commodities, action.resource, targets)
   );
 };
-function scoreResourceChoice(ctx, resources, commodities, resource, suppressSettlement, canStillSettle) {
+function scoreResourceChoice(ctx, resources, commodities, resource, targets) {
   const postResources = { ...resources, [resource]: (resources[resource] ?? 0) + 1 };
   const utility = evaluatePlayerStateUtilityWithHand(
     ctx.state,
@@ -31847,14 +31841,21 @@ function scoreResourceChoice(ctx, resources, commodities, resource, suppressSett
     postResources,
     commodities
   );
-  return utility + bestBuildPathImprovement(ctx, resources, postResources, suppressSettlement, canStillSettle);
+  return utility + bestBuildPathImprovement(postResources, targets);
 }
-function bestBuildPathImprovement(ctx, before, after, suppressSettlement, canStillSettle) {
-  let best = 0;
+function prepareBuildTargets(ctx, before, suppressSettlement, canStillSettle) {
+  const targets = [];
   for (const [actionType, baseBonus] of TARGET_BONUS) {
     const bonus = adjustedTargetBonus(actionType, baseBonus, suppressSettlement, canStillSettle) * ctx.tuning.scienceL3TargetBonusScale * (actionType === ActionType.RecruitKnight ? ctx.tuning.scienceL3RecruitBonusScale : 1);
     const cost = actionCost(actionType);
     const beforeGap = resourceGap(before, cost);
+    targets.push({ cost, bonus, beforeGap });
+  }
+  return targets;
+}
+function bestBuildPathImprovement(after, targets) {
+  let best = 0;
+  for (const { cost, bonus, beforeGap } of targets) {
     const afterGap = resourceGap(after, cost);
     if (afterGap === 0 && beforeGap > 0) {
       best = Math.max(best, bonus);
