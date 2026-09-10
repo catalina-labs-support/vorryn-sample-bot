@@ -24202,10 +24202,14 @@ function buildCityBerserkerExposurePenalty(ctx) {
   if (berserkerSummary.totalActiveStrength >= projectedCityCount) return 0;
   const ownStrength = berserkerSummary.strengthByPlayer[actingPlayerId] ?? 0;
   let weakestCityOwnerStrength = ownStrength;
-  for (const [playerId, pillageable] of Object.entries(berserkerSummary.pillageableCityByPlayer)) {
-    if (!pillageable) continue;
+  const pillageablePlayers = berserkerSummary.pillageableCityByPlayer;
+  for (const playerId in pillageablePlayers) {
+    if (!Object.hasOwn(pillageablePlayers, playerId) || !pillageablePlayers[playerId]) continue;
     const strength = berserkerSummary.strengthByPlayer[playerId] ?? 0;
-    if (strength < weakestCityOwnerStrength) weakestCityOwnerStrength = strength;
+    if (strength < weakestCityOwnerStrength) {
+      weakestCityOwnerStrength = strength;
+      break;
+    }
   }
   return ownStrength <= weakestCityOwnerStrength ? tuning.buildCityImminentBerserkerExposurePenalty : 0;
 }
