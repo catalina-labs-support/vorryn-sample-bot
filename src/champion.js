@@ -22941,6 +22941,7 @@ function activationDirectlyPreventsSelfPillage(ctx) {
   const knight = ctx.boardIndex.knightsById[ctx.action.knightId];
   if (knight === void 0) return false;
   const addedStrength = knightStrength(knight.level);
+  if (summary.totalActiveStrength + addedStrength >= summary.cityCount) return true;
   const selfStrength = summary.strengthByPlayer[ctx.actingPlayerId] ?? 0;
   let lowestPillageableStrength = Number.POSITIVE_INFINITY;
   let lowestOtherPillageableStrength = Number.POSITIVE_INFINITY;
@@ -22951,7 +22952,6 @@ function activationDirectlyPreventsSelfPillage(ctx) {
     if (playerId === ctx.actingPlayerId) continue;
     lowestOtherPillageableStrength = Math.min(lowestOtherPillageableStrength, strength);
   }
-  if (summary.totalActiveStrength + addedStrength >= summary.cityCount) return true;
   if (selfStrength !== lowestPillageableStrength) return false;
   return selfStrength + addedStrength > lowestOtherPillageableStrength;
 }
@@ -23958,6 +23958,8 @@ function computeCriticalThreatAffordability(ctx) {
       state: ctx.state,
       actingPlayerId: ctx.actingPlayerId,
       leaderOpponentId: criticalId,
+      // Keep the danger window aligned with the effective-VP selection above.
+      tuning: ctx.tuning,
       boardIndex: ctx.boardIndex,
       roadLengthByPlayer: ctx.roadLengthByPlayer,
       // exactOptionalPropertyTypes: only include the key when it's set.
@@ -24021,6 +24023,7 @@ function emptyRoadHopFindsSettlementSite(ctx, intersectionId, incomingEdgeId, re
   if (remainingHops <= 0) return false;
   const intersection2 = ctx.state.board.intersections[intersectionId];
   if (intersection2 === void 0) return false;
+  if (isOpponentOccupied(intersection2, ctx.actingPlayerId)) return false;
   if (isDistanceBlockedByOpponentBuilding(ctx, intersection2)) return false;
   for (const adjEdgeId of intersection2.adjacentEdgeIds) {
     if (adjEdgeId === incomingEdgeId) continue;
@@ -28659,7 +28662,8 @@ function buildPendingScoringBase(ctx) {
     ctx.tuning.handPressureCoefficient,
     player,
     boardIndex,
-    playerId
+    playerId,
+    Object.keys(state.players).length
   );
   let roadFeasibilityFactor = 0;
   if (canStillSettle) {
@@ -28731,13 +28735,15 @@ function buildPendingScoringBase(ctx) {
     )
   };
 }
-function computeHandPressureMagnitude(k, player, boardIndex, playerId) {
+function computeHandPressureMagnitude(k, player, boardIndex, playerId, playerCount) {
   if (k <= 0 || player === void 0 || !isSelf(player)) return 0;
   const threshold = discardThresholdFor(cityWallCount(boardIndex, playerId));
-  const excess = totalHandSize(player) - threshold;
-  if (excess <= 0) return 0;
-  const capped = Math.min(excess, 8);
-  return Math.round(k * capped * capped);
+  const handSize = totalHandSize(player);
+  if (handSize <= threshold) return 0;
+  const rollsUntilSpending = Math.max(1, playerCount);
+  const sevenProbability = 1 - (5 / 6) ** rollsUntilSpending;
+  const cardsAtRisk = Math.min(Math.floor(handSize / 2), 8);
+  return Math.round(k * 6 * sevenProbability * cardsAtRisk);
 }
 function buildScoreContext(ctx, action, base) {
   const out = Object.create(base);
