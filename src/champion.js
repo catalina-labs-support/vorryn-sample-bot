@@ -22974,14 +22974,15 @@ function lateGameNonVpPenalty(ctx) {
 }
 
 // bot/src/bot/score-rules/immediate-win-threat-adjustments.ts
+var IMMEDIATE_KNIGHT_WORK_TIER = {
+  urgencyThreshold: 0.95,
+  knightSupplyBase: 28,
+  moveKnightPenalty: 34
+};
 function immediateWinThreatAdjustments(ctx) {
   if (!ctx.immediateWinThreat) return 0;
   if (ctx.action.type === ActionType.BuildCityWall) return -45;
-  return defensiveKnightWorkPenalty(ctx, {
-    urgencyThreshold: 0.95,
-    knightSupplyBase: 28,
-    moveKnightPenalty: 34
-  });
+  return defensiveKnightWorkPenalty(ctx, IMMEDIATE_KNIGHT_WORK_TIER);
 }
 
 // packages/core/src/dice/lcg.ts
@@ -23924,6 +23925,11 @@ function costPressure(cost, hand) {
 }
 
 // bot/src/bot/score-rules/critical-threat-adjustments.ts
+var CRITICAL_KNIGHT_WORK_TIER = {
+  urgencyThreshold: 0.8,
+  knightSupplyBase: 16,
+  moveKnightPenalty: 22
+};
 function criticalThreatAdjustments(ctx) {
   if (!ctx.criticalOpponentThreat) return 0;
   if (ctx.immediateWinThreat) return 0;
@@ -23977,11 +23983,7 @@ function rawCriticalAdjustment(ctx) {
     const handOverflow = Math.max(0, handSize - 7);
     return -(55 - Math.min(18, handOverflow * 6));
   }
-  return defensiveKnightWorkPenalty(ctx, {
-    urgencyThreshold: 0.8,
-    knightSupplyBase: 16,
-    moveKnightPenalty: 22
-  });
+  return defensiveKnightWorkPenalty(ctx, CRITICAL_KNIGHT_WORK_TIER);
 }
 
 // bot/src/bot/score-rules/settlement-hoard.ts
@@ -31219,6 +31221,7 @@ function racePostureAdjustments(ctx) {
   const weight = ctx.tuning.racePostureWeight;
   if (weight <= 0) return 0;
   if (ctx.racePosture.raceUrgency <= 0) return 0;
+  if (ctx.racePosture.standing === "contending") return 0;
   const intensity = postureIntensity(ctx, weight);
   if (intensity <= 0) return 0;
   if (ctx.racePosture.standing === "trailing") {
