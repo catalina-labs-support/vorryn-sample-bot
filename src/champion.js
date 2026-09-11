@@ -29953,7 +29953,17 @@ function scoreClearStandingWant(ctx) {
   const currentScore = currentStandingWantScore(ctx, current);
   return currentScore < 0 ? 1 : STANDING_WANT_DISABLED_SCORE;
 }
+var executeStandingWantVerdictByContext = /* @__PURE__ */ new WeakMap();
 function executeStandingWantVerdict(ctx, action) {
+  if (ctx.action === action) {
+    const cached2 = executeStandingWantVerdictByContext.get(ctx);
+    if (cached2 !== void 0) return cached2;
+  }
+  const verdict = computeExecuteStandingWantVerdict(ctx, action);
+  if (ctx.action === action) executeStandingWantVerdictByContext.set(ctx, verdict);
+  return verdict;
+}
+function computeExecuteStandingWantVerdict(ctx, action) {
   if (!ctx.tuning.standingWantExecutionEnabled) return { eligible: false };
   const standingWant = ctx.state.players[action.targetPlayerId]?.standingWant ?? null;
   if (standingWant === null) return { eligible: false };
@@ -33632,6 +33642,8 @@ function computeTurnLookaheadBonus(ctx, candidate, followupPool, scoreCandidate,
   if (multiplier === 0) return 0;
   const runSecondPly = secondPly !== void 0 && secondPly.secondPlyK > 0 && (isBuildChainStarter(candidate, ctx) || isTradeAction(candidate));
   let bestFollowupScore = 0;
+  let fundedSettlementScore = 0;
+  const creditFundedSettlement = discount > 0 && candidate.type === ActionType.BuildRoad && player.victoryPoints >= ctx.state.victoryPointsTarget - THREE_FROM_WIN && ctx.state.berserkerTrackMax - ctx.state.berserkerTrackPosition > ctx.boardIndex.numPlayers;
   const chainStarters = [];
   const supplyScratch = { roads: 0, settlements: 0, cities: 0 };
   resetPieceSupply(supplyScratch, player);
@@ -33693,6 +33705,11 @@ function computeTurnLookaheadBonus(ctx, candidate, followupPool, scoreCandidate,
     if (candidateIsProgressCard ? planningActionsConflict(ctx, plannedCandidate, followup) : ordinaryActionsConflict(ctx, candidate, followup)) {
       continue;
     }
+    if (creditFundedSettlement && followup.type === ActionType.BuildSettlement && !ctx.boardIndex.buildableSettlementSiteIdsByPlayer[ctx.actingPlayerId]?.has(
+      followup.intersectionId
+    )) {
+      fundedSettlementScore = Math.max(fundedSettlementScore, scoreCandidate(followup));
+    }
     if (runSecondPly && canStartSecondPlyAfter(candidate, followup, ctx)) {
       const cost = costOnlyDeltaFor(ctx.state, ctx.actingPlayerId, followup);
       if (cost === null) continue;
@@ -33719,7 +33736,7 @@ function computeTurnLookaheadBonus(ctx, candidate, followupPool, scoreCandidate,
     );
     if (chained > bestFollowupScore) bestFollowupScore = chained;
   }
-  return Math.round(bestFollowupScore * discount * multiplier);
+  return Math.round(Math.max(bestFollowupScore * discount * multiplier, fundedSettlementScore));
 }
 function hasSupplyAfterCandidate(state, playerId, candidate, followup, supply = { roads: 0, settlements: 0, cities: 0 }) {
   const player = state.players[playerId];
