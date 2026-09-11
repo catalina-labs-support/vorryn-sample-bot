@@ -350,7 +350,7 @@ Only knights currently in `KnightState.Active` contribute. Inactive or freshly-p
 
 ### 8.4 Attack resolution — defense wins
 
-Defense succeeds when **`defenderStrength >= berserkerStrength`** — there is no `> 0` requirement (rulebook: "If defender strength is equal to or greater than barbarian strength, the defenders win"). A 0-vs-0 attack is therefore a repel, recorded with result `repelled` and `defenderPlayerId: null`; the strength-above-zero test governs only whether a REWARD is granted, not whether the defense succeeded.
+Defense succeeds when **`defenderStrength >= berserkerStrength`** — there is no `> 0` requirement (rulebook: "If defender strength is equal to or greater than barbarian strength, the defenders win"). A 0-vs-0 attack is therefore a repel, recorded with result `repelled` and `defenderPlayerId: null`; every player ties at zero contribution and receives the ordinary tied-defender progress-card choice (subject to deck availability).
 
 **Sole largest contributor:** the player whose active knights contributed the highest total strength receives 1 Defender-of-Vorryn VP token (`player.vpTokens++`). Victory is checked immediately after the award; if the recipient is the **current player** and this VP is the winning point, the game ends at once. If the recipient is a non-current player, the victory check is deferred: the win triggers as soon as the start of their next turn resolves (§15).
 

@@ -22222,7 +22222,7 @@ function activationExpectedValue(input2) {
   const reward = (total, mine) => {
     if (fails(total)) return 0;
     if (mine > maxOther) return tuning.knightDefenderTokenValue;
-    if (mine > 0 && mine === maxOther && drawAvailable) return tuning.knightDefenderDrawValue;
+    if (mine === maxOther && drawAvailable) return tuning.knightDefenderDrawValue;
     return 0;
   };
   const pillagedBefore = fails(defenders) && pillaged(own2) ? 1 : 0;
@@ -22775,7 +22775,9 @@ function flipsResourceAffordability(before, after, cost) {
 }
 
 // bot/src/bot/score-rules/knight-resource-trade-bonus.ts
-var RECRUIT_COST = actionCost(ActionType.RecruitKnight);
+var RECRUIT_COST_LINES = Object.entries(
+  actionCost(ActionType.RecruitKnight)
+);
 var ACTIVATE_COST = actionCost(ActionType.ActivateKnight);
 function knightResourceTradeBonus(ctx) {
   const bundle = tradeBundleForAction(ctx.action);
@@ -22806,14 +22808,14 @@ function activationResourceBonus(ctx, before, after) {
 }
 function recruitResourceBonus(ctx, recruitableKnightSupply, before, after) {
   if (recruitableKnightSupply <= 0) return 0;
-  const beforeMissing = missingCostLines(before, RECRUIT_COST);
-  const afterMissing = missingCostLines(after, RECRUIT_COST);
+  const beforeMissing = missingCostLines(before, RECRUIT_COST_LINES);
+  const afterMissing = missingCostLines(after, RECRUIT_COST_LINES);
   if (afterMissing >= beforeMissing) return 0;
   return afterMissing === 0 ? ctx.tuning.knightResourceTradeRecruitCompleteBonus : ctx.tuning.knightResourceTradeRecruitProgressBonus;
 }
 function missingCostLines(counts, cost) {
   let missing = 0;
-  for (const [type, needed] of Object.entries(cost)) {
+  for (const [type, needed] of cost) {
     if ((counts[type] ?? 0) < needed) missing++;
   }
   return missing;
@@ -31537,7 +31539,7 @@ function executedGiveSide(ctx, action) {
   if (action.type !== ActionType.ExecuteStandingWant) return [];
   const targetId = action.targetPlayerId;
   if (typeof targetId !== "string") return [];
-  const target = selfPlayer(ctx.state, targetId);
+  const target = ctx.state.players[targetId];
   return target?.standingWant?.want ?? [];
 }
 
