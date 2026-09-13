@@ -22977,8 +22977,11 @@ function midGameCityBonusFor(ctx) {
 // bot/src/bot/berserker-summary.ts
 function maxOtherActiveStrength(summary, playerId) {
   let max = 0;
-  for (const [pid, strength] of Object.entries(summary.strengthByPlayer)) {
-    if (pid !== playerId && strength > max) max = strength;
+  const strengths = summary.strengthByPlayer;
+  for (const pid in strengths) {
+    if (!Object.hasOwn(strengths, pid) || pid === playerId) continue;
+    const strength = strengths[pid] ?? 0;
+    if (strength > max) max = strength;
   }
   return max;
 }
@@ -29566,7 +29569,7 @@ function computeHandPressureMagnitude(k, player, boardIndex, playerId, playerCou
   const handSize = totalHandSize(player);
   if (handSize <= threshold) return 0;
   const rollsUntilSpending = Math.max(1, playerCount);
-  const sevenProbability = 1 - (5 / 6) ** rollsUntilSpending;
+  const sevenProbability = 1 - integerPower(5 / 6, rollsUntilSpending);
   const cardsAtRisk = Math.min(Math.floor(handSize / 2), 8);
   return Math.round(k * 6 * sevenProbability * cardsAtRisk);
 }
@@ -30257,8 +30260,10 @@ function movingKnightExposesPillage(ctx, knight) {
   if (summary.totalActiveStrength - strengthLost >= summary.cityCount) return false;
   const projectedSelf = (summary.strengthByPlayer[actingPlayerId] ?? 0) - strengthLost;
   let weakestOther = Number.POSITIVE_INFINITY;
-  for (const [playerId, pillageable] of Object.entries(summary.pillageableCityByPlayer)) {
-    if (playerId === actingPlayerId || pillageable !== true) continue;
+  const pillageable = summary.pillageableCityByPlayer;
+  for (const playerId in pillageable) {
+    if (!Object.hasOwn(pillageable, playerId) || playerId === actingPlayerId || pillageable[playerId] !== true)
+      continue;
     weakestOther = Math.min(weakestOther, summary.strengthByPlayer[playerId] ?? 0);
   }
   return projectedSelf <= weakestOther;
