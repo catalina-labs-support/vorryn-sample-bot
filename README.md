@@ -1,33 +1,39 @@
 # vorryn-sample-bot
 
-**Build an AI that plays Vorryn — and set it loose against your friends.**
+**Write a bot that plays a full four-player trading and strategy board game — against
+strong bots and real people.**
 
-A Vorryn bot is one small HTTP service. On its turn, Vorryn sends it the
-game state and a list of moves that are _already legal_; your bot picks
-one and sends back its `id`. That's the entire contract. You can have a
-working opponent seated at a real table this afternoon — then spend as
-long as you like making it ruthless.
+![A Vorryn game in progress](docs/assets/board.jpg)
 
-This repo is a complete, deployable starter in TypeScript: a Fastify
-handler, schema validation, a test suite, and the full protocol docs
+A Vorryn bot is one small HTTP service. On its turn, Vorryn sends it the game state and
+a list of moves that are _already legal_; your bot picks one and sends back its `id`.
+That's the entire contract.
+
+Watch three bots play a game right now, no account needed:
+**[vorryn.catalina-labs.com/watch](https://vorryn.catalina-labs.com/watch)**.
+
+## Your first game in 15 minutes
+
+1. **Clone and run.** `pnpm install && cp .env.example .env` (set `BOT_BEARER` to 32+
+   random characters: `openssl rand -base64 32`), then `pnpm dev` — your bot listens on
+   `http://localhost:3001`.
+2. **Prove it works.** `pnpm test` POSTs two real game requests to your bot.
+3. **Deploy it** anywhere that serves HTTPS — see [Deploying](#deploying) for Fly.io.
+4. **Register it** at [Profile → Build a Bot](https://vorryn.catalina-labs.com/profile?tab=build)
+   with your base URL and the same `BOT_BEARER` value.
+5. **Press Test endpoint** — Vorryn sends one real request and tells you what happened.
+6. **Press Play a game with this bot** — you, your bot, and one of Vorryn's bots.
+   Afterwards the summary shows how many decisions your endpoint made itself.
+
+Then open `src/strategy.ts` and start making it ruthless.
+
+This repo is a complete, deployable starter in TypeScript: a Fastify handler, schema
+validation, a test suite, and the full protocol docs
 ([external-bot guide](docs/EXTERNAL_BOT_GUIDE.md),
 [protocol reference](docs/BOT_PROTOCOL.md),
 [JSON schema](docs/bot-protocol.schema.json),
-[complete rules reference](docs/RULES_REFERENCE.md) — every cost,
-card, and forced decision, so you never need to have played the game).
-The production strategy is a generated, standalone bundle of Vorryn's validated
-champion decision graph: specialized forced-decision resolvers, 25+ scoring
-rules, opponent beliefs, same-turn win planning, and bounded lookahead. It uses
-only the redacted request and server-supplied legal candidates; it has no
-private-server or engine dependency at runtime and never invents action
-payloads. When human seats are present, it automatically applies the validated
-human-table policy at zero deliberate decision noise, then promotes it to the
-repo's competitive fair ceiling by disabling the first-party bot's explicitly
-priced UX handicaps. That means it may offer trades more often than the built-in
-bot; the goal of this starter is maximum win probability, not fewer dialogs.
-
-The readable public-information simulator remains as a deterministic fallback
-and experimentation surface. It is intentionally not the competitive selector.
+[complete rules reference](docs/RULES_REFERENCE.md) — every cost, card, and forced
+decision, so you never need to have played the game).
 
 ## Why build one?
 
@@ -320,7 +326,7 @@ You also get a few things a human has to track by hand:
   inference (who just gained which material type, who traded what).
 - `validActions` — every legal move, pre-validated, so you spend zero
   effort on rules enforcement.
-- [`RULES_REFERENCE.md`](../../docs/RULES_REFERENCE.md) — the complete
+- [`RULES_REFERENCE.md`](docs/RULES_REFERENCE.md) — the complete
   implemented-rules reference, drift-tested against the engine itself.
 
 The one structural constraint: your bot _selects_ a candidate, it never
@@ -475,6 +481,22 @@ request export is the replay surface for a bot author — real decision
 points, exactly as your bot saw them.
 
 ### How strong is this bot relative to the first-party bot?
+
+The included production strategy is the same decision logic Vorryn's own bots use, packaged to run standalone.
+
+The production strategy is a generated, standalone bundle of Vorryn's validated
+champion decision graph: specialized forced-decision resolvers, 25+ scoring
+rules, opponent beliefs, same-turn win planning, and bounded lookahead. It uses
+only the redacted request and server-supplied legal candidates; it has no
+private-server or engine dependency at runtime and never invents action
+payloads. When human seats are present, it automatically applies the validated
+human-table policy at zero deliberate decision noise, then promotes it to the
+repo's competitive fair ceiling by disabling the first-party bot's explicitly
+priced UX handicaps. That means it may offer trades more often than the built-in
+bot; the goal of this starter is maximum win probability, not fewer dialogs.
+
+The readable public-information simulator remains as a deterministic fallback
+and experimentation surface. It is intentionally not the competitive selector.
 
 At every table it runs the same validated zero-noise, unhandicapped champion
 graph as the maximum-strength first-party bot. The response trace identifies
