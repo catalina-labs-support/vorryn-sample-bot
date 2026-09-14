@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "fastify": "^5.12.4",
-    "zod": "^4.6.2"
+    "zod": "^4.6.4"
   },
   "devDependencies": {
     "@types/node": "^26.5.1",

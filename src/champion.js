@@ -326,7 +326,7 @@ function progressHandSize(player) {
   return isSelf(player) ? player.progressHand.length : player.progressHandCount;
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/classic/external.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/classic/external.js
 var external_exports = {};
 __export(external_exports, {
   $brand: () => $brand,
@@ -396,7 +396,6 @@ __export(external_exports, {
   ZodPrefault: () => ZodPrefault,
   ZodPreprocess: () => ZodPreprocess,
   ZodPromise: () => ZodPromise,
-  ZodProperties: () => ZodProperties,
   ZodReadonly: () => ZodReadonly,
   ZodRealError: () => ZodRealError,
   ZodRecord: () => ZodRecord,
@@ -440,6 +439,7 @@ __export(external_exports, {
   creditCard: () => creditCard2,
   cuid: () => cuid3,
   cuid2: () => cuid22,
+  currencyCode: () => currencyCode2,
   custom: () => custom,
   date: () => date2,
   decode: () => decode2,
@@ -533,7 +533,7 @@ __export(external_exports, {
   preprocess: () => preprocess,
   prettifyError: () => prettifyError,
   promise: () => promise,
-  properties: () => properties,
+  properties: () => _properties,
   property: () => _property,
   readonly: () => readonly,
   record: () => record,
@@ -589,7 +589,7 @@ __export(external_exports, {
   xor: () => xor
 });
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/core/index.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/index.js
 var core_exports2 = {};
 __export(core_exports2, {
   $ZodAny: () => $ZodAny,
@@ -621,6 +621,7 @@ __export(core_exports2, {
   $ZodCheckMultipleOf: () => $ZodCheckMultipleOf,
   $ZodCheckNumberFormat: () => $ZodCheckNumberFormat,
   $ZodCheckOverwrite: () => $ZodCheckOverwrite,
+  $ZodCheckProperties: () => $ZodCheckProperties,
   $ZodCheckProperty: () => $ZodCheckProperty,
   $ZodCheckRegex: () => $ZodCheckRegex,
   $ZodCheckSizeEquals: () => $ZodCheckSizeEquals,
@@ -674,7 +675,6 @@ __export(core_exports2, {
   $ZodPrefault: () => $ZodPrefault,
   $ZodPreprocess: () => $ZodPreprocess,
   $ZodPromise: () => $ZodPromise,
-  $ZodProperties: () => $ZodProperties,
   $ZodReadonly: () => $ZodReadonly,
   $ZodRealError: () => $ZodRealError,
   $ZodRecord: () => $ZodRecord,
@@ -842,6 +842,7 @@ __export(core_exports2, {
   _xor: () => _xor,
   base64Charset: () => base64Charset,
   base64urlCharset: () => base64urlCharset,
+  canParseURL: () => canParseURL,
   clone: () => clone,
   compile: () => compile,
   compileFn: () => compileFn,
@@ -864,7 +865,6 @@ __export(core_exports2, {
   initializeContext: () => initializeContext,
   isBackEdge: () => isBackEdge,
   isRecursiveSchema: () => isRecursiveSchema,
-  isTransforming: () => isTransforming,
   isValidBase64: () => isValidBase64,
   isValidBase64URL: () => isValidBase64URL,
   isValidCIDRv6: () => isValidCIDRv6,
@@ -901,11 +901,12 @@ __export(core_exports2, {
   util: () => util_exports,
   validate: () => validate,
   validateAsync: () => validateAsync,
+  validateURL: () => validateURL,
   version: () => version,
   withParser: () => withParser
 });
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/core/util.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/util.js
 var util_exports = {};
 __export(util_exports, {
   BIGINT_FORMAT_RANGES: () => BIGINT_FORMAT_RANGES,
@@ -1642,9 +1643,6 @@ function members(proto, table) {
     else
       defineBound(proto, key, desc.value);
   }
-  for (const sym of Object.getOwnPropertySymbols(table)) {
-    defineBound(proto, sym, table[sym]);
-  }
 }
 function own(inst, key, value, enumerable = true) {
   Object.defineProperty(inst, key, { configurable: true, writable: true, enumerable, value });
@@ -1751,7 +1749,7 @@ function constantCatch(value) {
   return fn;
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/core/core.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/core.js
 var _a;
 var NEVER = /* @__PURE__ */ Object.freeze({
   status: "aborted"
@@ -1797,8 +1795,7 @@ function $constructor(name, initializer3, proto, params) {
       } finally {
         _zodDesc.value = void 0;
       }
-    }
-    if (inst._zod.traits.has(name)) {
+    } else if (inst._zod.traits.has(name)) {
       return;
     }
     inst._zod.traits.add(name);
@@ -1874,7 +1871,7 @@ function config(newConfig) {
   return globalConfig;
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/core/errors.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/errors.js
 function _getMessage() {
   const internals = this._zod;
   internals.message ?? (internals.message = JSON.stringify(internals.def, jsonStringifyReplacer, 2));
@@ -2066,7 +2063,7 @@ function prettifyError(error62) {
   return lines.join("\n");
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/core/parse.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/parse.js
 function finalizeParams(callee, params) {
   return { callee: params?.callee ?? callee, Err: params?.Err };
 }
@@ -2226,7 +2223,7 @@ var _safeDecodeAsync = (_Err) => async (schema, value, _ctx) => {
 };
 var safeDecodeAsync = /* @__PURE__ */ _safeDecodeAsync($ZodRealError);
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/core/regexes.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/regexes.js
 var regexes_exports = {};
 __export(regexes_exports, {
   anyString: () => anyString,
@@ -2240,6 +2237,7 @@ __export(regexes_exports, {
   creditCard: () => creditCard,
   cuid: () => cuid,
   cuid2: () => cuid2,
+  currencyCode: () => currencyCode,
   date: () => date,
   datetime: () => datetime,
   domain: () => domain,
@@ -2338,6 +2336,7 @@ var domain = /^(?=.{1,253}$)([a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a
 var httpProtocol = /^https?$/;
 var e164 = /^\+[1-9]\d{6,14}$/;
 var creditCard = /^\d(?:[ -]?\d){11,18}$/;
+var currencyCode = /^(?:AED|AFN|ALL|AMD|AOA|ARS|AUD|AWG|AZN|BAM|BBD|BDT|BHD|BIF|BMD|BND|BOB|BOV|BRL|BSD|BTN|BWP|BYN|BZD|CAD|CDF|CHE|CHF|CHW|CLF|CLP|CNY|COP|COU|CRC|CUP|CVE|CZK|DJF|DKK|DOP|DZD|EGP|ERN|ETB|EUR|FJD|FKP|GBP|GEL|GHS|GIP|GMD|GNF|GTQ|GYD|HKD|HNL|HTG|HUF|IDR|ILS|INR|IQD|IRR|ISK|JMD|JOD|JPY|KES|KGS|KHR|KMF|KPW|KRW|KWD|KYD|KZT|LAK|LBP|LKR|LRD|LSL|LYD|MAD|MDL|MGA|MKD|MMK|MNT|MOP|MRU|MUR|MVR|MWK|MXN|MXV|MYR|MZN|NAD|NGN|NIO|NOK|NPR|NZD|OMR|PAB|PEN|PGK|PHP|PKR|PLN|PYG|QAR|RON|RSD|RUB|RWF|SAR|SBD|SCR|SDG|SEK|SGD|SHP|SLE|SOS|SRD|SSP|STN|SVC|SYP|SZL|THB|TJS|TMT|TND|TOP|TRY|TTD|TWD|TZS|UAH|UGX|USD|USN|UYI|UYU|UYW|UZS|VED|VES|VND|VUV|WST|XAD|XAF|XAG|XAU|XBA|XBB|XBC|XBD|XCD|XCG|XDR|XOF|XPD|XPF|XPT|XSU|XTS|XUA|XXX|YER|ZAR|ZMW|ZWG)$/;
 var iban = /^[A-Z]{2}(?!00|01|99)\d{2}[A-Z0-9]{11,30}$/;
 var dateSource = `(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))`;
 function anchor(source) {
@@ -2396,7 +2395,7 @@ var sha512_hex = /^[0-9a-fA-F]{128}$/;
 var sha512_base64 = /* @__PURE__ */ fixedBase64(86, "==");
 var sha512_base64url = /* @__PURE__ */ fixedBase64url(86);
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/core/checks.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/checks.js
 var $ZodCheck = /* @__PURE__ */ $constructor("$ZodCheck", (inst, def) => {
   var _a3;
   inst._zod ?? (inst._zod = {});
@@ -2822,6 +2821,34 @@ var $ZodCheckProperty = /* @__PURE__ */ $constructor("$ZodCheckProperty", (inst,
     return;
   };
 });
+var $ZodCheckProperties = /* @__PURE__ */ $constructor("$ZodCheckProperties", (inst, def) => {
+  $ZodCheck.init(inst, def);
+  hide(inst, Symbol.iterator, function* () {
+    yield inst;
+  });
+  let entries;
+  inst._zod.check = (payload) => {
+    if (payload.value == null) {
+      payload.issues.push({ expected: "object", code: "invalid_type", input: payload.value, inst });
+      return void 0;
+    }
+    entries ?? (entries = Reflect.ownKeys(def.shape).map((key) => [key, def.shape[key]]));
+    const input2 = payload.value;
+    let proms;
+    for (const [key, schema] of entries) {
+      const result = schema._zod.run({ value: input2[key], issues: [] }, {});
+      if (result instanceof Promise) {
+        proms ?? (proms = []);
+        proms.push(result.then((result2) => handleCheckPropertyResult(result2, payload, key)));
+      } else {
+        handleCheckPropertyResult(result, payload, key);
+      }
+    }
+    if (proms)
+      return Promise.all(proms).then(() => void 0);
+    return void 0;
+  };
+});
 var $ZodCheckMimeType = /* @__PURE__ */ $constructor("$ZodCheckMimeType", (inst, def) => {
   $ZodCheck.init(inst, def);
   const mimeSet = new Set(def.mime);
@@ -2844,7 +2871,7 @@ var $ZodCheckOverwrite = /* @__PURE__ */ $constructor("$ZodCheckOverwrite", (ins
   };
 });
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/core/doc.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/doc.js
 var Doc = class {
   constructor(args = [], closed = {}) {
     this.content = [];
@@ -2885,14 +2912,14 @@ ${content.join("\n")}
   }
 };
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/core/versions.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/versions.js
 var version = {
   major: 4,
   minor: 6,
-  patch: 2
+  patch: 4
 };
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/core/schemas.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/schemas.js
 var $ZodType = /* @__PURE__ */ $constructor("$ZodType", (inst, def) => {
   var _a3;
   inst ?? (inst = {});
@@ -3077,11 +3104,32 @@ var $ZodEmail = /* @__PURE__ */ $constructor("$ZodEmail", (inst, def) => {
 });
 var URL_BAD_FORMAT = 1;
 var URL_UNPARSEABLE = 2;
+function canParseURL(input2) {
+  try {
+    if (typeof URL !== "undefined" && typeof URL.canParse === "function")
+      return URL.canParse(input2);
+    new URL(input2);
+    return true;
+  } catch {
+    return false;
+  }
+}
+function validateURL(trimmed, def) {
+  if (!("normalize" in def) && !("hostname" in def) && !("protocol" in def)) {
+    return canParseURL(trimmed) || URL_UNPARSEABLE;
+  }
+  return parseURLObject(trimmed, def);
+}
 function parseURLObject(trimmed, def) {
   if (!def.normalize && def.protocol?.source === httpProtocol.source && !/^https?:\/\//i.test(trimmed)) {
     return URL_BAD_FORMAT;
   }
   try {
+    if (typeof URL !== "undefined") {
+      const URLStatic = URL;
+      if (typeof URLStatic.parse === "function")
+        return URLStatic.parse(trimmed) ?? URL_UNPARSEABLE;
+    }
     return new URL(trimmed);
   } catch {
     return URL_UNPARSEABLE;
@@ -3104,7 +3152,7 @@ var $ZodURL = /* @__PURE__ */ $constructor("$ZodURL", (inst, def) => {
   inst._zod.check = (payload) => {
     try {
       const trimmed = payload.value.trim();
-      const url2 = parseURLObject(trimmed, def);
+      const url2 = validateURL(trimmed, def);
       if (url2 === URL_BAD_FORMAT) {
         payload.issues.push({
           code: "invalid_format",
@@ -3124,6 +3172,10 @@ var $ZodURL = /* @__PURE__ */ $constructor("$ZodURL", (inst, def) => {
           inst,
           continue: !def.abort
         });
+        return;
+      }
+      if (url2 === true) {
+        payload.value = stripTabAndNewline(trimmed);
         return;
       }
       if (def.hostname && !urlHostnameOk(url2, def.hostname)) {
@@ -3215,12 +3267,7 @@ var ipv6Alphabet = /^[0-9a-fA-F:.]+$/;
 function isValidIPv6(value) {
   if (!ipv6Alphabet.test(value))
     return false;
-  try {
-    new URL(`http://[${value}]`);
-    return true;
-  } catch {
-    return false;
-  }
+  return canParseURL(`http://[${value}]`);
 }
 var $ZodIPv6 = /* @__PURE__ */ $constructor("$ZodIPv6", (inst, def) => {
   def.pattern ?? (def.pattern = ipv6);
@@ -5285,61 +5332,8 @@ function handleRefineResult(result, payload, input2, inst) {
     payload.issues.push(issue(_iss));
   }
 }
-function handlePropertiesResult(result, payload, key) {
-  if (result.issues.length) {
-    payload.issues.push(...prefixIssues(key, result.issues));
-  }
-}
-var $ZodProperties = /* @__PURE__ */ $constructor("$ZodProperties", (inst, def) => {
-  $ZodType.init(inst, def);
-  $ZodCheck.init(inst, def);
-  const memo2 = globalConfig.memoizer;
-  memo2?.attach(inst);
-  let entries;
-  const runShape = (payload, ctx) => {
-    entries ?? (entries = Reflect.ownKeys(def.shape).map((key) => [key, def.shape[key]]));
-    const input2 = payload.value;
-    let proms;
-    for (const [key, schema] of entries) {
-      const result = schema._zod.run({ value: input2[key], issues: [] }, ctx);
-      if (result instanceof Promise) {
-        proms ?? (proms = []);
-        proms.push(result.then((result2) => handlePropertiesResult(result2, payload, key)));
-      } else {
-        handlePropertiesResult(result, payload, key);
-      }
-    }
-    if (proms)
-      return Promise.all(proms).then(() => void 0);
-    return void 0;
-  };
-  inst._zod.parse = (payload, ctx) => {
-    const input2 = payload.value;
-    if (input2 === null || typeof input2 !== "object" && typeof input2 !== "function") {
-      payload.issues.push({ expected: "object", code: "invalid_type", input: input2, inst });
-      return payload;
-    }
-    if (ctx.direction === "backward")
-      ctx = { ...ctx, direction: "forward" };
-    if (memo2)
-      memo2.alloc(inst, payload, input2, ctx);
-    const result = runShape(payload, ctx);
-    return result instanceof Promise ? result.then(() => payload) : payload;
-  };
-  inst._zod.check = (payload) => {
-    if (payload.value == null) {
-      payload.issues.push({ expected: "object", code: "invalid_type", input: payload.value, inst });
-      return void 0;
-    }
-    return runShape(payload, {});
-  };
-}, {
-  *[Symbol.iterator]() {
-    yield this;
-  }
-});
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/core/memoizer.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/memoizer.js
 var $ZodCyclicError = class extends Error {
   constructor() {
     super(`Cannot parse a reference cycle that closes through a transform`);
@@ -5349,7 +5343,7 @@ var $ZodCyclicError = class extends Error {
 var STATE = "~memo";
 var NO_ISSUES = [];
 function isRef(value) {
-  return value !== null && (typeof value === "object" || typeof value === "function");
+  return value !== null && typeof value === "object";
 }
 function cloneIssues(issues) {
   return issues.map((iss) => iss.path ? { ...iss, path: iss.path.slice() } : { ...iss });
@@ -5398,9 +5392,6 @@ function isRecursive(inst, stack, resolve) {
       check2(def.catchall);
       break;
     }
-    case "properties":
-      merge2(shape(def.shape, false));
-      break;
     case "array":
       check2(def.element);
       break;
@@ -5619,7 +5610,7 @@ function isBackEdge(ctx, value) {
   return backEdges !== void 0 && isRef(value) && backEdges.has(value);
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/index.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/index.js
 var locales_exports = {};
 __export(locales_exports, {
   ar: () => ar_default,
@@ -5687,7 +5678,7 @@ __export(locales_exports, {
   zhTW: () => zh_TW_default
 });
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/ar.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/ar.js
 var error = () => {
   const Sizable = {
     string: { unit: "\u062D\u0631\u0641", verb: "\u0623\u0646 \u064A\u062D\u0648\u064A" },
@@ -5728,6 +5719,7 @@ var error = () => {
     json_string: "\u0646\u064E\u0635 \u0639\u0644\u0649 \u0647\u064A\u0626\u0629 JSON",
     e164: "\u0631\u0642\u0645 \u0647\u0627\u062A\u0641 \u0628\u0645\u0639\u064A\u0627\u0631 E.164",
     credit_card: "\u0631\u0642\u0645 \u0628\u0637\u0627\u0642\u0629 \u0627\u0644\u0627\u0626\u062A\u0645\u0627\u0646",
+    currency_code: "\u0631\u0645\u0632 \u0627\u0644\u0639\u0645\u0644\u0629",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "\u0645\u062F\u062E\u0644"
@@ -5798,7 +5790,7 @@ function ar_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/az.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/az.js
 var error2 = () => {
   const Sizable = {
     string: { unit: "simvol", verb: "olmal\u0131d\u0131r" },
@@ -5839,6 +5831,7 @@ var error2 = () => {
     json_string: "JSON string",
     e164: "E.164 number",
     credit_card: "kredit kart\u0131 n\xF6mr\u0259si",
+    currency_code: "valyuta kodu",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "input"
@@ -5908,7 +5901,7 @@ function az_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/be.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/be.js
 function getBelarusianPlural(count, one, few, many) {
   const absCount = Math.abs(count);
   const lastDigit = absCount % 10;
@@ -5999,6 +5992,7 @@ var error3 = () => {
     json_string: "JSON \u0440\u0430\u0434\u043E\u043A",
     e164: "\u043D\u0443\u043C\u0430\u0440 E.164",
     credit_card: "\u043D\u0443\u043C\u0430\u0440 \u043A\u0440\u044D\u0434\u044B\u0442\u043D\u0430\u0439 \u043A\u0430\u0440\u0442\u044B",
+    currency_code: "\u043A\u043E\u0434 \u0432\u0430\u043B\u044E\u0442\u044B",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "\u0443\u0432\u043E\u0434"
@@ -6076,7 +6070,7 @@ function be_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/bg.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/bg.js
 var error4 = () => {
   const Sizable = {
     string: { unit: "\u0441\u0438\u043C\u0432\u043E\u043B\u0430", verb: "\u0434\u0430 \u0441\u044A\u0434\u044A\u0440\u0436\u0430" },
@@ -6117,6 +6111,7 @@ var error4 = () => {
     json_string: "JSON \u043D\u0438\u0437",
     e164: "E.164 \u043D\u043E\u043C\u0435\u0440",
     credit_card: "\u043D\u043E\u043C\u0435\u0440 \u043D\u0430 \u043A\u0440\u0435\u0434\u0438\u0442\u043D\u0430 \u043A\u0430\u0440\u0442\u0430",
+    currency_code: "\u043A\u043E\u0434 \u043D\u0430 \u0432\u0430\u043B\u0443\u0442\u0430",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "\u0432\u0445\u043E\u0434"
@@ -6201,7 +6196,7 @@ function bg_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/bn.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/bn.js
 var error5 = () => {
   const Sizable = {
     string: { unit: "\u0985\u0995\u09CD\u09B7\u09B0", verb: "\u09A5\u09BE\u0995\u09A4\u09C7 \u09B9\u09AC\u09C7" },
@@ -6242,6 +6237,7 @@ var error5 = () => {
     json_string: "JSON \u09B8\u09CD\u099F\u09CD\u09B0\u09BF\u0982",
     e164: "E.164 \u09A8\u09AE\u09CD\u09AC\u09B0",
     credit_card: "\u0995\u09CD\u09B0\u09C7\u09A1\u09BF\u099F \u0995\u09BE\u09B0\u09CD\u09A1 \u09A8\u09AE\u09CD\u09AC\u09B0",
+    currency_code: "\u09AE\u09C1\u09A6\u09CD\u09B0\u09BE \u0995\u09CB\u09A1",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "\u0987\u09A8\u09AA\u09C1\u099F"
@@ -6314,7 +6310,7 @@ function bn_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/ca.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/ca.js
 var error6 = () => {
   const Sizable = {
     string: { unit: "car\xE0cters", verb: "contenir" },
@@ -6355,6 +6351,7 @@ var error6 = () => {
     json_string: "cadena JSON",
     e164: "n\xFAmero E.164",
     credit_card: "n\xFAmero de targeta de cr\xE8dit",
+    currency_code: "codi de moneda",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "entrada"
@@ -6427,7 +6424,7 @@ function ca_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/ckb.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/ckb.js
 var error7 = () => {
   const Sizable = {
     string: { unit: "\u067E\u06CC\u062A", verb: "\u0628\u06CE\u062A" },
@@ -6468,6 +6465,7 @@ var error7 = () => {
     json_string: "\u062F\u06D5\u0642\u06CC JSON",
     e164: "\u0698\u0645\u0627\u0631\u06D5\u06CC E.164",
     credit_card: "\u0698\u0645\u0627\u0631\u06D5\u06CC \u06A9\u0627\u0631\u062A\u06CC \u06A9\u0631\u06CE\u062F\u06CC\u062A",
+    currency_code: "\u06A9\u06C6\u062F\u06CC \u062F\u0631\u0627\u0648",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "\u062A\u06CE\u06A9\u0631\u062F\u06D5"
@@ -6559,7 +6557,7 @@ function ckb_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/cs.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/cs.js
 var error8 = () => {
   const Sizable = {
     string: { unit: "znak\u016F", verb: "m\xEDt" },
@@ -6600,6 +6598,7 @@ var error8 = () => {
     json_string: "\u0159et\u011Bzec ve form\xE1tu JSON",
     e164: "\u010D\xEDslo E.164",
     credit_card: "\u010D\xEDslo kreditn\xED karty",
+    currency_code: "k\xF3d m\u011Bny",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "vstup"
@@ -6675,7 +6674,7 @@ function cs_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/da.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/da.js
 var error9 = () => {
   const Sizable = {
     string: { unit: "tegn", verb: "havde" },
@@ -6716,6 +6715,7 @@ var error9 = () => {
     json_string: "JSON-streng",
     e164: "E.164-nummer",
     credit_card: "kreditkortnummer",
+    currency_code: "valutakode",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "input"
@@ -6795,7 +6795,7 @@ function da_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/de.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/de.js
 var error10 = () => {
   const Sizable = {
     string: { unit: "Zeichen", verb: "zu haben" },
@@ -6836,6 +6836,7 @@ var error10 = () => {
     json_string: "JSON-String",
     e164: "E.164-Nummer",
     credit_card: "Kreditkartennummer",
+    currency_code: "W\xE4hrungscode",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "Eingabe"
@@ -6908,7 +6909,7 @@ function de_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/el.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/el.js
 var error11 = () => {
   const Sizable = {
     string: { unit: "\u03C7\u03B1\u03C1\u03B1\u03BA\u03C4\u03AE\u03C1\u03B5\u03C2", verb: "\u03BD\u03B1 \u03AD\u03C7\u03B5\u03B9" },
@@ -6949,6 +6950,7 @@ var error11 = () => {
     json_string: "\u03C3\u03C5\u03BC\u03B2\u03BF\u03BB\u03BF\u03C3\u03B5\u03B9\u03C1\u03AC JSON",
     e164: "\u03B1\u03C1\u03B9\u03B8\u03BC\u03CC\u03C2 E.164",
     credit_card: "\u03B1\u03C1\u03B9\u03B8\u03BC\u03CC\u03C2 \u03C0\u03B9\u03C3\u03C4\u03C9\u03C4\u03B9\u03BA\u03AE\u03C2 \u03BA\u03AC\u03C1\u03C4\u03B1\u03C2",
+    currency_code: "\u03BA\u03C9\u03B4\u03B9\u03BA\u03CC\u03C2 \u03BD\u03BF\u03BC\u03AF\u03C3\u03BC\u03B1\u03C4\u03BF\u03C2",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "\u03B5\u03AF\u03C3\u03BF\u03B4\u03BF\u03C2"
@@ -7020,7 +7022,7 @@ function el_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/en.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/en.js
 var error12 = () => {
   const Sizable = {
     string: { unit: "characters", verb: "to have" },
@@ -7060,6 +7062,7 @@ var error12 = () => {
     base64url: "base64url-encoded string",
     json_string: "JSON string",
     e164: "E.164 number",
+    currency_code: "currency code",
     credit_card: "credit card number",
     iban: "IBAN",
     jwt: "JWT",
@@ -7144,7 +7147,7 @@ function en_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/eo.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/eo.js
 var error13 = () => {
   const Sizable = {
     string: { unit: "karaktrojn", verb: "havi" },
@@ -7185,6 +7188,7 @@ var error13 = () => {
     json_string: "JSON-karaktraro",
     e164: "E.164-nombro",
     credit_card: "kreditkarta numero",
+    currency_code: "valuta kodo",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "enigo"
@@ -7258,7 +7262,7 @@ function eo_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/es.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/es.js
 var error14 = () => {
   const Sizable = {
     string: { unit: "caracteres", verb: "tener" },
@@ -7298,6 +7302,7 @@ var error14 = () => {
     json_string: "cadena JSON",
     e164: "n\xFAmero E.164",
     credit_card: "n\xFAmero de tarjeta de cr\xE9dito",
+    currency_code: "c\xF3digo de moneda",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "entrada"
@@ -7394,7 +7399,7 @@ function es_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/fa.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/fa.js
 var error15 = () => {
   const Sizable = {
     string: { unit: "\u06A9\u0627\u0631\u0627\u06A9\u062A\u0631", verb: "\u062F\u0627\u0634\u062A\u0647 \u0628\u0627\u0634\u062F" },
@@ -7435,6 +7440,7 @@ var error15 = () => {
     json_string: "JSON \u0631\u0634\u062A\u0647",
     e164: "E.164 \u0639\u062F\u062F",
     credit_card: "\u0634\u0645\u0627\u0631\u0647 \u06A9\u0627\u0631\u062A \u0627\u0639\u062A\u0628\u0627\u0631\u06CC",
+    currency_code: "\u06A9\u062F \u0627\u0631\u0632",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "\u0648\u0631\u0648\u062F\u06CC"
@@ -7513,7 +7519,7 @@ function fa_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/fi.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/fi.js
 var error16 = () => {
   const Sizable = {
     string: { unit: "merkki\xE4", subject: "merkkijonon" },
@@ -7558,6 +7564,7 @@ var error16 = () => {
     json_string: "JSON-merkkijono",
     e164: "E.164-luku",
     credit_card: "luottokortin numero",
+    currency_code: "valuuttakoodi",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "templaattimerkkijono"
@@ -7630,7 +7637,7 @@ function fi_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/fr.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/fr.js
 var error17 = () => {
   const Sizable = {
     string: { unit: "caract\xE8res", verb: "avoir" },
@@ -7670,6 +7677,7 @@ var error17 = () => {
     json_string: "cha\xEEne de caract\xE8res JSON",
     e164: "num\xE9ro au format E.164",
     credit_card: "num\xE9ro de carte de cr\xE9dit",
+    currency_code: "code de devise",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "entr\xE9e"
@@ -7759,7 +7767,7 @@ function fr_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/fr-CA.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/fr-CA.js
 var error18 = () => {
   const Sizable = {
     string: { unit: "caract\xE8res", verb: "avoir" },
@@ -7800,6 +7808,7 @@ var error18 = () => {
     json_string: "cha\xEEne JSON",
     e164: "num\xE9ro E.164",
     credit_card: "num\xE9ro de carte de cr\xE9dit",
+    currency_code: "code de devise",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "entr\xE9e"
@@ -7871,7 +7880,7 @@ function fr_CA_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/gu.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/gu.js
 var error19 = () => {
   const Sizable = {
     string: { unit: "\u0A85\u0A95\u0ACD\u0AB7\u0AB0", verb: "\u0AB9\u0ACB\u0AB5\u0ABE \u0A9C\u0ACB\u0A88\u0A8F" },
@@ -7912,6 +7921,7 @@ var error19 = () => {
     json_string: "JSON \u0AB8\u0ACD\u0A9F\u0ACD\u0AB0\u0ABF\u0A82\u0A97",
     e164: "E.164 \u0AA8\u0A82\u0AAC\u0AB0",
     credit_card: "\u0A95\u0ACD\u0AB0\u0AC7\u0AA1\u0ABF\u0A9F \u0A95\u0ABE\u0AB0\u0ACD\u0AA1 \u0AA8\u0A82\u0AAC\u0AB0",
+    currency_code: "\u0A9A\u0AB2\u0AA3 \u0A95\u0ACB\u0AA1",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "\u0A87\u0AA8\u0AAA\u0AC1\u0A9F"
@@ -7984,7 +7994,7 @@ function gu_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/he.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/he.js
 var error20 = () => {
   const TypeNames = {
     string: { label: "\u05DE\u05D7\u05E8\u05D5\u05D6\u05EA", gender: "f" },
@@ -8061,6 +8071,7 @@ var error20 = () => {
     json_string: { label: "\u05DE\u05D7\u05E8\u05D5\u05D6\u05EA JSON", gender: "f" },
     e164: { label: "\u05DE\u05E1\u05E4\u05E8 E.164", gender: "m" },
     credit_card: { label: "\u05DE\u05E1\u05E4\u05E8 \u05DB\u05E8\u05D8\u05D9\u05E1 \u05D0\u05E9\u05E8\u05D0\u05D9", gender: "m" },
+    currency_code: { label: "\u05E7\u05D5\u05D3 \u05DE\u05D8\u05D1\u05E2", gender: "m" },
     iban: { label: "IBAN", gender: "m" },
     jwt: { label: "JWT", gender: "m" },
     template_literal: { label: "\u05E7\u05DC\u05D8", gender: "m" },
@@ -8185,7 +8196,7 @@ function he_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/hi.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/hi.js
 var error21 = () => {
   const Sizable = {
     string: { unit: "\u0905\u0915\u094D\u0937\u0930", verb: "\u0930\u0916\u0928\u0947 \u0915\u0947 \u0932\u093F\u090F" },
@@ -8226,6 +8237,7 @@ var error21 = () => {
     json_string: "JSON \u0938\u094D\u091F\u094D\u0930\u093F\u0902\u0917",
     e164: "E.164 \u0938\u0902\u0916\u094D\u092F\u093E",
     credit_card: "\u0915\u094D\u0930\u0947\u0921\u093F\u091F \u0915\u093E\u0930\u094D\u0921 \u0938\u0902\u0916\u094D\u092F\u093E",
+    currency_code: "\u092E\u0941\u0926\u094D\u0930\u093E \u0915\u094B\u0921",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "\u0907\u0928\u092A\u0941\u091F"
@@ -8296,7 +8308,7 @@ function hi_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/hr.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/hr.js
 var error22 = () => {
   const Sizable = {
     string: { unit: "znakova", verb: "imati" },
@@ -8336,6 +8348,7 @@ var error22 = () => {
     json_string: "JSON tekst",
     e164: "E.164 broj",
     credit_card: "broj kreditne kartice",
+    currency_code: "kod valute",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "unos"
@@ -8422,7 +8435,7 @@ function hr_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/hu.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/hu.js
 var error23 = () => {
   const Sizable = {
     string: { unit: "karakter", verb: "legyen" },
@@ -8463,6 +8476,7 @@ var error23 = () => {
     json_string: "JSON string",
     e164: "E.164 sz\xE1m",
     credit_card: "hitelk\xE1rtyasz\xE1m",
+    currency_code: "p\xE9nznemk\xF3d",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "bemenet"
@@ -8535,7 +8549,7 @@ function hu_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/hy.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/hy.js
 function getArmenianPlural(count, one, many) {
   return Math.abs(count) === 1 ? one : many;
 }
@@ -8616,6 +8630,7 @@ var error24 = () => {
     json_string: "JSON \u057F\u0578\u0572",
     e164: "E.164 \u0570\u0561\u0574\u0561\u0580",
     credit_card: "\u056F\u0580\u0565\u0564\u056B\u057F \u0584\u0561\u0580\u057F\u056B \u0570\u0561\u0574\u0561\u0580",
+    currency_code: "\u0561\u0580\u056A\u0578\u0582\u0575\u0569\u056B \u056F\u0578\u0564",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "\u0574\u0578\u0582\u057F\u0584"
@@ -8693,7 +8708,7 @@ function hy_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/id.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/id.js
 var error25 = () => {
   const Sizable = {
     string: { unit: "karakter", verb: "memiliki" },
@@ -8734,6 +8749,7 @@ var error25 = () => {
     json_string: "string JSON",
     e164: "angka E.164",
     credit_card: "nomor kartu kredit",
+    currency_code: "kode mata uang",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "input"
@@ -8804,7 +8820,7 @@ function id_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/is.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/is.js
 var error26 = () => {
   const Sizable = {
     string: { unit: "stafi", verb: "a\xF0 hafa" },
@@ -8845,6 +8861,7 @@ var error26 = () => {
     json_string: "JSON strengur",
     e164: "E.164 t\xF6lugildi",
     credit_card: "kreditkortan\xFAmer",
+    currency_code: "gjaldmi\xF0ilsk\xF3\xF0i",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "gildi"
@@ -8918,7 +8935,7 @@ function is_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/it.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/it.js
 var error27 = () => {
   const Sizable = {
     string: { unit: "caratteri", verb: "avere" },
@@ -8959,6 +8976,7 @@ var error27 = () => {
     json_string: "stringa JSON",
     e164: "numero E.164",
     credit_card: "numero di carta di credito",
+    currency_code: "codice valuta",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "input"
@@ -9031,7 +9049,7 @@ function it_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/ja.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/ja.js
 var error28 = () => {
   const Sizable = {
     string: { unit: "\u6587\u5B57", verb: "\u3067\u3042\u308B" },
@@ -9072,6 +9090,7 @@ var error28 = () => {
     json_string: "JSON\u6587\u5B57\u5217",
     e164: "E.164\u756A\u53F7",
     credit_card: "\u30AF\u30EC\u30B8\u30C3\u30C8\u30AB\u30FC\u30C9\u756A\u53F7",
+    currency_code: "\u901A\u8CA8\u30B3\u30FC\u30C9",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "\u5165\u529B\u5024"
@@ -9143,7 +9162,7 @@ function ja_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/ka.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/ka.js
 var error29 = () => {
   const Sizable = {
     string: { unit: "\u10E1\u10D8\u10DB\u10D1\u10DD\u10DA\u10DD", verb: "\u10E3\u10DC\u10D3\u10D0 \u10E8\u10D4\u10D8\u10EA\u10D0\u10D5\u10D3\u10D4\u10E1" },
@@ -9184,6 +9203,7 @@ var error29 = () => {
     json_string: "JSON \u10D5\u10D4\u10DA\u10D8",
     e164: "E.164 \u10DC\u10DD\u10DB\u10D4\u10E0\u10D8",
     credit_card: "\u10E1\u10D0\u10D9\u10E0\u10D4\u10D3\u10D8\u10E2\u10DD \u10D1\u10D0\u10E0\u10D0\u10D7\u10D8\u10E1 \u10DC\u10DD\u10DB\u10D4\u10E0\u10D8",
+    currency_code: "\u10D5\u10D0\u10DA\u10E3\u10E2\u10D8\u10E1 \u10D9\u10DD\u10D3\u10D8",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "\u10E8\u10D4\u10E7\u10D5\u10D0\u10DC\u10D0"
@@ -9260,7 +9280,7 @@ function ka_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/km.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/km.js
 var error30 = () => {
   const Sizable = {
     string: { unit: "\u178F\u17BD\u17A2\u1780\u17D2\u179F\u179A", verb: "\u1782\u17BD\u179A\u1798\u17B6\u1793" },
@@ -9301,6 +9321,7 @@ var error30 = () => {
     json_string: "\u1781\u17D2\u179F\u17C2\u17A2\u1780\u17D2\u179F\u179A JSON",
     e164: "\u179B\u17C1\u1781 E.164",
     credit_card: "\u179B\u17C1\u1781\u1794\u17D0\u178E\u17D2\u178E\u17A5\u178E\u1791\u17B6\u1793",
+    currency_code: "\u1780\u17BC\u178A\u179A\u17BC\u1794\u17B7\u1799\u1794\u17D0\u178E\u17D2\u178E",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "\u1791\u17B7\u1793\u17D2\u1793\u1793\u17D0\u1799\u1794\u1789\u17D2\u1785\u17BC\u179B"
@@ -9375,12 +9396,12 @@ function km_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/kh.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/kh.js
 function kh_default() {
   return km_default();
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/kn.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/kn.js
 var error31 = () => {
   const Sizable = {
     string: { unit: "\u0C85\u0C95\u0CCD\u0CB7\u0CB0\u0C97\u0CB3\u0CC1", verb: "\u0CB9\u0CCA\u0C82\u0CA6\u0CB2\u0CC1" },
@@ -9421,6 +9442,7 @@ var error31 = () => {
     json_string: "JSON\u0CB8\u0CCD\u0C9F\u0CCD\u0CB0\u0CBF\u0C82\u0C97\u0CCD",
     e164: "E.164 \u0CB8\u0C82\u0C96\u0CCD\u0CAF\u0CC6",
     credit_card: "\u0C95\u0CCD\u0CB0\u0CC6\u0CA1\u0CBF\u0C9F\u0CCD \u0C95\u0CBE\u0CB0\u0CCD\u0CA1\u0CCD \u0CB8\u0C82\u0C96\u0CCD\u0CAF\u0CC6",
+    currency_code: "\u0C95\u0CB0\u0CC6\u0CA8\u0CCD\u0CB8\u0CBF \u0C95\u0CCB\u0CA1\u0CCD",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "\u0C87\u0CA8\u0CCD\u0CAA\u0CC1\u0C9F\u0CCD"
@@ -9495,7 +9517,7 @@ function kn_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/ko.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/ko.js
 var error32 = () => {
   const Sizable = {
     string: { unit: "\uBB38\uC790", verb: "to have" },
@@ -9536,6 +9558,7 @@ var error32 = () => {
     json_string: "JSON \uBB38\uC790\uC5F4",
     e164: "E.164 \uBC88\uD638",
     credit_card: "\uC2E0\uC6A9\uCE74\uB4DC \uBC88\uD638",
+    currency_code: "\uD1B5\uD654 \uCF54\uB4DC",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "\uC785\uB825"
@@ -9611,7 +9634,7 @@ function ko_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/lt.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/lt.js
 var capitalizeFirstCharacter = (text) => {
   return text.charAt(0).toUpperCase() + text.slice(1);
 };
@@ -9734,6 +9757,7 @@ var error33 = () => {
     json_string: "JSON eilut\u0117",
     e164: "E.164 numeris",
     credit_card: "kredito kortel\u0117s numeris",
+    currency_code: "valiutos kodas",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "\u012Fvestis"
@@ -9818,7 +9842,7 @@ function lt_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/mk.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/mk.js
 var error34 = () => {
   const Sizable = {
     string: { unit: "\u0437\u043D\u0430\u0446\u0438", verb: "\u0434\u0430 \u0438\u043C\u0430\u0430\u0442" },
@@ -9859,6 +9883,7 @@ var error34 = () => {
     json_string: "JSON \u043D\u0438\u0437\u0430",
     e164: "E.164 \u0431\u0440\u043E\u0458",
     credit_card: "\u0431\u0440\u043E\u0458 \u043D\u0430 \u043A\u0440\u0435\u0434\u0438\u0442\u043D\u0430 \u043A\u0430\u0440\u0442\u0438\u0447\u043A\u0430",
+    currency_code: "\u043A\u043E\u0434 \u043D\u0430 \u0432\u0430\u043B\u0443\u0442\u0430",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "\u0432\u043D\u0435\u0441"
@@ -9932,7 +9957,7 @@ function mk_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/ms.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/ms.js
 var error35 = () => {
   const Sizable = {
     string: { unit: "aksara", verb: "mempunyai" },
@@ -9973,6 +9998,7 @@ var error35 = () => {
     json_string: "string JSON",
     e164: "nombor E.164",
     credit_card: "nombor kad kredit",
+    currency_code: "kod mata wang",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "input"
@@ -10044,7 +10070,7 @@ function ms_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/ne.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/ne.js
 var error36 = () => {
   const Sizable = {
     string: { unit: "\u0905\u0915\u094D\u0937\u0930", verb: "\u0939\u0941\u0928\u0941\u092A\u0930\u094D\u091B" },
@@ -10085,6 +10111,7 @@ var error36 = () => {
     json_string: "JSON \u0938\u094D\u091F\u094D\u0930\u093F\u0919",
     e164: "E.164 \u0928\u092E\u094D\u092C\u0930",
     credit_card: "\u0915\u094D\u0930\u0947\u0921\u093F\u091F \u0915\u093E\u0930\u094D\u0921 \u0928\u092E\u094D\u092C\u0930",
+    currency_code: "\u092E\u0941\u0926\u094D\u0930\u093E \u0915\u094B\u0921",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "\u0907\u0928\u092A\u0941\u091F"
@@ -10155,7 +10182,7 @@ function ne_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/nl.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/nl.js
 var error37 = () => {
   const Sizable = {
     string: { unit: "tekens", verb: "heeft" },
@@ -10196,6 +10223,7 @@ var error37 = () => {
     json_string: "JSON string",
     e164: "E.164-nummer",
     credit_card: "creditcardnummer",
+    currency_code: "valutacode",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "invoer"
@@ -10270,7 +10298,7 @@ function nl_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/nn.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/nn.js
 var error38 = () => {
   const Sizable = {
     string: { unit: "teikn", verb: "\xE5 ha" },
@@ -10311,6 +10339,7 @@ var error38 = () => {
     json_string: "JSON-streng",
     e164: "E.164-nummer",
     credit_card: "kredittkortnummer",
+    currency_code: "valutakode",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "input"
@@ -10383,7 +10412,7 @@ function nn_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/no.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/no.js
 var error39 = () => {
   const Sizable = {
     string: { unit: "tegn", verb: "\xE5 ha" },
@@ -10424,6 +10453,7 @@ var error39 = () => {
     json_string: "JSON-streng",
     e164: "E.164-nummer",
     credit_card: "kredittkortnummer",
+    currency_code: "valutakode",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "input"
@@ -10496,7 +10526,7 @@ function no_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/ota.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/ota.js
 var error40 = () => {
   const Sizable = {
     string: { unit: "harf", verb: "olmal\u0131d\u0131r" },
@@ -10537,6 +10567,7 @@ var error40 = () => {
     json_string: "JSON metin",
     e164: "E.164 say\u0131s\u0131",
     credit_card: "i'tib\xE2r kart\u0131 numaras\u0131",
+    currency_code: "para birimi kodu",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "giren"
@@ -10610,7 +10641,7 @@ function ota_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/ps.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/ps.js
 var error41 = () => {
   const Sizable = {
     string: { unit: "\u062A\u0648\u06A9\u064A", verb: "\u0648\u0644\u0631\u064A" },
@@ -10651,6 +10682,7 @@ var error41 = () => {
     json_string: "JSON \u0645\u062A\u0646",
     e164: "\u062F E.164 \u0634\u0645\u06D0\u0631\u0647",
     credit_card: "\u062F \u06A9\u0631\u06CC\u0689\u06CC\u067C \u06A9\u0627\u0631\u062A \u0634\u0645\u06CC\u0631\u0647",
+    currency_code: "\u062F \u0627\u0633\u0639\u0627\u0631\u0648 \u06A9\u0648\u0689",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "\u0648\u0631\u0648\u062F\u064A"
@@ -10729,7 +10761,7 @@ function ps_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/pl.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/pl.js
 var error42 = () => {
   const Sizable = {
     string: { unit: "znak\xF3w", verb: "mie\u0107" },
@@ -10770,6 +10802,7 @@ var error42 = () => {
     json_string: "ci\u0105g znak\xF3w w formacie JSON",
     e164: "liczba E.164",
     credit_card: "numer karty kredytowej",
+    currency_code: "kod waluty",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "wej\u015Bcie"
@@ -10843,7 +10876,7 @@ function pl_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/pt.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/pt.js
 var error43 = () => {
   const Sizable = {
     string: { unit: "caracteres" },
@@ -10884,6 +10917,7 @@ var error43 = () => {
     json_string: "o texto JSON",
     e164: "o n\xFAmero E.164",
     credit_card: "o n\xFAmero de cart\xE3o de cr\xE9dito",
+    currency_code: "o c\xF3digo de moeda",
     iban: "o IBAN",
     jwt: "o JWT",
     template_literal: "a entrada"
@@ -10986,7 +11020,7 @@ function pt_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/pt-BR.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/pt-BR.js
 var error44 = () => {
   const Sizable = {
     string: { unit: "caracteres" },
@@ -11027,6 +11061,7 @@ var error44 = () => {
     json_string: "o texto JSON",
     e164: "o n\xFAmero E.164",
     credit_card: "o n\xFAmero de cart\xE3o de cr\xE9dito",
+    currency_code: "o c\xF3digo de moeda",
     iban: "o IBAN",
     jwt: "o JWT",
     template_literal: "a entrada"
@@ -11130,7 +11165,7 @@ function pt_BR_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/ro.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/ro.js
 var error45 = () => {
   const Sizable = {
     string: { unit: "caractere", verb: "s\u0103 aib\u0103" },
@@ -11171,6 +11206,7 @@ var error45 = () => {
     json_string: "\u0219ir JSON",
     e164: "num\u0103r E.164",
     credit_card: "num\u0103r de card de credit",
+    currency_code: "cod valutar",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "intrare"
@@ -11252,7 +11288,7 @@ function ro_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/ru.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/ru.js
 function getRussianPlural(count, one, few, many) {
   const absCount = Math.abs(count);
   const lastDigit = absCount % 10;
@@ -11343,6 +11379,7 @@ var error46 = () => {
     json_string: "JSON \u0441\u0442\u0440\u043E\u043A\u0430",
     e164: "\u043D\u043E\u043C\u0435\u0440 E.164",
     credit_card: "\u043D\u043E\u043C\u0435\u0440 \u043A\u0440\u0435\u0434\u0438\u0442\u043D\u043E\u0439 \u043A\u0430\u0440\u0442\u044B",
+    currency_code: "\u043A\u043E\u0434 \u0432\u0430\u043B\u044E\u0442\u044B",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "\u0432\u0432\u043E\u0434"
@@ -11420,7 +11457,7 @@ function ru_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/sk.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/sk.js
 var error47 = () => {
   const Sizable = {
     string: { unit: "znakov", verb: "ma\u0165" },
@@ -11461,6 +11498,7 @@ var error47 = () => {
     json_string: "re\u0165azec vo form\xE1te JSON",
     e164: "\u010D\xEDslo E.164",
     credit_card: "\u010D\xEDslo kreditnej karty",
+    currency_code: "k\xF3d meny",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "vstup"
@@ -11536,7 +11574,7 @@ function sk_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/sl.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/sl.js
 var error48 = () => {
   const Sizable = {
     string: { unit: "znakov", verb: "imeti" },
@@ -11577,6 +11615,7 @@ var error48 = () => {
     json_string: "JSON niz",
     e164: "E.164 \u0161tevilka",
     credit_card: "\u0161tevilka kreditne kartice",
+    currency_code: "koda valute",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "vnos"
@@ -11650,7 +11689,7 @@ function sl_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/sv.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/sv.js
 var error49 = () => {
   const Sizable = {
     string: { unit: "tecken", verb: "att ha" },
@@ -11691,6 +11730,7 @@ var error49 = () => {
     json_string: "JSON-str\xE4ng",
     e164: "E.164-nummer",
     credit_card: "kreditkortsnummer",
+    currency_code: "valutakod",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "mall-literal"
@@ -11765,7 +11805,7 @@ function sv_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/ta.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/ta.js
 var error50 = () => {
   const Sizable = {
     string: { unit: "\u0B8E\u0BB4\u0BC1\u0BA4\u0BCD\u0BA4\u0BC1\u0B95\u0BCD\u0B95\u0BB3\u0BCD", verb: "\u0B95\u0BCA\u0BA3\u0BCD\u0B9F\u0BBF\u0BB0\u0BC1\u0B95\u0BCD\u0B95 \u0BB5\u0BC7\u0BA3\u0BCD\u0B9F\u0BC1\u0BAE\u0BCD" },
@@ -11806,6 +11846,7 @@ var error50 = () => {
     json_string: "JSON \u0B9A\u0BB0\u0BAE\u0BCD",
     e164: "E.164 \u0B8E\u0BA3\u0BCD",
     credit_card: "\u0B95\u0B9F\u0BA9\u0BCD \u0B85\u0B9F\u0BCD\u0B9F\u0BC8 \u0B8E\u0BA3\u0BCD",
+    currency_code: "\u0BA8\u0BBE\u0BA3\u0BAF\u0B95\u0BCD \u0B95\u0BC1\u0BB1\u0BBF\u0BAF\u0BC0\u0B9F\u0BC1",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "input"
@@ -11880,7 +11921,7 @@ function ta_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/tg.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/tg.js
 var error51 = () => {
   const Sizable = {
     string: { unit: "\u0430\u043B\u043E\u043C\u0430\u0442", verb: "\u0434\u043E\u0448\u0442\u0430 \u0431\u043E\u0448\u0430\u0434" },
@@ -11921,6 +11962,7 @@ var error51 = () => {
     json_string: "\u0441\u0430\u0442\u0440\u0438 JSON",
     e164: "\u0440\u0430\u049B\u0430\u043C\u0438 E.164",
     credit_card: "\u0440\u0430\u049B\u0430\u043C\u0438 \u043A\u043E\u0440\u0442\u0438 \u043A\u0440\u0435\u0434\u0438\u0442\u04E3",
+    currency_code: "\u0440\u0430\u043C\u0437\u0438 \u0430\u0441\u044A\u043E\u0440",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "\u0432\u0443\u0440\u0443\u0434"
@@ -11996,7 +12038,7 @@ function tg_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/th.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/th.js
 var error52 = () => {
   const Sizable = {
     string: { unit: "\u0E15\u0E31\u0E27\u0E2D\u0E31\u0E01\u0E29\u0E23", verb: "\u0E04\u0E27\u0E23\u0E21\u0E35" },
@@ -12037,6 +12079,7 @@ var error52 = () => {
     json_string: "\u0E02\u0E49\u0E2D\u0E04\u0E27\u0E32\u0E21\u0E41\u0E1A\u0E1A JSON",
     e164: "\u0E40\u0E1A\u0E2D\u0E23\u0E4C\u0E42\u0E17\u0E23\u0E28\u0E31\u0E1E\u0E17\u0E4C\u0E23\u0E30\u0E2B\u0E27\u0E48\u0E32\u0E07\u0E1B\u0E23\u0E30\u0E40\u0E17\u0E28 (E.164)",
     credit_card: "\u0E2B\u0E21\u0E32\u0E22\u0E40\u0E25\u0E02\u0E1A\u0E31\u0E15\u0E23\u0E40\u0E04\u0E23\u0E14\u0E34\u0E15",
+    currency_code: "\u0E23\u0E2B\u0E31\u0E2A\u0E2A\u0E01\u0E38\u0E25\u0E40\u0E07\u0E34\u0E19",
     iban: "IBAN",
     jwt: "\u0E42\u0E17\u0E40\u0E04\u0E19 JWT",
     template_literal: "\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E17\u0E35\u0E48\u0E1B\u0E49\u0E2D\u0E19"
@@ -12111,7 +12154,7 @@ function th_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/tk.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/tk.js
 var error53 = () => {
   const Sizable = {
     string: { unit: "simwol", verb: "bolmaly" },
@@ -12152,6 +12195,7 @@ var error53 = () => {
     json_string: "JSON setiri",
     e164: "E.164 nomeri",
     credit_card: "kredit kartyny\u0148 nomeri",
+    currency_code: "wal\xFDuta kody",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "\u015Fablon"
@@ -12218,7 +12262,7 @@ function tk_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/tr.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/tr.js
 var error54 = () => {
   const Sizable = {
     string: { unit: "karakter", verb: "olmal\u0131" },
@@ -12259,6 +12303,7 @@ var error54 = () => {
     json_string: "JSON dizesi",
     e164: "E.164 say\u0131s\u0131",
     credit_card: "kredi kart\u0131 numaras\u0131",
+    currency_code: "para birimi kodu",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "\u015Eablon dizesi"
@@ -12328,7 +12373,7 @@ function tr_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/uk.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/uk.js
 var error55 = () => {
   const Sizable = {
     string: { unit: "\u0441\u0438\u043C\u0432\u043E\u043B\u0456\u0432", verb: "\u043C\u0430\u0442\u0438\u043C\u0435" },
@@ -12369,6 +12414,7 @@ var error55 = () => {
     json_string: "\u0440\u044F\u0434\u043E\u043A JSON",
     e164: "\u043D\u043E\u043C\u0435\u0440 E.164",
     credit_card: "\u043D\u043E\u043C\u0435\u0440 \u043A\u0440\u0435\u0434\u0438\u0442\u043D\u043E\u0457 \u043A\u0430\u0440\u0442\u043A\u0438",
+    currency_code: "\u043A\u043E\u0434 \u0432\u0430\u043B\u044E\u0442\u0438",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "\u0432\u0445\u0456\u0434\u043D\u0456 \u0434\u0430\u043D\u0456"
@@ -12441,12 +12487,12 @@ function uk_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/ua.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/ua.js
 function ua_default() {
   return uk_default();
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/ur.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/ur.js
 var error56 = () => {
   const Sizable = {
     string: { unit: "\u062D\u0631\u0648\u0641", verb: "\u06C1\u0648\u0646\u0627" },
@@ -12487,6 +12533,7 @@ var error56 = () => {
     json_string: "\u062C\u06D2 \u0627\u06CC\u0633 \u0627\u0648 \u0627\u06CC\u0646 \u0633\u0679\u0631\u0646\u06AF",
     e164: "\u0627\u06CC 164 \u0646\u0645\u0628\u0631",
     credit_card: "\u06A9\u0631\u06CC\u0688\u0679 \u06A9\u0627\u0631\u0688 \u0646\u0645\u0628\u0631",
+    currency_code: "\u06A9\u0631\u0646\u0633\u06CC \u06A9\u0648\u0688",
     iban: "IBAN",
     jwt: "\u062C\u06D2 \u0688\u0628\u0644\u06CC\u0648 \u0679\u06CC",
     template_literal: "\u0627\u0646 \u067E\u0679"
@@ -12561,7 +12608,7 @@ function ur_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/uz.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/uz.js
 var error57 = () => {
   const Sizable = {
     string: { unit: "belgi", verb: "bo\u2018lishi kerak" },
@@ -12602,6 +12649,7 @@ var error57 = () => {
     json_string: "JSON satr",
     e164: "E.164 raqam",
     credit_card: "kredit karta raqami",
+    currency_code: "valyuta kodi",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "kirish"
@@ -12674,7 +12722,7 @@ function uz_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/vi.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/vi.js
 var error58 = () => {
   const Sizable = {
     string: { unit: "k\xFD t\u1EF1", verb: "c\xF3" },
@@ -12715,6 +12763,7 @@ var error58 = () => {
     json_string: "chu\u1ED7i JSON",
     e164: "s\u1ED1 E.164",
     credit_card: "s\u1ED1 th\u1EBB t\xEDn d\u1EE5ng",
+    currency_code: "m\xE3 ti\u1EC1n t\u1EC7",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "\u0111\u1EA7u v\xE0o"
@@ -12787,7 +12836,7 @@ function vi_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/zh-CN.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/zh-CN.js
 var error59 = () => {
   const Sizable = {
     string: { unit: "\u5B57\u7B26", verb: "\u5305\u542B" },
@@ -12828,6 +12877,7 @@ var error59 = () => {
     json_string: "JSON\u5B57\u7B26\u4E32",
     e164: "E.164\u53F7\u7801",
     credit_card: "\u4FE1\u7528\u5361\u53F7",
+    currency_code: "\u8D27\u5E01\u4EE3\u7801",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "\u8F93\u5165"
@@ -12901,7 +12951,7 @@ function zh_CN_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/zh-TW.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/zh-TW.js
 var error60 = () => {
   const Sizable = {
     string: { unit: "\u5B57\u5143", verb: "\u64C1\u6709" },
@@ -12942,6 +12992,7 @@ var error60 = () => {
     json_string: "JSON \u5B57\u4E32",
     e164: "E.164 \u6578\u503C",
     credit_card: "\u4FE1\u7528\u5361\u865F",
+    currency_code: "\u8CA8\u5E63\u4EE3\u78BC",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "\u8F38\u5165"
@@ -13013,7 +13064,7 @@ function zh_TW_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/locales/yo.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/yo.js
 var error61 = () => {
   const Sizable = {
     string: { unit: "\xE0mi", verb: "n\xED" },
@@ -13054,6 +13105,7 @@ var error61 = () => {
     json_string: "\u1ECD\u0300r\u1ECD\u0300 JSON",
     e164: "n\u1ECD\u0301mb\xE0 E.164",
     credit_card: "n\u1ECDmba kaadi gbese",
+    currency_code: "koodu ow\xF3",
     iban: "IBAN",
     jwt: "JWT",
     template_literal: "\u1EB9\u0300r\u1ECD \xECb\xE1w\u1ECDl\xE9"
@@ -13125,7 +13177,7 @@ function yo_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/core/registries.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/registries.js
 var _a2;
 var $output = /* @__PURE__ */ Symbol("ZodOutput");
 var $input = /* @__PURE__ */ Symbol("ZodInput");
@@ -13175,7 +13227,7 @@ function registry() {
 (_a2 = globalThis).__zod_globalRegistry ?? (_a2.__zod_globalRegistry = registry());
 var globalRegistry = globalThis.__zod_globalRegistry;
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/core/compile.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/compile.js
 var INVALID = /* @__PURE__ */ Symbol.for("zod.compile.invalid");
 var FALLBACK_FLAG = /* @__PURE__ */ Symbol.for("zod.compile.fallback");
 var ZodCompileAsyncError = class extends Error {
@@ -13432,7 +13484,7 @@ function generateChecks(doc, ctx, schema, accessor) {
         generatePropertyCheck(doc, ctx, def, currentAccessor);
         break;
       case "properties":
-        generatePropertiesChecks(doc, ctx, def, currentAccessor, false);
+        generatePropertiesChecks(doc, ctx, def, currentAccessor);
         break;
       case "overwrite": {
         const newAccessor = newVar(ctx);
@@ -13542,11 +13594,11 @@ function generateMimeTypeCheck(doc, ctx, def, accessor) {
     doc.write(`if (!${mimeSet}.has(${accessor}.type)) return INVALID;`);
   }
 }
-function generatePropertiesChecks(doc, ctx, def, accessor, schemaRole) {
+function generatePropertiesChecks(doc, ctx, def, accessor) {
   if (def.when) {
     throw new ZodCompileUnsupportedError(`check with a custom "when" condition`);
   }
-  doc.write(schemaRole ? `if (${accessor} === null || (typeof ${accessor} !== "object" && typeof ${accessor} !== "function")) return INVALID;` : `if (${accessor} == null) return INVALID;`);
+  doc.write(`if (${accessor} == null) return INVALID;`);
   const shape = def.shape;
   for (const key of Reflect.ownKeys(shape)) {
     const keyExpr = typeof key === "symbol" ? addConstant(ctx, key) : esc(key);
@@ -13636,7 +13688,7 @@ var PATTERN_IS_COMPLETE = /* @__PURE__ */ new Set([
   "uuid",
   "xid"
 ]);
-function generateStringFormatCheck(doc, ctx, def, accessor) {
+function generateStringFormatCheck(doc, ctx, def, accessor, needsValue = true) {
   const fmt = def.format;
   if (fmt === "base64") {
     const validator = addConstant(ctx, isValidBase64);
@@ -13676,7 +13728,7 @@ function generateStringFormatCheck(doc, ctx, def, accessor) {
   }
   const formatDef = def;
   if (fmt === "url" || fmt === "httpurl" || formatDef.normalize || formatDef.hostname !== void 0 || formatDef.protocol !== void 0) {
-    const parseConst = addConstant(ctx, parseURLObject);
+    const parseConst = addConstant(ctx, validateURL);
     const defConst = addConstant(ctx, def);
     const trimVar = newVar(ctx);
     const urlVar = newVar(ctx);
@@ -13691,6 +13743,8 @@ function generateStringFormatCheck(doc, ctx, def, accessor) {
       const protocolConst = addConstant(ctx, urlProtocolOk);
       doc.write(`if (!${protocolConst}(${urlVar}, ${defConst}.protocol)) return INVALID;`);
     }
+    if (!needsValue)
+      return null;
     const outputVar = newVar(ctx);
     const outputExpr = formatDef.normalize ? `${urlVar}.href` : `${addConstant(ctx, stripTabAndNewline)}(${trimVar})`;
     doc.write(`const ${outputVar} = ${outputExpr};`);
@@ -13750,7 +13804,7 @@ function generateCheck(doc, ctx, schema, accessor, needsValue = true) {
   let typeAccessor;
   switch (type) {
     case "string":
-      typeAccessor = generateStringCheck(doc, ctx, schema, accessor);
+      typeAccessor = generateStringCheck(doc, ctx, schema, accessor, buildsValue);
       break;
     case "number":
       typeAccessor = generateNumberCheck(doc, schema, accessor);
@@ -13856,10 +13910,6 @@ function generateCheck(doc, ctx, schema, accessor, needsValue = true) {
     case "custom":
       typeAccessor = generateCustomCheck(doc, ctx, schema, accessor);
       break;
-    case "properties":
-      generatePropertiesChecks(doc, ctx, schema._zod.def, accessor, true);
-      typeAccessor = accessor;
-      break;
     case "transform":
       typeAccessor = generateTransformCheck(doc, ctx, schema, accessor);
       break;
@@ -13875,12 +13925,12 @@ function generateCheck(doc, ctx, schema, accessor, needsValue = true) {
     return null;
   return generateChecks(doc, ctx, schema, typeAccessor);
 }
-function generateStringCheck(doc, ctx, schema, accessor) {
+function generateStringCheck(doc, ctx, schema, accessor, needsValue = true) {
   doc.write(`if (typeof ${accessor} !== "string") return INVALID;`);
   const def = schema._zod.def;
   if (def.format === void 0)
     return accessor;
-  return generateStringFormatCheck(doc, ctx, def, accessor);
+  return generateStringFormatCheck(doc, ctx, def, accessor, needsValue);
 }
 function generateNumberCheck(doc, schema, accessor) {
   doc.write(`if (typeof ${accessor} !== "number" || !Number.isFinite(${accessor})) return INVALID;`);
@@ -14779,21 +14829,19 @@ function generateTransformCheck(doc, ctx, schema, accessor) {
   return accessor;
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/core/api.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/api.js
+function snapshotChecks(def) {
+  if (def.checks)
+    def.checks = [...def.checks];
+  return def;
+}
 // @__NO_SIDE_EFFECTS__
 function _string(Class2, params) {
-  return new Class2({
-    type: "string",
-    ...normalizeParams(params)
-  });
+  return new Class2(snapshotChecks({ type: "string", ...normalizeParams(params) }));
 }
 // @__NO_SIDE_EFFECTS__
 function _coercedString(Class2, params) {
-  return new Class2({
-    type: "string",
-    coerce: true,
-    ...normalizeParams(params)
-  });
+  return new Class2(snapshotChecks({ type: "string", coerce: true, ...normalizeParams(params) }));
 }
 // @__NO_SIDE_EFFECTS__
 function _email(Class2, params) {
@@ -15097,20 +15145,11 @@ function _isoDuration(Class2, params) {
 }
 // @__NO_SIDE_EFFECTS__
 function _number(Class2, params) {
-  return new Class2({
-    type: "number",
-    checks: [],
-    ...normalizeParams(params)
-  });
+  return new Class2(snapshotChecks({ type: "number", checks: [], ...normalizeParams(params) }));
 }
 // @__NO_SIDE_EFFECTS__
 function _coercedNumber(Class2, params) {
-  return new Class2({
-    type: "number",
-    coerce: true,
-    checks: [],
-    ...normalizeParams(params)
-  });
+  return new Class2(snapshotChecks({ type: "number", coerce: true, checks: [], ...normalizeParams(params) }));
 }
 // @__NO_SIDE_EFFECTS__
 function _int(Class2, params) {
@@ -15452,9 +15491,8 @@ function _property(property, schema, params) {
   });
 }
 // @__NO_SIDE_EFFECTS__
-function _properties(Class2, shape, params) {
-  return new Class2({
-    type: "properties",
+function _properties(shape, params) {
+  return new $ZodCheckProperties({
     check: "properties",
     shape,
     ...normalizeParams(params)
@@ -15850,7 +15888,7 @@ function _stringFormat(Class2, format, fnOrRegex, _params = {}) {
   return inst;
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/core/to-json-schema.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/to-json-schema.js
 function assignProps(target, ...sources) {
   for (const source of sources) {
     for (const key of Reflect.ownKeys(source)) {
@@ -16089,11 +16127,11 @@ function foldObjects(members2) {
     }
     objects.push(member);
   }
-  const properties2 = {};
+  const properties = {};
   const required2 = /* @__PURE__ */ new Set();
   for (const object2 of objects) {
     for (const key in object2.properties) {
-      if (Object.prototype.hasOwnProperty.call(properties2, key))
+      if (Object.prototype.hasOwnProperty.call(properties, key))
         continue;
       const parts = [];
       for (const other of objects) {
@@ -16104,12 +16142,12 @@ function foldObjects(members2) {
           parts.push(part);
       }
       const merged = parts.length === 1 ? parts[0] : foldObjects(parts) ?? { allOf: parts };
-      assignProp(properties2, key, merged);
+      assignProp(properties, key, merged);
     }
     for (const key of object2.required ?? [])
       required2.add(key);
   }
-  const folded = { type: "object", properties: properties2 };
+  const folded = { type: "object", properties };
   if (required2.size)
     folded.required = [...required2];
   if (objects.every((object2) => object2.additionalProperties === false)) {
@@ -16380,7 +16418,7 @@ var createStandardJSONSchemaMethod = (schema, io, processors = {}) => (params) =
   return finalize(ctx, schema);
 };
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/core/json-schema-processors.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/json-schema-processors.js
 var narrowMin = (agg, key, value) => {
   if (agg[key] === void 0 || value > agg[key])
     agg[key] = value;
@@ -16731,17 +16769,15 @@ var objectProcessor = (schema, ctx, _json, params) => {
       path: [...params.path, "properties", key]
     }));
   }
-  const allKeys = new Set(Object.keys(shape));
-  const requiredKeys = new Set([...allKeys].filter((key) => {
+  const requiredKeys = [];
+  for (const key of Object.keys(shape)) {
     const field = def.shape[key];
-    if (ctx.io === "input") {
-      return inputOptin(field) === void 0;
-    } else {
-      return field._zod.optout === void 0;
+    if (ctx.io === "input" ? inputOptin(field) === void 0 : field._zod.optout === void 0) {
+      requiredKeys.push(key);
     }
-  }));
-  if (requiredKeys.size > 0) {
-    json2.required = Array.from(requiredKeys);
+  }
+  if (requiredKeys.length > 0) {
+    json2.required = requiredKeys;
   }
   if (def.catchall?._zod.def.type === "never") {
     json2.additionalProperties = false;
@@ -16754,31 +16790,6 @@ var objectProcessor = (schema, ctx, _json, params) => {
       path: [...params.path, "additionalProperties"]
     });
   }
-};
-var propertiesProcessor = (schema, ctx, _json, params) => {
-  const json2 = _json;
-  const def = schema._zod.def;
-  if (Object.getOwnPropertySymbols(def.shape).length && handleUnrepresentable(schema, ctx, json2, params, "Symbol keys cannot be represented in JSON Schema")) {
-    return;
-  }
-  if (ctx.io === "output") {
-    for (const key in def.shape) {
-      if (isTransforming(def.shape[key]) && handleUnrepresentable(schema, ctx, json2, params, `z.properties() returns its input, so the output of a transforming schema at key "${key}" cannot be represented in JSON Schema`)) {
-        return;
-      }
-    }
-  }
-  json2.type = "object";
-  json2.properties = {};
-  for (const key in def.shape) {
-    assignProp(json2.properties, key, processSchema(def.shape[key], ctx, {
-      ...params,
-      path: [...params.path, "properties", key]
-    }));
-  }
-  const required2 = Object.keys(def.shape).filter((key) => inputOptin(def.shape[key]) === void 0);
-  if (required2.length > 0)
-    json2.required = required2;
 };
 var unionProcessor = (schema, ctx, json2, params) => {
   const def = schema._zod.def;
@@ -17099,7 +17110,6 @@ var allProcessors = {
   file: fileProcessor,
   success: successProcessor,
   custom: customProcessor,
-  properties: propertiesProcessor,
   function: functionProcessor,
   transform: transformProcessor,
   map: mapProcessor,
@@ -17156,7 +17166,7 @@ function toJSONSchema(input2, params) {
   return finalize(ctx, input2);
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/core/json-schema-generator.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/json-schema-generator.js
 var JSONSchemaGenerator = class {
   /** @deprecated Access via ctx instead */
   get metadataRegistry() {
@@ -17234,10 +17244,10 @@ var JSONSchemaGenerator = class {
   }
 };
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/core/json-schema.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/json-schema.js
 var json_schema_exports = {};
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/classic/schemas.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/classic/schemas.js
 var schemas_exports2 = {};
 __export(schemas_exports2, {
   ZodAny: () => ZodAny,
@@ -17296,7 +17306,6 @@ __export(schemas_exports2, {
   ZodPrefault: () => ZodPrefault,
   ZodPreprocess: () => ZodPreprocess,
   ZodPromise: () => ZodPromise,
-  ZodProperties: () => ZodProperties,
   ZodReadonly: () => ZodReadonly,
   ZodRecord: () => ZodRecord,
   ZodSet: () => ZodSet,
@@ -17334,6 +17343,7 @@ __export(schemas_exports2, {
   creditCard: () => creditCard2,
   cuid: () => cuid3,
   cuid2: () => cuid22,
+  currencyCode: () => currencyCode2,
   custom: () => custom,
   date: () => date2,
   describe: () => describe2,
@@ -17388,7 +17398,6 @@ __export(schemas_exports2, {
   prefault: () => prefault,
   preprocess: () => preprocess,
   promise: () => promise,
-  properties: () => properties,
   readonly: () => readonly,
   record: () => record,
   refine: () => refine,
@@ -17419,7 +17428,7 @@ __export(schemas_exports2, {
   xor: () => xor
 });
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/classic/checks.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/classic/checks.js
 var checks_exports2 = {};
 __export(checks_exports2, {
   endsWith: () => _endsWith,
@@ -17442,6 +17451,7 @@ __export(checks_exports2, {
   normalize: () => _normalize,
   overwrite: () => _overwrite,
   positive: () => _positive,
+  properties: () => _properties,
   property: () => _property,
   regex: () => _regex,
   size: () => _size,
@@ -17453,7 +17463,7 @@ __export(checks_exports2, {
   uppercase: () => _uppercase
 });
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/classic/errors.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/classic/errors.js
 var _installedErrorProtos = /* @__PURE__ */ new WeakSet([Object.prototype, Error.prototype]);
 function _lazyMethod(proto, key, make) {
   Object.defineProperty(proto, key, {
@@ -17499,7 +17509,7 @@ var ZodRealError = /* @__PURE__ */ $constructor("ZodError", initializer2, void 0
   Parent: Error
 });
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/classic/parse.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/classic/parse.js
 var parse2 = /* @__PURE__ */ _parse(ZodRealError);
 var parseAsync2 = /* @__PURE__ */ _parseAsync(ZodRealError);
 var safeParse2 = /* @__PURE__ */ _safeParse(ZodRealError);
@@ -17513,7 +17523,7 @@ var safeDecode2 = /* @__PURE__ */ _safeDecode(ZodRealError);
 var safeEncodeAsync2 = /* @__PURE__ */ _safeEncodeAsync(ZodRealError);
 var safeDecodeAsync2 = /* @__PURE__ */ _safeDecodeAsync(ZodRealError);
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/classic/schemas.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/classic/schemas.js
 function _ensureDefaultLocale() {
   if (!globalConfig.localeError)
     config(en_default());
@@ -17901,8 +17911,8 @@ function url(params) {
 }
 function httpUrl(params) {
   return _url(ZodURL, {
-    protocol: regexes_exports.httpProtocol,
-    hostname: regexes_exports.domain,
+    protocol: httpProtocol,
+    hostname: domain,
     ...util_exports.normalizeParams(params)
   });
 }
@@ -18040,10 +18050,13 @@ function stringFormat(format, fnOrRegex, _params = {}) {
   return _stringFormat(ZodCustomStringFormat, format, fnOrRegex, _params);
 }
 function hostname2(_params) {
-  return _stringFormat(ZodCustomStringFormat, "hostname", regexes_exports.hostname, _params);
+  return _stringFormat(ZodCustomStringFormat, "hostname", hostname, _params);
 }
 function hex2(_params) {
-  return _stringFormat(ZodCustomStringFormat, "hex", regexes_exports.hex, _params);
+  return _stringFormat(ZodCustomStringFormat, "hex", hex, _params);
+}
+function currencyCode2(_params) {
+  return _stringFormat(ZodCustomStringFormat, "currency_code", currencyCode, _params);
 }
 function hash(alg, params) {
   const enc = params?.enc ?? "hex";
@@ -18908,14 +18921,6 @@ var ZodCustom = /* @__PURE__ */ $constructor("ZodCustom", (inst, def) => {
   ZodType.init(inst, def);
   inst._zod.processJSONSchema = (ctx, json2, params) => customProcessor(inst, ctx, json2, params);
 });
-var ZodProperties = /* @__PURE__ */ $constructor("ZodProperties", (inst, def) => {
-  _ensureDefaultMemoizer();
-  $ZodProperties.init(inst, def);
-  ZodType.init(inst, def);
-});
-function properties(shape, params) {
-  return _properties(ZodProperties, shape, params);
-}
 function check(fn) {
   const ch = new $ZodCheck({
     check: "custom"
@@ -18939,7 +18944,7 @@ var ZodInstanceOf = /* @__PURE__ */ $constructor("ZodInstanceOf", (inst, def) =>
   ZodCustom.init(inst, def);
 }, {
   properties(shape, params) {
-    return this.check(properties(shape, params));
+    return this.check(_properties(shape, params));
   }
 });
 function _instanceof(cls, params = {}) {
@@ -18983,7 +18988,7 @@ function preprocess(fn, schema) {
   });
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/classic/compat.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/classic/compat.js
 var ZodIssueCode = {
   invalid_type: "invalid_type",
   too_big: "too_big",
@@ -19009,7 +19014,7 @@ var ZodFirstPartyTypeKind;
 /* @__PURE__ */ (function(ZodFirstPartyTypeKind2) {
 })(ZodFirstPartyTypeKind || (ZodFirstPartyTypeKind = {}));
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/classic/iso.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/classic/iso.js
 var iso_exports = {};
 __export(iso_exports, {
   ZodISODate: () => ZodISODate,
@@ -19034,7 +19039,7 @@ function duration2(params) {
   return _isoDuration(ZodISODuration, params);
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/classic/from-json-schema.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/classic/from-json-schema.js
 var z = {
   ...schemas_exports2,
   ...checks_exports2,
@@ -19526,10 +19531,10 @@ function convertBaseSchema(schema, ctx) {
     }
     case "object": {
       const shape = {};
-      const properties2 = schema.properties || {};
+      const properties = schema.properties || {};
       const requiredSet = new Set(schema.required || []);
       const additionalSchema = typeof schema.additionalProperties === "object" ? convertSchema(schema.additionalProperties, ctx) : void 0;
-      for (const [key, propSchema] of Object.entries(properties2)) {
+      for (const [key, propSchema] of Object.entries(properties)) {
         const propZodSchema = convertSchema(propSchema, ctx);
         assignProp(shape, key, requiredSet.has(key) ? propZodSchema : propZodSchema.optional());
       }
@@ -19767,7 +19772,7 @@ function fromJSONSchema(schema, params) {
   return convertSchema(normalized, ctx);
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/core/visit.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/visit.js
 var RESOLVING = /* @__PURE__ */ Symbol("z.visit/resolving");
 function visit(schema, fnOrHandlers) {
   const fn = typeof fnOrHandlers === "function" ? fnOrHandlers : (node2, rewritten) => {
@@ -19890,18 +19895,6 @@ function visit(schema, fnOrHandlers) {
         const { _cachedInner, ...rest } = def;
         return clone(s, { ...rest, getter: () => run(original()) });
       }
-      case "properties": {
-        const oldShape = def.shape;
-        let changed = false;
-        const newShape = {};
-        for (const k of Reflect.ownKeys(oldShape)) {
-          const mapped = run(oldShape[k]);
-          if (mapped !== oldShape[k])
-            changed = true;
-          newShape[k] = mapped;
-        }
-        return changed ? clone(s, { ...def, shape: newShape }) : s;
-      }
       // A leaf by choice: `parts` are regex fragments, not data positions.
       case "template_literal":
       // Leaves.
@@ -19934,7 +19927,7 @@ function visit(schema, fnOrHandlers) {
   return run(schema);
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/classic/deep-partial.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/classic/deep-partial.js
 function deepPartial(schema) {
   return visit(schema, {
     object: (s) => s.partial(),
@@ -19946,7 +19939,7 @@ function deepPartial(schema) {
   });
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/classic/in-out.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/classic/in-out.js
 function withChecks(side, checks) {
   if (!checks?.length)
     return side;
@@ -19976,7 +19969,7 @@ function output(schema) {
   });
 }
 
-// node_modules/.pnpm/zod@4.6.2/node_modules/zod/v4/classic/coerce.js
+// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/classic/coerce.js
 var coerce_exports = {};
 __export(coerce_exports, {
   bigint: () => bigint3,
