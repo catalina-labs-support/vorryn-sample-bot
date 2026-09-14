@@ -26018,8 +26018,11 @@ var DEFAULT_SETUP_VALUATION_WEIGHTS = Object.freeze({
   pipResourceWool: 1.8,
   pipCommodityCoin: 5,
   // 2.5 ore + 2.5 base
-  pipCommodityPaper: 4.5,
-  // 2.0 lumber + 2.5 base
+  // Raised from 4.5 (2026-09-13): with the science level-3 drive live, a
+  // forest setup-2 city feeds the paper the drive spends. +2.94pp / +2.97pp
+  // on two disjoint 3,300-pair humans-knob-ab blocks
+  // (docs/bot-evals/2026-09-13-forest-city-paper.md).
+  pipCommodityPaper: 11,
   pipCommodityCloth: 3.8,
   // 1.8 wool + 2.0 base
   // diversityValue
