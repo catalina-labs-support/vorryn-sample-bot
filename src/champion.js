@@ -25723,189 +25723,6 @@ function handPressure(ctx) {
   return 0;
 }
 
-// bot/src/bot/progress-card-hold-bars.data.ts
-var HOLD_BARS_ARTIFACT = {
-  schemaVersion: 1,
-  scoreStage: "finalized-pre-lever",
-  quantile: 0.75,
-  minGames: 100,
-  sampling: "first non-exempt decision per (game, player, own turn, card); one per (game, card) by sha256 seeded index",
-  sourceRef: "1d5043f25",
-  sourceDirty: false,
-  tuningHash: "65b0b011d1587367",
-  seedPrefix: "hold-cal-",
-  games: 400,
-  completedGames: 400,
-  stalledGames: 0,
-  cards: {
-    scienceAugury: {
-      supported: true,
-      games: 305,
-      bar: 76
-    },
-    scienceMason: {
-      supported: true,
-      games: 295,
-      bar: 134
-    },
-    scienceEngineering: {
-      supported: true,
-      games: 234,
-      bar: 66
-    },
-    scienceGeomancer: {
-      supported: true,
-      games: 324,
-      bar: 45
-    },
-    scienceIrrigation: {
-      supported: true,
-      games: 321,
-      bar: 38
-    },
-    scienceMedicine: {
-      supported: true,
-      games: 284,
-      bar: 161
-    },
-    scienceMining: {
-      supported: true,
-      games: 322,
-      bar: 43
-    },
-    scienceTempering: {
-      supported: true,
-      games: 193,
-      bar: 0
-    },
-    scienceRoadBuilding: {
-      supported: true,
-      games: 315,
-      bar: 80
-    },
-    tradeCommercialHarbor: {
-      supported: true,
-      games: 224,
-      bar: 26
-    },
-    tradeTribute: {
-      supported: true,
-      games: 213,
-      bar: 43
-    },
-    tradeMerchant: {
-      supported: true,
-      games: 333,
-      bar: 62
-    },
-    tradeMerchantFleet: {
-      supported: true,
-      games: 242,
-      bar: 26
-    },
-    tradeResourceMonopoly: {
-      supported: true,
-      games: 307,
-      bar: 77.66666666666667
-    },
-    tradeTradeMonopoly: {
-      supported: true,
-      games: 244,
-      bar: 66
-    },
-    politicsDiplomacy: {
-      supported: true,
-      games: 210,
-      bar: 13
-    },
-    politicsEncouragement: {
-      supported: true,
-      games: 206,
-      bar: 30
-    },
-    politicsEspionage: {
-      supported: true,
-      games: 249,
-      bar: 48
-    },
-    politicsIntrigue: {
-      supported: false,
-      games: 54,
-      bar: null,
-      reason: "only 54 games (< 100)"
-    },
-    politicsSabotage: {
-      supported: true,
-      games: 178,
-      bar: 66
-    },
-    politicsTaxation: {
-      supported: true,
-      games: 202,
-      bar: 68
-    },
-    politicsTreason: {
-      supported: true,
-      games: 203,
-      bar: 36
-    },
-    politicsBetrothal: {
-      supported: true,
-      games: 178,
-      bar: 34
-    }
-  }
-};
-
-// bot/src/bot/progress-card-hold-bars.ts
-function holdBarsArtifactErrors(artifact) {
-  const errors = [];
-  if (artifact.schemaVersion !== 1) errors.push(`schemaVersion ${String(artifact.schemaVersion)}`);
-  if (artifact.scoreStage !== "finalized-pre-lever") errors.push("scoreStage");
-  if (artifact.quantile !== 0.75) errors.push("quantile");
-  if (!Number.isInteger(artifact.minGames) || artifact.minGames < 1) errors.push("minGames");
-  for (const field of ["games", "completedGames", "stalledGames"]) {
-    const value = artifact[field];
-    if (!Number.isInteger(value) || value < 0) errors.push(field);
-  }
-  if (artifact.completedGames + artifact.stalledGames !== artifact.games) {
-    errors.push("completedGames + stalledGames !== games");
-  }
-  const expected = new Set(ALL_CARDS.filter((card2) => !card2.isVp).map((card2) => card2.id));
-  for (const id of expected) {
-    if (!Object.hasOwn(artifact.cards, id)) errors.push(`missing card ${id}`);
-  }
-  for (const [id, entry] of Object.entries(artifact.cards)) {
-    if (!expected.has(id)) {
-      errors.push(`unexpected card ${id}`);
-      continue;
-    }
-    if (!Number.isInteger(entry.games) || entry.games < 0 || entry.games > artifact.games) {
-      errors.push(`${id}: games`);
-    }
-    if (entry.supported) {
-      if (entry.bar === null || !Number.isFinite(entry.bar) || entry.bar < 0) {
-        errors.push(`${id}: supported card needs a finite nonnegative bar`);
-      }
-      if (entry.games < artifact.minGames) errors.push(`${id}: supported below minGames`);
-    } else {
-      if (entry.bar !== null) errors.push(`${id}: unsupported card must have a null bar`);
-      if (entry.reason === void 0 || entry.reason.trim() === "") {
-        errors.push(`${id}: unsupported card must say why`);
-      }
-    }
-  }
-  return errors;
-}
-var LOAD_ERRORS = holdBarsArtifactErrors(HOLD_BARS_ARTIFACT);
-if (LOAD_ERRORS.length > 0) {
-  throw new Error(`progress-card-hold-bars.data.ts is invalid: ${LOAD_ERRORS.join("; ")}`);
-}
-function holdBarFor(cardId) {
-  const entry = HOLD_BARS_ARTIFACT.cards[cardId];
-  return entry?.supported === true && entry.bar !== null ? entry.bar : 0;
-}
-
 // bot/src/bot/maritime-trade-rate.ts
 function maritimeTradeRate(action) {
   return action.offer.count / action.want.count;
@@ -27634,7 +27451,6 @@ var DEFAULT_TUNING = Object.freeze({
   intrigueHoldActiveBonus: 8,
   intrigueHoldCap: 60,
   // Off: the confirmation A/B measured the lever at −3.01pp (2026-09-14).
-  progressCardHoldOptionWeight: 0,
   // Symmetric opponent-win-prevention. Master weight 1.0; per-channel bonuses
   // sized to lift the blocking family above off-theme builds when a leader is
   // one move from winning, without dominating the bot's own winning line. The
@@ -29963,28 +29779,7 @@ function scoreProgressCardAction(args) {
   if (action.skip === true) return SKIP_PROGRESS_CARD_SCORE;
   const payloadScore = rawProgressCardPayloadScore(args, cardId, action);
   const rawScore = payloadScore ?? rawProgressCardPlayOnlyScore(args, cardId) ?? rawProgressCardValue(args, cardId);
-  const finalized = finalizeProgressCardScore(args, cardId, rawScore);
-  if (rawScore === NO_BENEFIT_PLAY_SCORE) return finalized;
-  return finalized - holdOptionPenalty(args, cardId);
-}
-var PROGRESS_HAND_PRESSURE = 4;
-function holdOptionPenalty(ctx, cardId) {
-  const weight = ctx.tuning.progressCardHoldOptionWeight;
-  if (!(weight > 0) || !Number.isFinite(weight)) return 0;
-  const bar = holdBarFor(cardId);
-  if (bar === 0 || holdOptionExempt(ctx, cardId)) return 0;
-  return weight * bar;
-}
-function holdOptionExempt(ctx, cardId) {
-  const { state, actingPlayerId } = ctx;
-  const player = state.players[actingPlayerId];
-  if (player !== void 0 && progressHandSize(player) >= PROGRESS_HAND_PRESSURE) {
-    return true;
-  }
-  if ((player?.victoryPoints ?? 0) >= state.victoryPointsTarget - TWO_FROM_WIN) return true;
-  const critical = ctx.scoreContext?.criticalOpponentThreat ?? hasCriticalOpponentThreat(state, actingPlayerId, ctx.tuning);
-  if (critical) return true;
-  return cardId === "scienceTempering" && temperingBerserkerUrgent(state);
+  return finalizeProgressCardScore(args, cardId, rawScore);
 }
 function rawProgressCardPlayOnlyScore(ctx, cardId) {
   switch (cardId) {
@@ -30000,12 +29795,9 @@ var TEMPERING_URGENT_BERSERKER_RATIO = 0.7;
 var TEMPERING_WAIT_SCORE = 6;
 function temperingPlayScore(ctx) {
   if (countPromotableKnights(ctx) >= 2) return null;
-  return temperingBerserkerUrgent(ctx.state) ? null : TEMPERING_WAIT_SCORE;
-}
-function temperingBerserkerUrgent(state) {
-  const { berserkerTrackPosition, berserkerTrackMax } = state;
+  const { berserkerTrackPosition, berserkerTrackMax } = ctx.state;
   const ratio = berserkerTrackMax > 0 ? berserkerTrackPosition / berserkerTrackMax : 0;
-  return ratio >= TEMPERING_URGENT_BERSERKER_RATIO;
+  return ratio >= TEMPERING_URGENT_BERSERKER_RATIO ? null : TEMPERING_WAIT_SCORE;
 }
 function commercialHarborPlayScore(ctx) {
   const { state, actingPlayerId } = ctx;
