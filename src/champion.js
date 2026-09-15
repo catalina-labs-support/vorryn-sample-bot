@@ -27633,8 +27633,8 @@ var DEFAULT_TUNING = Object.freeze({
   intrigueHoldKnightStrengthWeight: 8,
   intrigueHoldActiveBonus: 8,
   intrigueHoldCap: 60,
-  // Served on by owner decision 2026-09-14, ahead of its outcome verdict.
-  progressCardHoldOptionWeight: 1,
+  // Off: the confirmation A/B measured the lever at −3.01pp (2026-09-14).
+  progressCardHoldOptionWeight: 0,
   // Symmetric opponent-win-prevention. Master weight 1.0; per-channel bonuses
   // sized to lift the blocking family above off-theme builds when a leader is
   // one move from winning, without dominating the bot's own winning line. The
