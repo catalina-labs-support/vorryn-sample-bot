@@ -26142,6 +26142,17 @@ function analyzeDomesticTradeDeclines(state, proposerId, targetPlayerId, offer, 
     bestPriorResponderDelta
   };
 }
+function proposedWantTypeThisTurn(state, proposerId, type) {
+  for (const decline of state.domesticTradeDeclinesThisTurn) {
+    if (decline.proposerId !== proposerId) continue;
+    if (decline.want.some((item) => item.type === type)) return true;
+  }
+  for (const outcome of state.domesticTradeOutcomesThisTurn) {
+    if (outcome.proposerId !== proposerId) continue;
+    if (outcome.proposerReceives.some((item) => item.type === type)) return true;
+  }
+  return false;
+}
 function summarizeBundle(bundle) {
   const counts = /* @__PURE__ */ new Map();
   let total = 0;
@@ -26323,8 +26334,59 @@ function scoreMaritimeTrade(ctx, action) {
   const lowRateBuildPathBonus = rate <= 3 && projection.bonus >= tuning.tradeBuildPathBonusThreshold ? (4 - rate) * tuning.maritimeLowRateBuildPathBonus : 0;
   const domesticOpportunityPenalty = rate >= 3 && state.opponentMaterialTypes.includes(action.want.type) ? (rate - 2) * tuning.maritimeLowRateDomesticOpportunityPenalty : 0;
   return Math.round(
-    utilityDelta * 15 + projection.bonus + lowRateBuildPathBonus - domesticOpportunityPenalty + turnsSavedTradeBonus(ctx, [action.offer], [action.want])
+    utilityDelta * 15 + projection.bonus + lowRateBuildPathBonus - domesticOpportunityPenalty - fourToOneDomesticFirstPenalty(ctx, action, rate) - fourToOneCommodityPenalty(ctx, action, rate) + turnsSavedTradeBonus(ctx, [action.offer], [action.want])
   );
+}
+var FOUR_TO_ONE_RATE = 4;
+function fourToOneDomesticFirstPenalty(ctx, action, rate) {
+  const penalty = ctx.tuning.maritimeFourToOneDomesticFirstPenalty;
+  if (penalty === 0 || rate < FOUR_TO_ONE_RATE) return 0;
+  const { state, actingPlayerId, opponentModel } = ctx;
+  const wanted = action.want.type;
+  if (!state.opponentMaterialTypes.includes(wanted)) return 0;
+  if (opponentModel === void 0) return 0;
+  if (proposedWantTypeThisTurn(state, actingPlayerId, wanted)) return 0;
+  if (maritimeTradeCompletesSameTurnWin(ctx, action)) return 0;
+  const threshold = ctx.tuning.maritimeFourToOneDomesticFirstMinHolderProbability;
+  let plausibleHolder = false;
+  for (const opponentId of ctx.nonSelfOpponentIds) {
+    if (opponentModel.probabilityHoldsAtLeast(opponentId, wanted, 1) >= threshold) {
+      plausibleHolder = true;
+      break;
+    }
+  }
+  return plausibleHolder ? penalty : 0;
+}
+function maritimeTradeCompletesSameTurnWin(ctx, action) {
+  const target = ctx.state.victoryPointsTarget;
+  if (ctx.selfVp >= target - ONE_FROM_WIN) return true;
+  if (ctx.selfVp < target - TWO_FROM_WIN) return false;
+  const self2 = selfPlayer(ctx.state, ctx.actingPlayerId);
+  if (self2 === null) return false;
+  const projected = projectProposerHand(
+    { ...self2.resources, ...self2.commodities },
+    [action.offer],
+    [action.want]
+  );
+  if (canClaimLongestRoadWithHand(ctx.state, ctx.actingPlayerId, projected)) return true;
+  return metropolisTracksClaimableWithHand(ctx.state, ctx.boardIndex, ctx.actingPlayerId, projected).size > 0;
+}
+function fourToOneCommodityPenalty(ctx, action, rate) {
+  const penalty = ctx.tuning.maritimeFourToOneCommodityPenalty;
+  if (penalty === 0 || rate < FOUR_TO_ONE_RATE) return 0;
+  const wanted = action.want.type;
+  if (!isCommodityType(wanted)) return 0;
+  return maritimeBuyCompletesImprovement(ctx, wanted, action.want.count) ? 0 : penalty;
+}
+function maritimeBuyCompletesImprovement(ctx, commodity, bought) {
+  const self2 = selfPlayer(ctx.state, ctx.actingPlayerId);
+  if (self2 === null) return false;
+  if ((ctx.boardIndex.cityCountByPlayer[ctx.actingPlayerId] ?? 0) <= 0) return false;
+  const level = trackLevelFor(trackForCommodity(commodity), self2);
+  if (level >= MAX_TRACK_LEVEL) return false;
+  const cost = improvementCost(self2.cranePlayed, level);
+  const held = self2.commodities[commodity] ?? 0;
+  return held < cost && held + bought >= cost;
 }
 function turnsSavedTradeBonus(ctx, give, receive) {
   const weight = ctx.tuning.tradeTurnsSavedBonus;
@@ -30253,6 +30315,53 @@ function deriveScoreContext(ctx, overrides) {
   return out;
 }
 
+// bot/src/bot/longest-road-exposure.ts
+var ROAD_COST2 = actionCost(ActionType.BuildRoad);
+var exposureByState = /* @__PURE__ */ new WeakMap();
+function longestRoadExposure(ctx) {
+  return memoizePerRequest(
+    exposureByState,
+    ctx.state,
+    ctx.actingPlayerId,
+    () => computeExposure(ctx)
+  );
+}
+function computeExposure(ctx) {
+  const { state, actingPlayerId } = ctx;
+  if (state.longestRoadHolderPlayerId !== actingPlayerId) return null;
+  const maxGap = Math.floor(ctx.tuning.longestRoadDefenseMaxGap);
+  if (maxGap <= 0) return null;
+  let best = null;
+  for (const [opponentId, opponent] of Object.entries(state.players)) {
+    if (opponentId === actingPlayerId) continue;
+    const roadBudget = Math.min(maxGap, opponent.roadsInSupply);
+    if (roadBudget <= 0) continue;
+    const search = minimumLegalRoadsToClaimLongestRoad(state, opponentId, roadBudget);
+    let roadsNeeded;
+    if (search.kind === "found") {
+      roadsNeeded = search.roadsNeeded;
+    } else if (search.kind === "unknown") {
+      roadsNeeded = search.conservativeRoadsNeeded;
+      if (roadsNeeded > roadBudget) continue;
+    } else {
+      continue;
+    }
+    const affordProbability = ctx.opponentModel?.probabilityCanAfford(opponentId, roadsCost(roadsNeeded)) ?? 1;
+    if (best === null || roadsNeeded < best.roadsNeeded || roadsNeeded === best.roadsNeeded && affordProbability > best.affordProbability) {
+      best = { threatenedBy: opponentId, roadsNeeded, affordProbability };
+    }
+  }
+  return best;
+}
+function roadsCost(roads) {
+  const cost = {};
+  for (const [rawType, rawCount] of Object.entries(ROAD_COST2)) {
+    if (rawCount === void 0 || rawCount <= 0) continue;
+    cost[rawType] = rawCount * roads;
+  }
+  return cost;
+}
+
 // bot/src/bot/setup-base-with-candidate.ts
 function settlementBaseWithCandidate(base, state, candidateIntersectionId) {
   const intersection2 = state.board.intersections[candidateIntersectionId];
@@ -30503,7 +30612,7 @@ function scoreRoadAction(ctx, edgeId) {
     bothEndpointsBuilt = false;
   }
   if (bothEndpointsBuilt) score2 -= 15;
-  const defenseBonus = longestRoadDefenseBonus(ctx, edgeId, dedupScratch);
+  const defenseBonus = longestRoadDefenseBonus(ctx, edgeId, dedupScratch) + longestRoadHoldDefenseBonus(ctx, roadLengthGain);
   score2 += defenseBonus;
   const titleInReach = state.longestRoadHolderPlayerId === actingPlayerId || longestRoadClaimTarget - projectedRoadLength <= LR_OBJECTIVE_MAX_GAP;
   const usefulLengthGain = roadLengthGain > 0 && titleInReach;
@@ -30694,6 +30803,17 @@ function longestRoadDefenseBonus(ctx, edgeId, opponentIds) {
     if (candidate > bestBonus) bestBonus = candidate;
   }
   return bestBonus;
+}
+function longestRoadHoldDefenseBonus(ctx, roadLengthGain) {
+  const { state, tuning } = ctx;
+  if (tuning.longestRoadDefenseBonus === 0) return 0;
+  if (roadLengthGain <= 0) return 0;
+  const exposure = longestRoadExposure(ctx);
+  if (exposure === null) return 0;
+  if (exposure.affordProbability < tuning.longestRoadDefenseAffordFloor) return 0;
+  const nearWin = ctx.selfVp >= state.victoryPointsTarget - THREE_FROM_WIN;
+  const multiplier = nearWin ? tuning.longestRoadDefenseNearWinMultiplier : 1;
+  return Math.round(tuning.longestRoadDefenseBonus * multiplier);
 }
 function excessRoadsAboveBuildings(state, actingPlayerId, buildingSlack) {
   const player = state.players[actingPlayerId];
@@ -32080,7 +32200,7 @@ function targetCoverageConsumed(action, targetCost, player) {
 }
 
 // bot/src/bot/score-rules/kit-break-road.ts
-var ROAD_COST2 = [
+var ROAD_COST3 = [
   { type: ResourceType.Brick, needed: 1 },
   { type: ResourceType.Lumber, needed: 1 }
 ];
@@ -32109,7 +32229,7 @@ function kitBreakRoadDelayTurns(ctx) {
     [ResourceType.Lumber]: (player.resources[ResourceType.Lumber] ?? 0) - 1
   };
   const production = ctx.productionEstimator?.expectedProductionPerTurn(ctx.state, ctx.actingPlayerId) ?? {};
-  const turns = turnsToAffordFromCounts(ROAD_COST2, afterRoad, production);
+  const turns = turnsToAffordFromCounts(ROAD_COST3, afterRoad, production);
   return Math.min(turns, ctx.tuning.kitBreakRoadMaxDelayTurns);
 }
 function kitBreakRoad(ctx) {
@@ -34032,8 +34152,8 @@ function findRoadTradeSettlementWinningPlan(ctx, actionPool) {
 }
 
 // bot/src/bot/banked-road-win-plan.ts
-var roadsCost = (roads) => ({ brick: roads, lumber: roads });
-var TWO_ROADS_COST = roadsCost(2);
+var roadsCost2 = (roads) => ({ brick: roads, lumber: roads });
+var TWO_ROADS_COST = roadsCost2(2);
 function findBankedRoadWinPlan(ctx, pool) {
   const self2 = selfPlayer(ctx.state, ctx.playerId);
   if (!ctx.tuning.sameTurnEndgamePlannerEnabled || !ctx.tuning.humanEndgameMultiTradeWinEnabled || self2 === null || ctx.state.phase !== Phase.Action || ctx.state.pendingDecision !== null || ctx.state.currentPlayerId !== ctx.playerId || self2.victoryPoints + 2 < ctx.state.victoryPointsTarget || ctx.state.longestRoadHolderPlayerId === ctx.playerId || self2.roadsInSupply < 2 || canAffordHypothetical(self2, TWO_ROADS_COST))
@@ -34102,40 +34222,13 @@ function twoRoadLongestRoadChain(ctx) {
 function fundRoads(ctx, pool, roads) {
   const self2 = selfPlayer(ctx.state, ctx.playerId);
   if (self2 === null) return null;
-  const cost = roadsCost(roads);
-  const deficit = roadDeficit(self2.resources, roads);
-  if (deficit === 0) return [];
-  if (deficit > 2) return null;
-  const trades = pool.filter(
-    (a) => a.type === ActionType.MaritimeTrade && a.want.count === 1 && (a.want.type === "brick" || a.want.type === "lumber") && (self2.resources[a.want.type] ?? 0) < roads
-  );
-  const bank = { resources: ctx.state.bankResources, commodities: ctx.state.bankCommodities };
-  const starts = [];
-  for (const first of trades) {
-    const delta = actionDelta(first);
-    if (delta === null || !canAffordHypothetical(self2, costOnly(delta)) || !canAffordHypothetical(bank, { [first.want.type]: first.want.count }))
-      continue;
-    const after = applyResourceDelta(self2, delta);
-    if (roadDeficit(after.resources, roads) >= deficit) continue;
-    if (canAffordHypothetical(after, cost)) return [first];
-    starts.push({ first, after });
-  }
-  for (const { first, after } of starts) {
-    const bankAfter = applyResourceDelta(bank, {
-      [first.offer.type]: first.offer.count,
-      [first.want.type]: -first.want.count
-    });
-    for (const second of trades) {
-      const delta = actionDelta(second);
-      if (delta === null || !canAffordHypothetical(after, costOnly(delta)) || !canAffordHypothetical(bankAfter, { [second.want.type]: second.want.count }))
-        continue;
-      if (canAffordHypothetical(applyResourceDelta(after, delta), cost)) return [first, second];
-    }
-  }
-  return null;
-}
-function roadDeficit(resources, roads) {
-  return Math.max(0, roads - (resources.brick ?? 0)) + Math.max(0, roads - (resources.lumber ?? 0));
+  return fundCostWithBankTrades(
+    ctx,
+    bankTradesIn(pool),
+    { resources: self2.resources, commodities: self2.commodities },
+    roadsCost2(roads),
+    2
+  )?.sequence ?? null;
 }
 
 // bot/src/bot/road-building-longest-road-plan.ts
@@ -34263,7 +34356,7 @@ function actionShapeKey(action) {
 
 // bot/src/bot/lookahead/synthetic-followup.ts
 var SETTLEMENT_COST4 = costOnly(SETTLEMENT_DELTA);
-var ROAD_COST3 = costOnly(ROAD_DELTA);
+var ROAD_COST4 = costOnly(ROAD_DELTA);
 var SYNTHETIC_ID_PREFIX = "synthetic-";
 function syntheticId(prefix, targetId) {
   return `${SYNTHETIC_ID_PREFIX}${prefix}-${targetId}`;
@@ -34357,7 +34450,7 @@ function resourceUnlockedFollowups(ctx, projected, medicineConsumed, craneConsum
 function affordabilityFingerprint(ctx, projected, medicineConsumed, craneConsumed) {
   const player = ctx.state.players[ctx.actingPlayerId];
   let mask = 0;
-  if (canAffordHypothetical(projected, ROAD_COST3)) mask |= 1;
+  if (canAffordHypothetical(projected, ROAD_COST4)) mask |= 1;
   if (canAffordHypothetical(projected, SETTLEMENT_COST4)) mask |= 2;
   if (player !== void 0 && canAffordHypothetical(
     projected,
@@ -34406,7 +34499,7 @@ function enumerateRoadUnlockedSettlements(edgeId, ctx, projected) {
   return out;
 }
 function enumerateAffordableBuildRoads(ctx, projected) {
-  if (!canAffordHypothetical(projected, ROAD_COST3)) return [];
+  if (!canAffordHypothetical(projected, ROAD_COST4)) return [];
   const player = ctx.state.players[ctx.actingPlayerId];
   if (player === void 0 || player.roadsInSupply <= 0) return [];
   const reachableEmptyEdges = ctx.boardIndex.reachableEmptyEdgeIds[ctx.actingPlayerId];
@@ -36624,6 +36717,14 @@ var DEFAULT_TUNING = Object.freeze({
   tradeNeedFloorShare: 0.5,
   maritimeLowRateBuildPathBonus: 12,
   maritimeLowRateDomesticOpportunityPenalty: 4,
+  // 4:1 discipline (prod 2026-09-13: 2.7 vs 1.5 four-to-ones per seat-game,
+  // 32% vs 15% buying commodities). First values match what the existing
+  // opportunity penalty already charges a 4:1 in this preset ((4-2)*4 = 8),
+  // so each lever doubles that charge in its own regime rather than dwarfing
+  // the utility term. Threshold 0.5: a coin-flip holder is worth an ask.
+  maritimeFourToOneDomesticFirstPenalty: 8,
+  maritimeFourToOneDomesticFirstMinHolderProbability: 0.5,
+  maritimeFourToOneCommodityPenalty: 8,
   // Domestic-trade lookahead floor: 0 = no-op for bot-vs-bot (the min-pAccept
   // gate already short-circuits below it). The `humans` preset raises it so a
   // build-advancing overpay isn't under-credited just because the human's
@@ -36867,6 +36968,14 @@ var DEFAULT_TUNING = Object.freeze({
   lrSprintStealGap0: 25,
   lrSprintStealGap1: 12,
   lrMidGameObjectiveStep: 6,
+  // Holder-side LR defense (see the Tuning doc comment for the prod numbers).
+  // 40 sits with the other one-move denial lifts (opponentWinBlockRoadCutBonus
+  // 45, a city wall ~40) so the defensive road beats an off-theme build without
+  // outranking the bot's own winning line; ×2 near the target.
+  longestRoadDefenseBonus: 40,
+  longestRoadDefenseMaxGap: 1,
+  longestRoadDefenseAffordFloor: 0.2,
+  longestRoadDefenseNearWinMultiplier: 2,
   expansionPressureTargetBuildings: 4,
   expansionPressureStep: 5,
   expansionPressureEarlyThreshold: 2,
@@ -37090,6 +37199,13 @@ var HUMANS = Object.freeze({
   domesticLookaheadFloor: 0.5,
   maritimeLowRateLookaheadMultiplier: 0.5,
   maritimeLowRateDomesticOpportunityPenalty: 10,
+  // 4:1 discipline at human tables, sized like the opportunity penalty above
+  // ((4-2)*10 = 20): ask the table before paying 4:1 for a card someone
+  // plausibly holds, and don't dump four resources for a commodity that does
+  // not complete an improvement this turn (prod: 2.7 vs 1.5 four-to-ones per
+  // seat-game; 32% vs 15% of them buying commodities).
+  maritimeFourToOneDomesticFirstPenalty: 20,
+  maritimeFourToOneCommodityPenalty: 20,
   domesticTradeTargetHasWantBonus: 12,
   domesticTradeDeclineSweetenPerExtraCardBonus: 14,
   domesticTradePostDeclineMinScore: 12,
