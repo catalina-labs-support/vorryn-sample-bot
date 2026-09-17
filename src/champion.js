@@ -326,7 +326,7 @@ function progressHandSize(player) {
   return isSelf(player) ? player.progressHand.length : player.progressHandCount;
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/classic/external.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/classic/external.js
 var external_exports = {};
 __export(external_exports, {
   $brand: () => $brand,
@@ -589,7 +589,7 @@ __export(external_exports, {
   xor: () => xor
 });
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/index.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/core/index.js
 var core_exports2 = {};
 __export(core_exports2, {
   $ZodAny: () => $ZodAny,
@@ -906,7 +906,7 @@ __export(core_exports2, {
   withParser: () => withParser
 });
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/util.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/core/util.js
 var util_exports = {};
 __export(util_exports, {
   BIGINT_FORMAT_RANGES: () => BIGINT_FORMAT_RANGES,
@@ -1749,7 +1749,7 @@ function constantCatch(value) {
   return fn;
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/core.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/core/core.js
 var _a;
 var NEVER = /* @__PURE__ */ Object.freeze({
   status: "aborted"
@@ -1871,7 +1871,7 @@ function config(newConfig) {
   return globalConfig;
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/errors.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/core/errors.js
 function _getMessage() {
   const internals = this._zod;
   internals.message ?? (internals.message = JSON.stringify(internals.def, jsonStringifyReplacer, 2));
@@ -2063,7 +2063,7 @@ function prettifyError(error62) {
   return lines.join("\n");
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/parse.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/core/parse.js
 function finalizeParams(callee, params) {
   return { callee: params?.callee ?? callee, Err: params?.Err };
 }
@@ -2223,7 +2223,7 @@ var _safeDecodeAsync = (_Err) => async (schema, value, _ctx) => {
 };
 var safeDecodeAsync = /* @__PURE__ */ _safeDecodeAsync($ZodRealError);
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/regexes.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/core/regexes.js
 var regexes_exports = {};
 __export(regexes_exports, {
   anyString: () => anyString,
@@ -2395,7 +2395,7 @@ var sha512_hex = /^[0-9a-fA-F]{128}$/;
 var sha512_base64 = /* @__PURE__ */ fixedBase64(86, "==");
 var sha512_base64url = /* @__PURE__ */ fixedBase64url(86);
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/checks.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/core/checks.js
 var $ZodCheck = /* @__PURE__ */ $constructor("$ZodCheck", (inst, def) => {
   var _a3;
   inst._zod ?? (inst._zod = {});
@@ -2871,7 +2871,7 @@ var $ZodCheckOverwrite = /* @__PURE__ */ $constructor("$ZodCheckOverwrite", (ins
   };
 });
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/doc.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/core/doc.js
 var Doc = class {
   constructor(args = [], closed = {}) {
     this.content = [];
@@ -2912,14 +2912,14 @@ ${content.join("\n")}
   }
 };
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/versions.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/core/versions.js
 var version = {
   major: 4,
   minor: 6,
-  patch: 4
+  patch: 5
 };
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/schemas.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/core/schemas.js
 var $ZodType = /* @__PURE__ */ $constructor("$ZodType", (inst, def) => {
   var _a3;
   inst ?? (inst = {});
@@ -5333,7 +5333,7 @@ function handleRefineResult(result, payload, input2, inst) {
   }
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/memoizer.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/core/memoizer.js
 var $ZodCyclicError = class extends Error {
   constructor() {
     super(`Cannot parse a reference cycle that closes through a transform`);
@@ -5610,7 +5610,7 @@ function isBackEdge(ctx, value) {
   return backEdges !== void 0 && isRef(value) && backEdges.has(value);
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/index.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/index.js
 var locales_exports = {};
 __export(locales_exports, {
   ar: () => ar_default,
@@ -5678,7 +5678,7 @@ __export(locales_exports, {
   zhTW: () => zh_TW_default
 });
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/ar.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/ar.js
 var error = () => {
   const Sizable = {
     string: { unit: "\u062D\u0631\u0641", verb: "\u0623\u0646 \u064A\u062D\u0648\u064A" },
@@ -5790,7 +5790,7 @@ function ar_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/az.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/az.js
 var error2 = () => {
   const Sizable = {
     string: { unit: "simvol", verb: "olmal\u0131d\u0131r" },
@@ -5901,7 +5901,7 @@ function az_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/be.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/be.js
 function getBelarusianPlural(count, one, few, many) {
   const absCount = Math.abs(count);
   const lastDigit = absCount % 10;
@@ -6070,7 +6070,7 @@ function be_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/bg.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/bg.js
 var error4 = () => {
   const Sizable = {
     string: { unit: "\u0441\u0438\u043C\u0432\u043E\u043B\u0430", verb: "\u0434\u0430 \u0441\u044A\u0434\u044A\u0440\u0436\u0430" },
@@ -6196,7 +6196,7 @@ function bg_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/bn.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/bn.js
 var error5 = () => {
   const Sizable = {
     string: { unit: "\u0985\u0995\u09CD\u09B7\u09B0", verb: "\u09A5\u09BE\u0995\u09A4\u09C7 \u09B9\u09AC\u09C7" },
@@ -6310,7 +6310,7 @@ function bn_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/ca.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/ca.js
 var error6 = () => {
   const Sizable = {
     string: { unit: "car\xE0cters", verb: "contenir" },
@@ -6424,7 +6424,7 @@ function ca_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/ckb.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/ckb.js
 var error7 = () => {
   const Sizable = {
     string: { unit: "\u067E\u06CC\u062A", verb: "\u0628\u06CE\u062A" },
@@ -6557,7 +6557,7 @@ function ckb_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/cs.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/cs.js
 var error8 = () => {
   const Sizable = {
     string: { unit: "znak\u016F", verb: "m\xEDt" },
@@ -6674,7 +6674,7 @@ function cs_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/da.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/da.js
 var error9 = () => {
   const Sizable = {
     string: { unit: "tegn", verb: "havde" },
@@ -6795,7 +6795,7 @@ function da_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/de.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/de.js
 var error10 = () => {
   const Sizable = {
     string: { unit: "Zeichen", verb: "zu haben" },
@@ -6909,7 +6909,7 @@ function de_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/el.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/el.js
 var error11 = () => {
   const Sizable = {
     string: { unit: "\u03C7\u03B1\u03C1\u03B1\u03BA\u03C4\u03AE\u03C1\u03B5\u03C2", verb: "\u03BD\u03B1 \u03AD\u03C7\u03B5\u03B9" },
@@ -7022,7 +7022,7 @@ function el_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/en.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/en.js
 var error12 = () => {
   const Sizable = {
     string: { unit: "characters", verb: "to have" },
@@ -7147,7 +7147,7 @@ function en_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/eo.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/eo.js
 var error13 = () => {
   const Sizable = {
     string: { unit: "karaktrojn", verb: "havi" },
@@ -7262,7 +7262,7 @@ function eo_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/es.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/es.js
 var error14 = () => {
   const Sizable = {
     string: { unit: "caracteres", verb: "tener" },
@@ -7399,7 +7399,7 @@ function es_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/fa.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/fa.js
 var error15 = () => {
   const Sizable = {
     string: { unit: "\u06A9\u0627\u0631\u0627\u06A9\u062A\u0631", verb: "\u062F\u0627\u0634\u062A\u0647 \u0628\u0627\u0634\u062F" },
@@ -7519,7 +7519,7 @@ function fa_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/fi.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/fi.js
 var error16 = () => {
   const Sizable = {
     string: { unit: "merkki\xE4", subject: "merkkijonon" },
@@ -7637,7 +7637,7 @@ function fi_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/fr.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/fr.js
 var error17 = () => {
   const Sizable = {
     string: { unit: "caract\xE8res", verb: "avoir" },
@@ -7767,7 +7767,7 @@ function fr_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/fr-CA.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/fr-CA.js
 var error18 = () => {
   const Sizable = {
     string: { unit: "caract\xE8res", verb: "avoir" },
@@ -7880,7 +7880,7 @@ function fr_CA_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/gu.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/gu.js
 var error19 = () => {
   const Sizable = {
     string: { unit: "\u0A85\u0A95\u0ACD\u0AB7\u0AB0", verb: "\u0AB9\u0ACB\u0AB5\u0ABE \u0A9C\u0ACB\u0A88\u0A8F" },
@@ -7994,7 +7994,7 @@ function gu_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/he.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/he.js
 var error20 = () => {
   const TypeNames = {
     string: { label: "\u05DE\u05D7\u05E8\u05D5\u05D6\u05EA", gender: "f" },
@@ -8196,7 +8196,7 @@ function he_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/hi.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/hi.js
 var error21 = () => {
   const Sizable = {
     string: { unit: "\u0905\u0915\u094D\u0937\u0930", verb: "\u0930\u0916\u0928\u0947 \u0915\u0947 \u0932\u093F\u090F" },
@@ -8308,7 +8308,7 @@ function hi_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/hr.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/hr.js
 var error22 = () => {
   const Sizable = {
     string: { unit: "znakova", verb: "imati" },
@@ -8435,7 +8435,7 @@ function hr_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/hu.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/hu.js
 var error23 = () => {
   const Sizable = {
     string: { unit: "karakter", verb: "legyen" },
@@ -8549,7 +8549,7 @@ function hu_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/hy.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/hy.js
 function getArmenianPlural(count, one, many) {
   return Math.abs(count) === 1 ? one : many;
 }
@@ -8708,7 +8708,7 @@ function hy_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/id.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/id.js
 var error25 = () => {
   const Sizable = {
     string: { unit: "karakter", verb: "memiliki" },
@@ -8820,7 +8820,7 @@ function id_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/is.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/is.js
 var error26 = () => {
   const Sizable = {
     string: { unit: "stafi", verb: "a\xF0 hafa" },
@@ -8935,7 +8935,7 @@ function is_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/it.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/it.js
 var error27 = () => {
   const Sizable = {
     string: { unit: "caratteri", verb: "avere" },
@@ -9049,7 +9049,7 @@ function it_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/ja.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/ja.js
 var error28 = () => {
   const Sizable = {
     string: { unit: "\u6587\u5B57", verb: "\u3067\u3042\u308B" },
@@ -9162,7 +9162,7 @@ function ja_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/ka.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/ka.js
 var error29 = () => {
   const Sizable = {
     string: { unit: "\u10E1\u10D8\u10DB\u10D1\u10DD\u10DA\u10DD", verb: "\u10E3\u10DC\u10D3\u10D0 \u10E8\u10D4\u10D8\u10EA\u10D0\u10D5\u10D3\u10D4\u10E1" },
@@ -9280,7 +9280,7 @@ function ka_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/km.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/km.js
 var error30 = () => {
   const Sizable = {
     string: { unit: "\u178F\u17BD\u17A2\u1780\u17D2\u179F\u179A", verb: "\u1782\u17BD\u179A\u1798\u17B6\u1793" },
@@ -9396,12 +9396,12 @@ function km_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/kh.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/kh.js
 function kh_default() {
   return km_default();
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/kn.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/kn.js
 var error31 = () => {
   const Sizable = {
     string: { unit: "\u0C85\u0C95\u0CCD\u0CB7\u0CB0\u0C97\u0CB3\u0CC1", verb: "\u0CB9\u0CCA\u0C82\u0CA6\u0CB2\u0CC1" },
@@ -9517,7 +9517,7 @@ function kn_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/ko.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/ko.js
 var error32 = () => {
   const Sizable = {
     string: { unit: "\uBB38\uC790", verb: "to have" },
@@ -9634,7 +9634,7 @@ function ko_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/lt.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/lt.js
 var capitalizeFirstCharacter = (text) => {
   return text.charAt(0).toUpperCase() + text.slice(1);
 };
@@ -9842,7 +9842,7 @@ function lt_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/mk.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/mk.js
 var error34 = () => {
   const Sizable = {
     string: { unit: "\u0437\u043D\u0430\u0446\u0438", verb: "\u0434\u0430 \u0438\u043C\u0430\u0430\u0442" },
@@ -9957,7 +9957,7 @@ function mk_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/ms.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/ms.js
 var error35 = () => {
   const Sizable = {
     string: { unit: "aksara", verb: "mempunyai" },
@@ -10070,7 +10070,7 @@ function ms_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/ne.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/ne.js
 var error36 = () => {
   const Sizable = {
     string: { unit: "\u0905\u0915\u094D\u0937\u0930", verb: "\u0939\u0941\u0928\u0941\u092A\u0930\u094D\u091B" },
@@ -10182,7 +10182,7 @@ function ne_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/nl.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/nl.js
 var error37 = () => {
   const Sizable = {
     string: { unit: "tekens", verb: "heeft" },
@@ -10298,7 +10298,7 @@ function nl_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/nn.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/nn.js
 var error38 = () => {
   const Sizable = {
     string: { unit: "teikn", verb: "\xE5 ha" },
@@ -10412,7 +10412,7 @@ function nn_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/no.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/no.js
 var error39 = () => {
   const Sizable = {
     string: { unit: "tegn", verb: "\xE5 ha" },
@@ -10526,7 +10526,7 @@ function no_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/ota.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/ota.js
 var error40 = () => {
   const Sizable = {
     string: { unit: "harf", verb: "olmal\u0131d\u0131r" },
@@ -10641,7 +10641,7 @@ function ota_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/ps.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/ps.js
 var error41 = () => {
   const Sizable = {
     string: { unit: "\u062A\u0648\u06A9\u064A", verb: "\u0648\u0644\u0631\u064A" },
@@ -10761,7 +10761,7 @@ function ps_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/pl.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/pl.js
 var error42 = () => {
   const Sizable = {
     string: { unit: "znak\xF3w", verb: "mie\u0107" },
@@ -10876,7 +10876,7 @@ function pl_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/pt.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/pt.js
 var error43 = () => {
   const Sizable = {
     string: { unit: "caracteres" },
@@ -11020,7 +11020,7 @@ function pt_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/pt-BR.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/pt-BR.js
 var error44 = () => {
   const Sizable = {
     string: { unit: "caracteres" },
@@ -11165,7 +11165,7 @@ function pt_BR_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/ro.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/ro.js
 var error45 = () => {
   const Sizable = {
     string: { unit: "caractere", verb: "s\u0103 aib\u0103" },
@@ -11288,7 +11288,7 @@ function ro_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/ru.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/ru.js
 function getRussianPlural(count, one, few, many) {
   const absCount = Math.abs(count);
   const lastDigit = absCount % 10;
@@ -11457,7 +11457,7 @@ function ru_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/sk.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/sk.js
 var error47 = () => {
   const Sizable = {
     string: { unit: "znakov", verb: "ma\u0165" },
@@ -11574,7 +11574,7 @@ function sk_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/sl.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/sl.js
 var error48 = () => {
   const Sizable = {
     string: { unit: "znakov", verb: "imeti" },
@@ -11689,7 +11689,7 @@ function sl_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/sv.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/sv.js
 var error49 = () => {
   const Sizable = {
     string: { unit: "tecken", verb: "att ha" },
@@ -11805,7 +11805,7 @@ function sv_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/ta.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/ta.js
 var error50 = () => {
   const Sizable = {
     string: { unit: "\u0B8E\u0BB4\u0BC1\u0BA4\u0BCD\u0BA4\u0BC1\u0B95\u0BCD\u0B95\u0BB3\u0BCD", verb: "\u0B95\u0BCA\u0BA3\u0BCD\u0B9F\u0BBF\u0BB0\u0BC1\u0B95\u0BCD\u0B95 \u0BB5\u0BC7\u0BA3\u0BCD\u0B9F\u0BC1\u0BAE\u0BCD" },
@@ -11921,7 +11921,7 @@ function ta_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/tg.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/tg.js
 var error51 = () => {
   const Sizable = {
     string: { unit: "\u0430\u043B\u043E\u043C\u0430\u0442", verb: "\u0434\u043E\u0448\u0442\u0430 \u0431\u043E\u0448\u0430\u0434" },
@@ -12038,7 +12038,7 @@ function tg_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/th.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/th.js
 var error52 = () => {
   const Sizable = {
     string: { unit: "\u0E15\u0E31\u0E27\u0E2D\u0E31\u0E01\u0E29\u0E23", verb: "\u0E04\u0E27\u0E23\u0E21\u0E35" },
@@ -12154,7 +12154,7 @@ function th_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/tk.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/tk.js
 var error53 = () => {
   const Sizable = {
     string: { unit: "simwol", verb: "bolmaly" },
@@ -12262,7 +12262,7 @@ function tk_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/tr.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/tr.js
 var error54 = () => {
   const Sizable = {
     string: { unit: "karakter", verb: "olmal\u0131" },
@@ -12373,7 +12373,7 @@ function tr_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/uk.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/uk.js
 var error55 = () => {
   const Sizable = {
     string: { unit: "\u0441\u0438\u043C\u0432\u043E\u043B\u0456\u0432", verb: "\u043C\u0430\u0442\u0438\u043C\u0435" },
@@ -12487,12 +12487,12 @@ function uk_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/ua.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/ua.js
 function ua_default() {
   return uk_default();
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/ur.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/ur.js
 var error56 = () => {
   const Sizable = {
     string: { unit: "\u062D\u0631\u0648\u0641", verb: "\u06C1\u0648\u0646\u0627" },
@@ -12608,7 +12608,7 @@ function ur_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/uz.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/uz.js
 var error57 = () => {
   const Sizable = {
     string: { unit: "belgi", verb: "bo\u2018lishi kerak" },
@@ -12722,7 +12722,7 @@ function uz_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/vi.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/vi.js
 var error58 = () => {
   const Sizable = {
     string: { unit: "k\xFD t\u1EF1", verb: "c\xF3" },
@@ -12836,7 +12836,7 @@ function vi_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/zh-CN.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/zh-CN.js
 var error59 = () => {
   const Sizable = {
     string: { unit: "\u5B57\u7B26", verb: "\u5305\u542B" },
@@ -12951,7 +12951,7 @@ function zh_CN_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/zh-TW.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/zh-TW.js
 var error60 = () => {
   const Sizable = {
     string: { unit: "\u5B57\u5143", verb: "\u64C1\u6709" },
@@ -13064,7 +13064,7 @@ function zh_TW_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/locales/yo.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/yo.js
 var error61 = () => {
   const Sizable = {
     string: { unit: "\xE0mi", verb: "n\xED" },
@@ -13177,7 +13177,7 @@ function yo_default() {
   };
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/registries.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/core/registries.js
 var _a2;
 var $output = /* @__PURE__ */ Symbol("ZodOutput");
 var $input = /* @__PURE__ */ Symbol("ZodInput");
@@ -13227,7 +13227,7 @@ function registry() {
 (_a2 = globalThis).__zod_globalRegistry ?? (_a2.__zod_globalRegistry = registry());
 var globalRegistry = globalThis.__zod_globalRegistry;
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/compile.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/core/compile.js
 var INVALID = /* @__PURE__ */ Symbol.for("zod.compile.invalid");
 var FALLBACK_FLAG = /* @__PURE__ */ Symbol.for("zod.compile.fallback");
 var ZodCompileAsyncError = class extends Error {
@@ -14829,7 +14829,7 @@ function generateTransformCheck(doc, ctx, schema, accessor) {
   return accessor;
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/api.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/core/api.js
 function snapshotChecks(def) {
   if (def.checks)
     def.checks = [...def.checks];
@@ -15888,7 +15888,7 @@ function _stringFormat(Class2, format, fnOrRegex, _params = {}) {
   return inst;
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/to-json-schema.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/core/to-json-schema.js
 function assignProps(target, ...sources) {
   for (const source of sources) {
     for (const key of Reflect.ownKeys(source)) {
@@ -16418,7 +16418,7 @@ var createStandardJSONSchemaMethod = (schema, io, processors = {}) => (params) =
   return finalize(ctx, schema);
 };
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/json-schema-processors.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/core/json-schema-processors.js
 var narrowMin = (agg, key, value) => {
   if (agg[key] === void 0 || value > agg[key])
     agg[key] = value;
@@ -17166,7 +17166,7 @@ function toJSONSchema(input2, params) {
   return finalize(ctx, input2);
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/json-schema-generator.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/core/json-schema-generator.js
 var JSONSchemaGenerator = class {
   /** @deprecated Access via ctx instead */
   get metadataRegistry() {
@@ -17244,10 +17244,10 @@ var JSONSchemaGenerator = class {
   }
 };
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/json-schema.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/core/json-schema.js
 var json_schema_exports = {};
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/classic/schemas.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/classic/schemas.js
 var schemas_exports2 = {};
 __export(schemas_exports2, {
   ZodAny: () => ZodAny,
@@ -17428,7 +17428,7 @@ __export(schemas_exports2, {
   xor: () => xor
 });
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/classic/checks.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/classic/checks.js
 var checks_exports2 = {};
 __export(checks_exports2, {
   endsWith: () => _endsWith,
@@ -17463,7 +17463,7 @@ __export(checks_exports2, {
   uppercase: () => _uppercase
 });
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/classic/errors.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/classic/errors.js
 var _installedErrorProtos = /* @__PURE__ */ new WeakSet([Object.prototype, Error.prototype]);
 function _lazyMethod(proto, key, make) {
   Object.defineProperty(proto, key, {
@@ -17509,7 +17509,7 @@ var ZodRealError = /* @__PURE__ */ $constructor("ZodError", initializer2, void 0
   Parent: Error
 });
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/classic/parse.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/classic/parse.js
 var parse2 = /* @__PURE__ */ _parse(ZodRealError);
 var parseAsync2 = /* @__PURE__ */ _parseAsync(ZodRealError);
 var safeParse2 = /* @__PURE__ */ _safeParse(ZodRealError);
@@ -17523,7 +17523,7 @@ var safeDecode2 = /* @__PURE__ */ _safeDecode(ZodRealError);
 var safeEncodeAsync2 = /* @__PURE__ */ _safeEncodeAsync(ZodRealError);
 var safeDecodeAsync2 = /* @__PURE__ */ _safeDecodeAsync(ZodRealError);
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/classic/schemas.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/classic/schemas.js
 function _ensureDefaultLocale() {
   if (!globalConfig.localeError)
     config(en_default());
@@ -18988,7 +18988,7 @@ function preprocess(fn, schema) {
   });
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/classic/compat.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/classic/compat.js
 var ZodIssueCode = {
   invalid_type: "invalid_type",
   too_big: "too_big",
@@ -19014,7 +19014,7 @@ var ZodFirstPartyTypeKind;
 /* @__PURE__ */ (function(ZodFirstPartyTypeKind2) {
 })(ZodFirstPartyTypeKind || (ZodFirstPartyTypeKind = {}));
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/classic/iso.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/classic/iso.js
 var iso_exports = {};
 __export(iso_exports, {
   ZodISODate: () => ZodISODate,
@@ -19039,7 +19039,7 @@ function duration2(params) {
   return _isoDuration(ZodISODuration, params);
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/classic/from-json-schema.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/classic/from-json-schema.js
 var z = {
   ...schemas_exports2,
   ...checks_exports2,
@@ -19772,7 +19772,7 @@ function fromJSONSchema(schema, params) {
   return convertSchema(normalized, ctx);
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/core/visit.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/core/visit.js
 var RESOLVING = /* @__PURE__ */ Symbol("z.visit/resolving");
 function visit(schema, fnOrHandlers) {
   const fn = typeof fnOrHandlers === "function" ? fnOrHandlers : (node2, rewritten) => {
@@ -19927,7 +19927,7 @@ function visit(schema, fnOrHandlers) {
   return run(schema);
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/classic/deep-partial.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/classic/deep-partial.js
 function deepPartial(schema) {
   return visit(schema, {
     object: (s) => s.partial(),
@@ -19939,7 +19939,7 @@ function deepPartial(schema) {
   });
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/classic/in-out.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/classic/in-out.js
 function withChecks(side, checks) {
   if (!checks?.length)
     return side;
@@ -19969,7 +19969,7 @@ function output(schema) {
   });
 }
 
-// node_modules/.pnpm/zod@4.6.4/node_modules/zod/v4/classic/coerce.js
+// node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/classic/coerce.js
 var coerce_exports = {};
 __export(coerce_exports, {
   bigint: () => bigint3,
@@ -27032,498 +27032,6 @@ function leaderNeedsResourceForVp(state, leaderId, boardIndex, opponentModel, re
   return held < needed;
 }
 
-// bot/src/bot/setup-valuation/default-weights.ts
-var DEFAULT_SETUP_VALUATION_WEIGHTS = Object.freeze({
-  // pipValue — a pip is ~2 score points; ore/grain slightly higher (city-kit
-  // gates). Resource weights apply to Setup1 settlements (feature ×1) and
-  // Setup2 pure-resource cities (Fields/Hills, feature ×2). Commodity pips fire
-  // only at Setup2: a city on a commodity hex (Mountains/Forest/Pasture) yields
-  // 1 resource + 1 commodity, so its resource feature is ×1 and the city's
-  // extra value lives in the commodity weight (≈ paired-resource + base). This
-  // keeps the Setup2 commodity-hex valuation that win-rate testing favoured
-  // while making the feature match the actual production rule.
-  pipResourceOre: 2.5,
-  pipResourceGrain: 2.5,
-  pipResourceBrick: 2,
-  pipResourceLumber: 2,
-  pipResourceWool: 1.8,
-  pipCommodityCoin: 5,
-  // 2.5 ore + 2.5 base
-  // Raised from 4.5 (2026-09-13): with the science level-3 drive live, a
-  // forest setup-2 city feeds the paper the drive spends. +2.94pp / +2.97pp
-  // on two disjoint 3,300-pair humans-knob-ab blocks
-  // (docs/bot-evals/2026-09-13-forest-city-paper.md).
-  pipCommodityPaper: 11,
-  pipCommodityCloth: 3.8,
-  // 1.8 wool + 2.0 base
-  // diversityValue
-  diversityCoef: 4,
-  setup2FirstOre: 8,
-  setup2FirstGrain: 8,
-  setup2FirstBrick: 6,
-  setup2FirstLumber: 6,
-  setup2FirstWool: 5,
-  setup2ShortfallSlopeOreGrain: 6,
-  setup2ShortfallSlopeOther: 3,
-  // expansionValue
-  expansionPipCoef: 0.5,
-  missingHexCoef: 5,
-  // × boardAvgPipsPerHex ≈ 15 per missing hex
-  setup2CoastalCityCoef: 25,
-  // harborValue
-  harborOre: 6,
-  harborGrain: 6,
-  harborBrick: 5,
-  harborLumber: 5,
-  harborWool: 5,
-  harborThreeToOne: 3,
-  harborUncoveredCoef: 1.5,
-  // setup2CityValue
-  cityKitCoef: 2,
-  cityKitBalanceCoef: 2,
-  strategyTrackCommodityCoef: 3,
-  hotConflictCoef: 1.5,
-  // setup2DoubledHexPips — hand-picked initial guess: same magnitude as
-  // hotConflictCoef. A 3-pip doubled hex incurs ~4.5 penalty; calibrate
-  // to refine. Falsifying floor: zero, which restores pre-fix behavior.
-  setup2DoubledHexPips: 1.5
-});
-
-// bot/src/tuning.ts
-var DEFAULT_TUNING = Object.freeze({
-  standingWantPostingEnabled: true,
-  standingWantExecutionEnabled: true,
-  openingBuildBonus: 30,
-  lateGameNonVpPenalty: 19,
-  endgameCloserModeEnabled: true,
-  endgameCloserVpActionBonus: 18,
-  endgameCloserPrepBonus: 24,
-  endgameCloserDistractionPenalty: 28,
-  sameTurnEndgamePlannerEnabled: true,
-  humanEndgameMultiTradeWinEnabled: false,
-  racePostureWeight: 0,
-  nearWinLeaderClampEnabled: false,
-  leaderConvertibilityWeight: 0,
-  vpActionBaseBonus: 12,
-  vpActionUrgencyMultiplier: 11,
-  blunderProbability: 0,
-  vpActionPerSelfVpBonus: 2,
-  midGameBuildCityBonus: 22,
-  settlementHoardRoadPenalty: 125,
-  // Plan-hold: off by default ⇒ bit-identical bot-vs-bot. Humans arm it.
-  planHoldPenalty: 0,
-  planHoldWindow: 2,
-  planHoldMaxPenalty: 12,
-  standingWantHoldPenalty: 6,
-  standingWantHoldMaxPenalty: 24,
-  nearKitSettlementHoldPenalty: 0,
-  nearKitSettlementHoldBroadEnabled: false,
-  nearKitSettlementHoldMaxDeficit: 1,
-  nearKitSettlementActivationReservationEnabled: false,
-  nearKitSettlementPriorityEnabled: false,
-  // Turns-saved trade bonus: off by default. Humans arm it.
-  tradeTurnsSavedBonus: 0,
-  tradeTurnsSavedMaxBonus: 18,
-  tradeInitiativeSweetenerBonus: 0,
-  cityHoardSettlementPenalty: 70,
-  handPressureCoefficient: 3,
-  truncatedFamilyScoreMultiplier: 0.9,
-  domesticTradeTruncatedFamilyScoreMultiplier: 0.65,
-  standingWantTruncatedFamilyScoreMultiplier: 1,
-  standingWantExecuteMinMargin: 6,
-  standingWantExecuteEndgameMarginMultiplier: 2,
-  standingWantExecuteTempoMarginPerTurn: 8,
-  standingWantExecuteRepeatMarginGrowth: 0.6,
-  productionScarcityWeight: 0,
-  tradeOfferSurplusOrdinalFactorDeep: 0.35,
-  tradeOfferSurplusOrdinalFactorNear: 0.6,
-  tradeProjectionPositiveBonusCap: 42,
-  tradeProjectionNegativeBonusFloor: -24,
-  domesticTradeDeclineFatiguePerDecline: 12,
-  domesticTradeDeclineFatigueCap: 48,
-  domesticTradeMaxDeclinesPerTurn: 3,
-  // Strict no-op by default: bot-vs-bot play and frozen eval baselines stay
-  // bit-identical. The `humans` table profile arms this — see personalities.ts.
-  domesticTradeResponderDeclineWindowStop: Infinity,
-  domesticTradeBotProposalLimit: 1,
-  // Bot-only default stays uncapped. The humans table overlay installs the
-  // user-facing interruption budget and proposal-quality filter.
-  humanFacingProposalsPerTurn: 0,
-  humanProposalMinQuality: 0,
-  opponentNearWinTradeStopEnabled: true,
-  strategyMilitaryControlEnabled: true,
-  domesticTradeReversalLookback: 3,
-  // Bot-vs-bot equilibrium prior (bots accept ≈0% of non-improving trades).
-  // The `humans` personality raises this — see personalities.ts.
-  opponentTradeAppetiteBaseline: 0.2,
-  // D1: 0 skips the deal-quality mix (bit-identical). `humans` raises it so the
-  // bot proposes offers the human actually gains from.
-  opponentTradeAppetiteDeltaWeight: 0,
-  opponentTradeUtilityThresholdMode: false,
-  opponentTradeUtilityVetoThreshold: -0.25,
-  opponentTradeUtilityVetoMultiplier: 0.15,
-  opponentTradeTempoPenaltyPerTurn: 0,
-  // Per-opponent observed-acceptance learning. Infinity pins the Beta posterior
-  // to the prior mean ⇒ no-op ⇒ bot-vs-bot frozen. `humans` sets a finite
-  // strength so the bot learns which opponents trade. See personalities.ts.
-  opponentTradeAppetitePriorStrength: Infinity,
-  humanOpponentTradeCalibrationEnabled: false,
-  opponentTradeSameWantResponseWeight: 0,
-  // Known-gains composition bias. 0 ⇒ gains ledger unbuilt, no-op ⇒ bot-vs-bot
-  // frozen. `humans` arms it (see personalities.ts).
-  knownGainsBiasPerCard: 0,
-  // Public-only correlated hand belief. Off by default to preserve the frozen
-  // bot-vs-bot baseline; the humans preset pays the small bounded cost.
-  opponentJointHandSamples: 0,
-  // Conservative: counters fire only on a clear improvement. DEFAULT path
-  // never sees counter candidates (enumerator flag off), so these are
-  // inert in bot-vs-bot; humans preset tunes them.
-  counterProposeMargin: 25,
-  counterEvArgmaxEnabled: false,
-  counterTakeMargin: 20,
-  // Relent ramp + counter restraint (responder side). Inert in bot-vs-bot:
-  // counter candidates only exist on human tables. The humans preset inherits
-  // these defaults; sweep via scripts/eval-vs-humanproxy.ts.
-  counterRelentRounds: 2,
-  counterRelentAcceptUtilityFloor: 0,
-  // Near-win relent floor: 0 ⇒ inert (same as the base floor). Humans raise it.
-  counterRelentNearWinAcceptFloor: 0,
-  counterOnlyWhenDeclining: true,
-  // Dark by default: the bar is a candidate mechanism, not a shipped behavior.
-  declineFirstEnabled: false,
-  declineFirstUtilityFloor: 0,
-  // Trade sociability — defaults are looser than bot-vs-bot equilibrium so
-  // the bot is a willing trade partner for humans, who accept more readily
-  // than bots do.
-  domesticTradeProposeOverheadHighSurplus: 12,
-  domesticTradeProposeOverheadDefault: 18,
-  // Pareto guard: fires only when both perspective-delta AND appetite pAccept
-  // agree the trade is hopeless. Threshold 0 = strict Pareto on opponent
-  // delta. MinPAccept 0.25 = above the APPETITE_BASELINE (0.2), so the guard
-  // doesn't fire on borderline-appetite trades that bot wants to attempt
-  // anyway. Penalty 80 sinks any propose well below endTurn (0).
-  proposeParetoThreshold: 0,
-  proposeParetoMinPAccept: 0.25,
-  proposeParetoPenalty: 80,
-  // Build-path dampener (shared propose + response). Trades with
-  // projection.bonus ≥ 20 advance a concrete build target; propose-side
-  // weights their utility delta at 5x instead of 15x, response-side
-  // skips the card-balance and last-of-needed defensive gates. Without
-  // both, the starved bot can neither propose nor accept the lopsided
-  // "give more than you get" trades that unblock resource starvation.
-  tradeBuildPathBonusThreshold: 20,
-  tradeBuildPathUtilityWeight: 5,
-  // Dark: the projection keeps crediting supply-only settlement/road targets
-  // until the placement gate clears the independent gate.
-  tradeTargetsRequirePlacement: false,
-  // Win-proximity completion leverage: 0 = factor 1 = bit-identical bot-vs-bot.
-  // The `humans` preset raises it (paired with a higher positive-bonus cap).
-  tradeCompletionVpLeverage: 0,
-  // Social constant (B2): was an inline literal 20 in computeCoreScore.
-  tradeProposeSocialConstant: 20,
-  // Need floor (B2): cap 0 ⇒ no floor ⇒ bit-identical. The `humans` preset
-  // raises the cap so a build-advancing overpay survives a low pAccept.
-  tradeNeedFloorCap: 0,
-  tradeNeedFloorShare: 0.5,
-  maritimeLowRateBuildPathBonus: 12,
-  maritimeLowRateDomesticOpportunityPenalty: 4,
-  // Domestic-trade lookahead floor: 0 = no-op for bot-vs-bot (the min-pAccept
-  // gate already short-circuits below it). The `humans` preset raises it so a
-  // build-advancing overpay isn't under-credited just because the human's
-  // modelled acceptance is uncertain.
-  domesticLookaheadFloor: 0,
-  // Maritime low-rate lookahead multiplier: 1.0 = no-op. The `humans` preset
-  // lowers it to discourage paying the bank 3:1/4:1 when a player would trade.
-  maritimeLowRateLookaheadMultiplier: 1,
-  domesticTradeTargetHasWantBonus: 6,
-  domesticTradeHumanAbundanceWeight: 0,
-  domesticTradeAudienceDiscriminationEnabled: false,
-  domesticTradeComplementaryOfferWeight: 0,
-  domesticTradeHumanLowResponseShapePenalty: 0,
-  domesticTradeDeclineSweetenPerExtraCardBonus: 8,
-  domesticTradePostDeclineMinScore: 0,
-  domesticTradeSameWantRetryBuildPathRequiredAfter: 2,
-  // OFF by default — measured, not assumed. On the humans-preset gate this
-  // lever only ever cost win rate, because the human response corpus is a
-  // threshold veto rather than a value grade: sweetening an already-acceptable
-  // offer buys ~no extra acceptance and just donates cards. Same frozen
-  // baseline, 400 seeds / 1,200 paired games unless noted:
-  //   0  (hard veto only)      +1.00pp +/- 1.52  p=0.55    PASS
-  //   3  (flat)                -1.67pp +/- 1.74  p=0.36    WARN
-  //   12 (surplus-scaled)      -2.50pp +/- 1.79  p=0.18    WARN
-  //   12 (flat, 1,100 seeds)   -9.30pp +/- 1.11  p=1e-16   FAIL
-  // The unconditional "never ask for more cards than you offer" rule lives in
-  // scoreDomesticTradePropose and is NOT this knob — it is free and always on.
-  tradeGenerosityPerExtraCardBonus: 0,
-  tradeGenerosityMaxBonus: 24,
-  tradeBuildPathTwoForOneBonus: 0,
-  domesticTradeBankAlternativePenalty: 0,
-  domesticTradeLeaderNonBuildPenalty: 0,
-  // 80 preserves the prior hardcoded TURN_LOOKAHEAD_CANDIDATE_LIMIT. The
-  // `humans` preset raises it so crowded trade pools don't disable lookahead.
-  turnLookaheadCandidateLimit: 80,
-  // Surplus-dump accept branch off by default (bot-vs-bot equilibrium); the
-  // `humans` preset enables it.
-  surplusDumpAcceptEnabled: false,
-  domesticTradeAcceptStrongProjection: 12,
-  domesticTradeAcceptModerateProjection: 6,
-  domesticTradeAcceptModerateUtility: 15,
-  domesticTradeAcceptUtilityFloor: 45,
-  buildCityBase: 50,
-  buildCityOreGrainBonus: 5,
-  buildCityCommodityBonus: 2,
-  buildCityImminentBerserkerExposurePenalty: 240,
-  buildSettlementBase: 70,
-  buildRoadBase: 20,
-  recruitKnightBase: 10,
-  knightDeferBeforeCitiesPenalty: 30,
-  firstKnightTrackThreshold: 3,
-  knightSaturationScale: 1,
-  knightRecruitOpponentCityChokeBonus: 10,
-  displaceKnightKillBonus: 0,
-  knightRetreatRedisplacePenalty: 60,
-  metropolisPushBonus: 20,
-  activateKnightBase: 40,
-  kitBreakRoadPenaltyPerTurn: 0,
-  kitBreakRoadMaxDelayTurns: 6,
-  knightExpectedLossModelEnabled: false,
-  knightPillageLossValue: 120,
-  knightDefenderTokenValue: 60,
-  knightDefenderDrawValue: 20,
-  promoteKnightBase: 34,
-  chaseRobberBase: 44,
-  // Inert until an expansion-gate discovery and disjoint confirmation justify
-  // arming it in a personality preset.
-  knightChaseDeactivationFriction: 0,
-  // 3p:1.0 keeps seat-0 closest to fair share. 4p weight intentionally lower:
-  // at 4p the iterative opponent-pick simulation already strongly biases the
-  // bot's expected Setup2 pick toward diverse-but-modest intersections, so
-  // 1.0 over-corrects and crashes seat-0 win rate. See bot-tuning-findings.md.
-  setupPlacementLookaheadWeight: Object.freeze({ 3: 1, 4: 0.3 }),
-  setupPlacementLookaheadWeightDefault: 1,
-  // 3p saturates at ≥0.10; 4p needs ~0.40 to close the seat-3 gap.
-  // See bot-tuning-findings.md.
-  setupOpponentDenialWeight: Object.freeze({ 3: 0.1, 4: 0.4 }),
-  setupOpponentDenialWeightDefault: 0.15,
-  // Setup2 denial: half the Setup1 magnitude as a conservative default —
-  // Setup2's own shortfall/gap/first-of-type features already pull toward
-  // strong remaining spots, so denial only needs to break ties toward the
-  // seat-above picker's best remaining intersection. Integration eval should
-  // watch seat-balance deltas before raising these.
-  setup2OpponentDenialWeight: Object.freeze({ 3: 0.05, 4: 0.2 }),
-  setup2OpponentDenialWeightDefault: 0.075,
-  // Calibrated for human-play: strong humans block more aggressively than
-  // bot-vs-bot equilibrium suggests. Well below the bot's own settlement-
-  // scoring magnitudes, so the bot won't sacrifice a clearly stronger spot.
-  actionPhaseOpponentDenialWeight: Object.freeze({ 3: 0.1, 4: 0.15 }),
-  actionPhaseOpponentDenialWeightDefault: 0.1,
-  // Empty ⇒ every rule contributes unscaled. Populated only by offline
-  // ablation harnesses; production never sets it.
-  scoreRuleScale: Object.freeze({}),
-  knightResourceTradeMinUrgency: 0.8,
-  knightResourceTradeImminentTrackRemaining: 3,
-  knightResourceTradeActivateCompleteBonus: 55,
-  knightResourceTradeRecruitCompleteBonus: 60,
-  knightResourceTradeRecruitProgressBonus: 35,
-  // Default-on with a conservative discount after narrowing the participating
-  // setup families. The path now mainly values trades and roads that unlock
-  // concrete same-turn follow-ups without letting a second-ply score dominate.
-  // Domestic proposals are acceptance-weighted and build-path gated in the
-  // lookahead scorer, which avoids the unweighted proposal spam found in the
-  // first 30-game calibration run.
-  turnLookaheadEnabled: true,
-  turnLookaheadDiscount: 0.18,
-  // Second follow-up ply is OFF by default (0 = legacy single-ply, bit-identical).
-  // Kept off until an eval/gauntlet proves it, so the frozen-gauntlet baseline
-  // stays comparable. The `humans`/aggressive presets may opt in once swept.
-  turnLookaheadSecondPlyK: 0,
-  turnLookaheadSecondPlyDiscount: 0.5,
-  vpTransitionTradeGuardEnabled: true,
-  opponentTradeFairnessGuardEnabled: true,
-  opponentTradeFairnessRatio: 1.25,
-  metropolisLockoutPenalty: 10,
-  opponentTradeFairnessProposerVpFloor: 7,
-  opponentTradeFairnessMinProposerGain: 0.4,
-  opponentTradeFairnessLeaderMargin: 2,
-  opponentTradeFairnessLeaderRatio: 1.1,
-  // Near-win pricing disabled by default (only the strict leader gets the tight
-  // ratio) ⇒ bit-identical bot-vs-bot. Humans arm it.
-  opponentTradeFairnessNearWinMargin: -1,
-  // B3: count-based card-balance by default (bit-identical). `humans` flips to
-  // the value-aware gate with slack 45 (x100 utility).
-  tradeCardBalanceUtilityGate: false,
-  tradeCardBalanceUtilitySlack: 0,
-  // B4: fairness self-build escape off by default. Ceiling 0.45 is the
-  // "we gain a lot too, don't veto" threshold used only when the escape is on.
-  fairnessSelfBuildEscapeEnabled: false,
-  opponentTradeFairnessSelfGainCeiling: 0.45,
-  // B5: confirm tightening off by default (prior bonus<0 && utilityGain<0 rule).
-  // Floor 1 (x100) is "strictly positive" — applied only when the gate is on.
-  confirmTightenEnabled: false,
-  confirmUtilityFloor: 1,
-  // B6: winning-build resource-trade bonuses disabled by default.
-  winningBuildResourceTradeMaritimeCompleteBonus: 0,
-  winningBuildResourceTradeDomesticProgressBonus: 0,
-  // Competitive fair-play pressure: all of these read only public/redacted
-  // state, but make bots more adversarial about contested expansion, leader
-  // pursuit, hidden-VP pressure, and Longest Road denial.
-  opponentDenialConcentrationScale: 0.35,
-  knightActivationLeaderBonus: 12,
-  hiddenVpThreatWeight: 9,
-  // VP comparisons are exact by default — the non-VP card-holding tempo proxy
-  // is NOT folded into VP-threshold gates (VP cards auto-reveal into visible
-  // `victoryPoints`). Recoverable for eval via a positive value.
-  opponentTempoVpNudge: 0,
-  // Leader-affordability gating of endgame panic-defense. Conservative
-  // starting floors — a cashless win-1 leader keeps half its defensive
-  // pull (a topdeck can still win); a cashless win-2 leader keeps a fifth.
-  // A/B via eval:gauntlet before tightening.
-  threatAffordabilityFloor: 0.2,
-  threatAffordabilityImmediateFloor: 0.5,
-  leaderTradePenaltyMultiplier: 1,
-  // Robber card-denial: weight neutral by default; chase penalty lowered
-  // 14 → 10 so the bot stops shying off card-rich centre hexes. A/B both
-  // via eval:gauntlet (the human-replay robber-hex metric is too small to
-  // tune on — directional check only).
-  robberDenialWeight: 1,
-  robberChaseKnightPenalty: 10,
-  robberLongestRoadDenialWeight: 10,
-  robberMerchantDenialWeight: 8,
-  metropolisChokeRobberWeight: 0,
-  leaderAcquisitionChokeWeight: 0,
-  // Must dominate the commodity-discard bias (5 × cards) plus the
-  // resource-over-commodity utility gap so a metropolis-push bundle isn't
-  // dumped; 60 covers a ≤5-card commodity bundle. A/B via eval:gauntlet.
-  discardBreaksBuildPenalty: 60,
-  // Per-commodity discard bias: small so resourceUtility still dominates; the
-  // discardBreaksBuildPenalty above is sized to clear (5 × cards) of this.
-  discardCommodityBias: 5,
-  // Science-L3 build-path priority scale: 1 preserves the frozen priority map.
-  scienceL3TargetBonusScale: 1,
-  // Dark candidate: 1 preserves production behavior until measured.
-  scienceL3RecruitBonusScale: 1,
-  // Draw-engine: modest by default so it complements (not dominates) the
-  // metropolis-race terms; A/B via eval:sweep. No-production tracks are
-  // discounted to 0.4 (the bot can't feed them).
-  drawEngineWeight: 12,
-  drawEngineNoProductionFactor: 0.4,
-  scienceLevel3DriveWeight: 8,
-  scienceLevel3DenialEnabled: true,
-  roadCutWeight: 18,
-  winSiteDenialWeight: 22,
-  opponentWantTellWeight: 0,
-  // Free-ride discount disabled by default — the prior -6 penalty made the
-  // bot concede DoC tokens to the strongest defender. Raise above 0 to
-  // restore that behaviour.
-  militaryFreeRideDiscount: 0,
-  // Metropolis-race gap boost: per level of lag behind the leading opponent
-  // when no metro is placed. 12 × gap ranges from 0 (tied) to ~36 (gap=3),
-  // about half the base improveCity score — enough to outscore a road or
-  // maritime trade when chasing, not so large it preempts a settlement.
-  metropolisGapBoost: 12,
-  metropolisDefendOwnedBonus: 0,
-  metropolisStealRequiresStealable: true,
-  deckDisruptionPivotEnabled: false,
-  pillagePreferUnwalledTieBreak: false,
-  // Race penalty per gap step, replacing prior flat -5 in scoreScienceRush
-  // / scoreTradeEngine. 5 reproduces the historical magnitude at gap=1.
-  metropolisRacePenaltyPerGap: 5,
-  // Deactivation friction — every move forces the knight Inactive, so the
-  // marginal positional gain must repay the burned activation (~8 on the
-  // resource scale) plus tempo. 12 keeps an at-risk city guard (+16 → +4)
-  // and site unblocks (+60 → +48) positive while killing the +1..+4
-  // shuffle noise self-play traces showed.
-  knightMoveDeactivationFriction: 12,
-  // DoC contest defaults: 30 is roughly half a city-improvement score —
-  // enough to flip recruit/activate over a maritime trade when contested,
-  // not so large it preempts a settlement build. Track-remaining ceiling 3
-  // matches `berserkerContributionFlipBonus`'s existing window; raise to
-  // widen the urgency horizon.
-  defenderTokenContestBonus: 30,
-  defenderTokenContestTrackRemaining: 3,
-  trappedRoadEscapeMultiplier: 3,
-  weakProposerLeniencyDivisor: 2,
-  auguryRobberValueWeight: 0.4,
-  auguryRobberValueCap: 40,
-  auguryEndgameThreatBonus: 14,
-  auguryEndgameThreatHandCap: 12,
-  intrigueHoldKnightStrengthWeight: 8,
-  intrigueHoldActiveBonus: 8,
-  intrigueHoldCap: 60,
-  // Off: the confirmation A/B measured the lever at −3.01pp (2026-09-14).
-  // Symmetric opponent-win-prevention. Master weight 1.0; per-channel bonuses
-  // sized to lift the blocking family above off-theme builds when a leader is
-  // one move from winning, without dominating the bot's own winning line. The
-  // robber/road/settlement lifts (~40-55) sit between a maritime trade and a
-  // city build; the trade-denial penalty stacks with the existing
-  // leaderTradePenalty to make funding the leader clearly negative. A/B via
-  // eval:gauntlet before tightening.
-  opponentWinBlockWeight: 1,
-  opponentWinBlockRobberBonus: 50,
-  opponentWinBlockRoadCutBonus: 45,
-  opponentWinBlockSettlementBonus: 40,
-  opponentWinBlockDefenderTokenBonus: 40,
-  opponentWinBlockTradeDenialPenalty: 55,
-  lrSprintWinningGap0: 90,
-  lrSprintWinningGap1: 55,
-  lrSprintWinningGap2: 25,
-  lrSprintPrepStep: 15,
-  lrSprintStealGap0: 25,
-  lrSprintStealGap1: 12,
-  lrMidGameObjectiveStep: 6,
-  expansionPressureTargetBuildings: 4,
-  expansionPressureStep: 5,
-  expansionPressureEarlyThreshold: 2,
-  expansionPressureEarlyBonus: 6,
-  expansionPressureCityKitBonus: 4,
-  level1PrimingBonus: 8,
-  level2TrackBonus: 12,
-  metropolisRaceBonus: 15,
-  metropolisChaseBonus: 10,
-  preRacePrimingBonus: 8,
-  metropolisHungerBonus: 20,
-  metropolisSecureOrStealBonus: 60,
-  metropolisUnclaimedRaceBonus: 80,
-  metropolisStealRaceBonus: 45,
-  metropolisCliffStealBonus: 18,
-  metropolisCliffRaceBonus: 10,
-  metropolisCliffEntryBonus: 6,
-  setupValuationWeights: DEFAULT_SETUP_VALUATION_WEIGHTS
-});
-var PLAYER_COUNT_KEYED_TUNING_KEYS = [
-  "setupPlacementLookaheadWeight",
-  "setupOpponentDenialWeight",
-  "setup2OpponentDenialWeight",
-  "actionPhaseOpponentDenialWeight"
-];
-var PER_KEY_MERGED_TUNING_KEYS = [
-  ...PLAYER_COUNT_KEYED_TUNING_KEYS,
-  "setupValuationWeights",
-  "scoreRuleScale"
-];
-function unknownTuningOverrideKeys(overrides) {
-  const defaultKeys = new Set(Object.keys(DEFAULT_TUNING));
-  return Object.keys(overrides).filter((key) => !defaultKeys.has(key));
-}
-function validateTuningPresetRegistry(label, presets) {
-  for (const [name, preset] of Object.entries(presets)) {
-    const [firstUnknown] = unknownTuningOverrideKeys(preset);
-    if (firstUnknown !== void 0) {
-      throw new Error(
-        `[${label}] preset "${name}" contains unknown tuning key "${firstUnknown}" \u2014 typo? See bot/src/tuning.ts for the canonical Tuning shape.`
-      );
-    }
-  }
-}
-function mergeTuningOverrides(overrides, base = DEFAULT_TUNING) {
-  const merged = { ...base, ...overrides };
-  const writable = merged;
-  for (const key of PER_KEY_MERGED_TUNING_KEYS) {
-    writable[key] = key in overrides ? Object.freeze({ ...base[key], ...overrides[key] }) : base[key];
-  }
-  return Object.freeze(merged);
-}
-
 // bot/src/opponents/production-estimator.ts
 var HISTOGRAM_CONFIDENCE_START = 12;
 var HISTOGRAM_CONFIDENCE_FULL = 60;
@@ -28469,8 +27977,8 @@ function improveCityCostHint(action) {
 
 // bot/src/opponents/acceptance-learning.ts
 function observedAppetiteBaseline(config2, indexes, opponentId) {
-  const baseline = appetiteBaselineFor(config2, opponentId);
-  const priorStrength = acceptancePriorStrengthFor(config2, opponentId);
+  const baseline = config2.appetiteBaseline;
+  const priorStrength = config2.acceptancePriorStrength;
   if (!Number.isFinite(priorStrength) || priorStrength <= 0) {
     return baseline;
   }
@@ -28484,8 +27992,8 @@ function observedAppetiteBaseline(config2, indexes, opponentId) {
   return numerator / denominator;
 }
 function observedSameWantAppetiteBaseline(config2, indexes, opponentId, want) {
-  const baseline = appetiteBaselineFor(config2, opponentId);
-  const priorStrength = acceptancePriorStrengthFor(config2, opponentId);
+  const baseline = config2.appetiteBaseline;
+  const priorStrength = config2.acceptancePriorStrength;
   if (config2.sameWantResponseWeight <= 0 || !Number.isFinite(priorStrength) || priorStrength <= 0) {
     return null;
   }
@@ -28503,12 +28011,6 @@ function observedSameWantAppetiteBaseline(config2, indexes, opponentId, want) {
   if (accepts + declines <= 0) return null;
   const alpha0 = priorStrength * baseline;
   return (alpha0 + accepts) / (priorStrength + accepts + declines);
-}
-function appetiteBaselineFor(config2, opponentId) {
-  return config2.humanOpponentIds?.has(opponentId) === true ? config2.appetiteBaseline : config2.nonHumanAppetiteBaseline;
-}
-function acceptancePriorStrengthFor(config2, opponentId) {
-  return config2.humanOpponentIds?.has(opponentId) === true ? config2.acceptancePriorStrength : config2.nonHumanAcceptancePriorStrength;
 }
 
 // bot/src/opponents/hand-belief-math.ts
@@ -28642,9 +28144,6 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
   const appetiteBaseline = options.appetiteBaseline ?? APPETITE_BASELINE;
   const appetiteDeltaWeight = options.appetiteDeltaWeight ?? 0;
   const acceptancePriorStrength = options.acceptancePriorStrength ?? Infinity;
-  const humanOpponentIds = options.humanOpponentIds;
-  const nonHumanAppetiteBaseline = options.nonHumanAppetiteBaseline ?? appetiteBaseline;
-  const nonHumanAcceptancePriorStrength = options.nonHumanAcceptancePriorStrength ?? acceptancePriorStrength;
   const sameWantResponseWeight = options.sameWantResponseWeight ?? 0;
   const jointHandSampleCount = clamp(Math.floor(options.jointHandSamples ?? 0), 0, 64);
   const jointMeanEstimatedHand = options.jointMeanEstimatedHand === true && jointHandSampleCount > 0;
@@ -29069,11 +28568,8 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
   }
   const acceptanceConfig = {
     appetiteBaseline,
-    nonHumanAppetiteBaseline,
     acceptancePriorStrength,
-    nonHumanAcceptancePriorStrength,
-    sameWantResponseWeight,
-    humanOpponentIds
+    sameWantResponseWeight
   };
   function probabilityOpponentAcceptsTrade(opponentId, offer, want, acceptanceOptions = {}) {
     if (opponentId === playerId) {
@@ -29094,7 +28590,7 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
     if (sameWantAppetite !== null) {
       appetite = Math.min(appetite, sameWantAppetite);
     }
-    if (tradeUtilityThresholdMode && humanOpponentIds?.has(opponentId) === true) {
+    if (tradeUtilityThresholdMode) {
       const learned = clamp(appetite, 0.01, APPETITE_CAP);
       const veto = evaluation.fitScaleUtilityDelta < tradeUtilityVetoThreshold ? tradeUtilityVetoMultiplier : 1;
       return capacity * learned * veto;
@@ -29144,19 +28640,6 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
   };
 }
 
-// bot/src/opponents/human-actor.ts
-function knownHumanPlayerIds(request, allPlayerIds, excludePlayerId) {
-  const seats = new Set(request.humanPlayerIds ?? []);
-  const candidateIds = new Set(allPlayerIds);
-  for (const event of request.recentEvents) {
-    if (event.type !== GameEventType.ActionApplied || event.payload.isBot !== false) continue;
-    const actorId = event.actingPlayerId;
-    if (actorId !== null && candidateIds.has(actorId)) seats.add(actorId);
-  }
-  if (excludePlayerId !== void 0) seats.delete(excludePlayerId);
-  return seats;
-}
-
 // bot/src/bot/context.ts
 var InvalidBotProjectionError = class extends Error {
   constructor(message) {
@@ -29177,7 +28660,6 @@ function buildBotContext(request, tuning) {
   const normalizedRequest = recentEvents === request.recentEvents ? request : { ...request, recentEvents };
   const boardIndex = buildBoardIndex(request.state, request.playerId);
   const estimator = createProductionEstimator(request.diceHistogram, recentEvents, boardIndex);
-  const publicHumanIds = tuning.humanOpponentTradeCalibrationEnabled ? cachedKnownHumanPlayerIds(normalizedRequest, normalizedRequest.playerId) : void 0;
   const opponentModel = createOpponentModel(request.state, request.playerId, recentEvents, {
     productionEstimator: estimator,
     appetiteBaseline: tuning.opponentTradeAppetiteBaseline,
@@ -29189,12 +28671,7 @@ function buildBotContext(request, tuning) {
     boardIndex,
     tradeUtilityThresholdMode: tuning.opponentTradeUtilityThresholdMode,
     tradeUtilityVetoThreshold: tuning.opponentTradeUtilityVetoThreshold,
-    tradeUtilityVetoMultiplier: tuning.opponentTradeUtilityVetoMultiplier,
-    ...publicHumanIds !== void 0 ? {
-      humanOpponentIds: publicHumanIds,
-      nonHumanAppetiteBaseline: DEFAULT_TUNING.opponentTradeAppetiteBaseline,
-      nonHumanAcceptancePriorStrength: DEFAULT_TUNING.opponentTradeAppetitePriorStrength
-    } : {}
+    tradeUtilityVetoMultiplier: tuning.opponentTradeUtilityVetoMultiplier
   });
   const leaderId = leaderOpponentId(request.state, request.playerId, estimator, boardIndex, {
     nearWinClampEnabled: tuning.nearWinLeaderClampEnabled,
@@ -29211,23 +28688,6 @@ function buildBotContext(request, tuning) {
     leaderOpponentId: leaderId,
     opponentModel
   });
-}
-var knownHumanPlayerIdsCache = /* @__PURE__ */ new WeakMap();
-function cachedKnownHumanPlayerIds(request, excludePlayerId) {
-  let entry = knownHumanPlayerIdsCache.get(request.state);
-  if (entry === void 0 || entry.recentEvents !== request.recentEvents || entry.humanPlayerIds !== request.humanPlayerIds) {
-    entry = {
-      recentEvents: request.recentEvents,
-      humanPlayerIds: request.humanPlayerIds,
-      byExclusion: /* @__PURE__ */ new Map()
-    };
-    knownHumanPlayerIdsCache.set(request.state, entry);
-  }
-  return getOrCreate(
-    entry.byExclusion,
-    excludePlayerId,
-    () => knownHumanPlayerIds(request, Object.keys(request.state.players), excludePlayerId)
-  );
 }
 function self(ctx) {
   return selfPlayer(ctx.state, ctx.playerId);
@@ -33613,7 +33073,7 @@ function resolveAtTermsAward(ctx, decision2, atTermsCandidates, cancel, preTrade
     const candidate = safeCandidates[i];
     if (candidate === void 0) continue;
     const penalty = tradePartnerTempoPenalty(ctx, candidate.bidResponderId, offer, want);
-    if (penalty < opponentTempoPenalty) {
+    if (penalty < opponentTempoPenalty || penalty === opponentTempoPenalty && safeAtTermsAward !== null && effectiveOpponentVp(ctx.state, candidate.bidResponderId, ctx.tuning) < effectiveOpponentVp(ctx.state, safeAtTermsAward.bidResponderId, ctx.tuning)) {
       safeAtTermsAward = candidate;
       opponentTempoPenalty = penalty;
     }
@@ -33679,7 +33139,6 @@ var TRACE_KEY = {
   declineCount: "tradeResponseDeclineCount",
   desperate: "tradeResponseDesperate",
   advancesBuildPath: "tradeResponseAdvancesBuildPath",
-  proposerIsWeak: "tradeResponseProposerIsWeak",
   selfGain: "tradeResponseSelfGain",
   proposerGain: "tradeResponseProposerGain",
   proposerEffectiveVp: "tradeResponseProposerEffectiveVp",
@@ -33971,8 +33430,6 @@ var domesticTradeResponse = (ctx, decision2) => {
     });
   }
   const desperate = self2.victoryPoints >= target - ONE_FROM_WIN;
-  const humanSeats = knownHumanPlayerIds(ctx.request, Object.keys(ctx.state.players));
-  const proposerIsWeak = proposerId !== null && ctx.state.turnNumber >= 10 && effectiveOpponentVp(ctx.state, proposerId, ctx.tuning) <= 4 && !humanSeats.has(proposerId);
   const declineCount = ctx.state.domesticTradeDeclinesThisTurn.filter(
     (d) => d.proposerId === proposerId && (d.targetPlayerId === void 0 || d.targetPlayerId === ctx.playerId)
   ).length;
@@ -34012,8 +33469,7 @@ var domesticTradeResponse = (ctx, decision2) => {
     projection.surplusOfferShare,
     utilityGain,
     desperate,
-    declineCount,
-    proposerIsWeak
+    declineCount
   );
   const sharedRationale = {
     projectionBonus: projection.bonus,
@@ -34021,8 +33477,7 @@ var domesticTradeResponse = (ctx, decision2) => {
     surplusOfferShare: projection.surplusOfferShare,
     declineCount,
     desperate,
-    advancesBuildPath,
-    proposerIsWeak
+    advancesBuildPath
   };
   if (ctx.tuning.declineFirstEnabled && !desperate && !advancesBuildPath && utilityGain < ctx.tuning.declineFirstUtilityFloor) {
     return declineWith(ctx, { gate: "decline-first", ...sharedRationale });
@@ -34070,12 +33525,11 @@ var domesticTradeResponse = (ctx, decision2) => {
   }
   return acceptWith(ctx, { gate: "accept", ...sharedRationale });
 };
-function isAcceptableTradeValue(tuning, projectionBonus, surplusGiveShare, utilityGain, desperate, declineCount, proposerIsWeak) {
+function isAcceptableTradeValue(tuning, projectionBonus, surplusGiveShare, utilityGain, desperate, declineCount) {
   if (desperate) {
     return projectionBonus > 0 || utilityGain > 0;
   }
-  const leniency = proposerIsWeak ? Math.max(0.1, tuning.weakProposerLeniencyDivisor) : 1;
-  const fatigue = (1 + declineCount * 0.4) / leniency;
+  const fatigue = 1 + declineCount * 0.4;
   const strong = tuning.domesticTradeAcceptStrongProjection * fatigue;
   const moderate = tuning.domesticTradeAcceptModerateProjection * fatigue;
   const moderateUtility = tuning.domesticTradeAcceptModerateUtility * fatigue;
@@ -34476,6 +33930,318 @@ function findRoadSettlementCityWinningPlan(ctx, actionPool) {
         syntheticFinisher: true
       };
     }
+  }
+  return null;
+}
+
+// bot/src/bot/bank-funding.ts
+function fundCostWithBankTrades(ctx, trades, hand, cost, maxTrades) {
+  const lacks = (projected, type) => materialCount(projected, type) < (cost[type] ?? 0);
+  const search = (projected, bank2, sequence, depth) => {
+    if (canAffordHypothetical(projected, cost)) return { sequence, hand: projected };
+    if (depth === 0) return null;
+    for (const trade of trades) {
+      if (!lacks(projected, trade.want.type)) continue;
+      if (materialCount(bank2, trade.want.type) < trade.want.count) continue;
+      const delta = actionDelta(trade);
+      if (delta === null) continue;
+      if (!canAffordHypothetical(projected, { [trade.offer.type]: trade.offer.count })) continue;
+      const found = search(
+        applyResourceDelta(projected, delta),
+        applyResourceDelta(bank2, {
+          [trade.offer.type]: trade.offer.count,
+          [trade.want.type]: -trade.want.count
+        }),
+        [...sequence, trade],
+        depth - 1
+      );
+      if (found !== null) return found;
+    }
+    return null;
+  };
+  const bank = { resources: ctx.state.bankResources, commodities: ctx.state.bankCommodities };
+  for (let depth = 0; depth <= maxTrades; depth++) {
+    const found = search(hand, bank, [], depth);
+    if (found !== null) return found;
+  }
+  return null;
+}
+function bankTradesIn(pool) {
+  return pool.filter((a) => a.type === ActionType.MaritimeTrade);
+}
+function materialCount(state, type) {
+  return state.resources[type] ?? state.commodities[type] ?? 0;
+}
+
+// bot/src/bot/road-trade-settlement-plan.ts
+var MAX_TRADES = 2;
+function findRoadTradeSettlementWinningPlan(ctx, actionPool) {
+  const player = selfPlayer(ctx.state, ctx.playerId);
+  if (player === null || ctx.state.pendingDecision !== null || player.victoryPoints < ctx.state.victoryPointsTarget - THREE_FROM_WIN || player.roadsInSupply <= 0 || player.settlementsInSupply <= 0 || !canAffordHypothetical(player, costOnly(ROAD_DELTA)))
+    return null;
+  const afterRoad = applyResourceDelta(player, ROAD_DELTA);
+  const settlementCost = costOnly(SETTLEMENT_DELTA);
+  if (canAffordHypothetical(afterRoad, settlementCost)) return null;
+  const funded = fundCostWithBankTrades(
+    ctx,
+    bankTradesIn(actionPool),
+    afterRoad,
+    settlementCost,
+    // A second trade is the multi-trade third ply: human-table ceiling only.
+    ctx.tuning.humanEndgameMultiTradeWinEnabled ? MAX_TRADES : 1
+  );
+  const trade = funded?.sequence[0];
+  if (trade === void 0) return null;
+  const target = ctx.state.victoryPointsTarget;
+  for (const road of actionPool) {
+    if (road.type !== ActionType.BuildRoad) continue;
+    const edge = ctx.state.board.edges[road.edgeId];
+    if (edge === void 0) continue;
+    const roadVpDelta = winningVpDelta(road, ctx.state, ctx.playerId, {
+      boardIndex: ctx.boardIndex
+    });
+    if (player.victoryPoints + roadVpDelta + 1 < target) continue;
+    for (const intersectionId of [edge.intersectionA, edge.intersectionB]) {
+      if (!isLegalSettlementSiteAfterRoad(
+        ctx.state,
+        ctx.boardIndex.boardView,
+        intersectionId,
+        road.edgeId
+      ))
+        continue;
+      return {
+        setupAction: road,
+        followupAction: trade,
+        finisherAction: {
+          id: `synthetic-settlement-${intersectionId}`,
+          type: ActionType.BuildSettlement,
+          intersectionId
+        },
+        setupVpDelta: roadVpDelta,
+        followupVpDelta: 0,
+        finisherVpDelta: 1,
+        setupScore: 0,
+        followupScore: 0,
+        finisherScore: 0,
+        syntheticFollowup: false,
+        syntheticFinisher: true
+      };
+    }
+  }
+  return null;
+}
+
+// bot/src/bot/banked-road-win-plan.ts
+var roadsCost = (roads) => ({ brick: roads, lumber: roads });
+var TWO_ROADS_COST = roadsCost(2);
+function findBankedRoadWinPlan(ctx, pool) {
+  const self2 = selfPlayer(ctx.state, ctx.playerId);
+  if (!ctx.tuning.sameTurnEndgamePlannerEnabled || !ctx.tuning.humanEndgameMultiTradeWinEnabled || self2 === null || ctx.state.phase !== Phase.Action || ctx.state.pendingDecision !== null || ctx.state.currentPlayerId !== ctx.playerId || self2.victoryPoints + 2 < ctx.state.victoryPointsTarget || ctx.state.longestRoadHolderPlayerId === ctx.playerId || self2.roadsInSupply < 2 || canAffordHypothetical(self2, TWO_ROADS_COST))
+    return null;
+  const funding = fundRoads(ctx, pool, 2);
+  if (funding === null) return null;
+  const chain = twoRoadLongestRoadChain(ctx);
+  return chain === null ? null : [...funding, ...chain];
+}
+function findMerchantBankedRoadWinPlan(ctx, pool) {
+  const self2 = selfPlayer(ctx.state, ctx.playerId);
+  if (!ctx.tuning.sameTurnEndgamePlannerEnabled || !ctx.tuning.humanEndgameMultiTradeWinEnabled || self2 === null || ctx.state.phase !== Phase.Action || ctx.state.pendingDecision !== null || ctx.state.currentPlayerId !== ctx.playerId || ctx.state.merchantOwnerPlayerId === ctx.playerId || self2.victoryPoints + 3 < ctx.state.victoryPointsTarget || ctx.state.longestRoadHolderPlayerId === ctx.playerId || self2.roadsInSupply < 2)
+    return null;
+  const chain = twoRoadLongestRoadChain(ctx);
+  if (chain === null) return null;
+  for (const play of pool) {
+    if (play.type !== ActionType.PlayProgressCard || play.hexId === void 0) continue;
+    const card2 = self2.progressHand.find((c) => c.instanceId === play.instanceId);
+    if (card2 === void 0 || ALL_CARDS_BY_ID.get(card2.cardId)?.effectHandler !== "takeMerchantControl")
+      continue;
+    const hex3 = ctx.state.board.hexes[play.hexId];
+    const resource = hex3 === void 0 ? null : hexProducesResource(hex3.type);
+    if (resource === null) continue;
+    const rate = Math.min(
+      2,
+      currentMaritimeRateFor(ctx.state, ctx.boardIndex, ctx.playerId, resource, {
+        ignoreMerchant: true
+      })
+    );
+    const merchantTrades = ["brick", "lumber"].filter((want) => want !== resource).map((want) => ({
+      id: `synthetic-merchant-trade-${resource}-${want}`,
+      type: ActionType.MaritimeTrade,
+      offer: { type: resource, count: rate },
+      want: { type: want, count: 1 }
+    }));
+    const funding = fundRoads(ctx, [...pool, ...merchantTrades], 2);
+    if (funding !== null) return [play, ...funding, ...chain];
+  }
+  return null;
+}
+function twoRoadLongestRoadChain(ctx) {
+  const board = ctx.state.board;
+  for (const first of Object.values(board.edges)) {
+    if (first.roadOwnerPlayerId !== null || !isRoadConnected(ctx.boardIndex.boardView, ctx.playerId, first.id))
+      continue;
+    const afterFirst = withEdgeOwnerOverride(board, first, ctx.playerId);
+    const view = recordBoardView(afterFirst);
+    for (const endpoint of [first.intersectionA, first.intersectionB]) {
+      for (const secondId of board.intersections[endpoint]?.adjacentEdgeIds ?? []) {
+        const second = afterFirst.edges[secondId];
+        if (second === void 0 || second.roadOwnerPlayerId !== null || !isRoadConnected(view, ctx.playerId, secondId))
+          continue;
+        if (twoRoadLrWinDelta(first.id, secondId, ctx.state, ctx.playerId) !== 2) continue;
+        return [
+          ...[first.id, secondId].map((edgeId) => ({
+            id: `synthetic-banked-road-${edgeId}`,
+            type: ActionType.BuildRoad,
+            edgeId
+          }))
+        ];
+      }
+    }
+  }
+  return null;
+}
+function fundRoads(ctx, pool, roads) {
+  const self2 = selfPlayer(ctx.state, ctx.playerId);
+  if (self2 === null) return null;
+  const cost = roadsCost(roads);
+  const deficit = roadDeficit(self2.resources, roads);
+  if (deficit === 0) return [];
+  if (deficit > 2) return null;
+  const trades = pool.filter(
+    (a) => a.type === ActionType.MaritimeTrade && a.want.count === 1 && (a.want.type === "brick" || a.want.type === "lumber") && (self2.resources[a.want.type] ?? 0) < roads
+  );
+  const bank = { resources: ctx.state.bankResources, commodities: ctx.state.bankCommodities };
+  const starts = [];
+  for (const first of trades) {
+    const delta = actionDelta(first);
+    if (delta === null || !canAffordHypothetical(self2, costOnly(delta)) || !canAffordHypothetical(bank, { [first.want.type]: first.want.count }))
+      continue;
+    const after = applyResourceDelta(self2, delta);
+    if (roadDeficit(after.resources, roads) >= deficit) continue;
+    if (canAffordHypothetical(after, cost)) return [first];
+    starts.push({ first, after });
+  }
+  for (const { first, after } of starts) {
+    const bankAfter = applyResourceDelta(bank, {
+      [first.offer.type]: first.offer.count,
+      [first.want.type]: -first.want.count
+    });
+    for (const second of trades) {
+      const delta = actionDelta(second);
+      if (delta === null || !canAffordHypothetical(after, costOnly(delta)) || !canAffordHypothetical(bankAfter, { [second.want.type]: second.want.count }))
+        continue;
+      if (canAffordHypothetical(applyResourceDelta(after, delta), cost)) return [first, second];
+    }
+  }
+  return null;
+}
+function roadDeficit(resources, roads) {
+  return Math.max(0, roads - (resources.brick ?? 0)) + Math.max(0, roads - (resources.lumber ?? 0));
+}
+
+// bot/src/bot/road-building-longest-road-plan.ts
+function findRoadBuildingLongestRoadPlan(ctx, actionPool) {
+  const self2 = selfPlayer(ctx.state, ctx.playerId);
+  if (self2 === null || ctx.state.pendingDecision !== null || self2.victoryPoints + 2 < ctx.state.victoryPointsTarget || ctx.state.longestRoadHolderPlayerId === ctx.playerId || self2.roadsInSupply < 3)
+    return null;
+  const play = actionPool.find(
+    (action) => action.type === ActionType.PlayProgressCard && self2.progressHand.some(
+      (card2) => card2.instanceId === action.instanceId && ALL_CARDS_BY_ID.get(card2.cardId)?.effectHandler === "buildUpToTwoFreeRoads"
+    )
+  );
+  const funding = play === void 0 ? null : fundRoads(ctx, actionPool, 1);
+  if (play === void 0 || funding === null || funding.length > 1 && !ctx.tuning.humanEndgameMultiTradeWinEnabled)
+    return null;
+  const board = ctx.state.board;
+  for (const first of Object.values(board.edges)) {
+    if (first.roadOwnerPlayerId !== null || !isRoadConnected(ctx.boardIndex.boardView, ctx.playerId, first.id))
+      continue;
+    const afterFirst = withEdgeOwnerOverride(board, first, ctx.playerId);
+    const firstView = recordBoardView(afterFirst);
+    for (const endpoint of [first.intersectionA, first.intersectionB]) {
+      for (const secondId of board.intersections[endpoint]?.adjacentEdgeIds ?? []) {
+        const second = afterFirst.edges[secondId];
+        if (second === void 0 || second.roadOwnerPlayerId !== null || !isRoadConnected(firstView, ctx.playerId, secondId))
+          continue;
+        const afterSecond = withEdgeOwnerOverride(afterFirst, second, ctx.playerId);
+        const secondView = recordBoardView(afterSecond);
+        for (const nextEndpoint of [second.intersectionA, second.intersectionB]) {
+          for (const thirdId of board.intersections[nextEndpoint]?.adjacentEdgeIds ?? []) {
+            const third = afterSecond.edges[thirdId];
+            if (third === void 0 || third.roadOwnerPlayerId !== null || !isRoadConnected(secondView, ctx.playerId, thirdId))
+              continue;
+            const finisher = {
+              id: `synthetic-road-building-third-road-${thirdId}`,
+              type: ActionType.BuildRoad,
+              edgeId: thirdId
+            };
+            if (winningVpDelta(finisher, { ...ctx.state, board: afterSecond }, ctx.playerId) !== 2)
+              continue;
+            return {
+              setupAction: play,
+              followupAction: {
+                id: `synthetic-road-building-free-road-${first.id}`,
+                type: ActionType.BuildRoad,
+                edgeId: first.id
+              },
+              finisherAction: finisher,
+              setupVpDelta: 0,
+              followupVpDelta: 0,
+              finisherVpDelta: 2,
+              setupScore: 0,
+              followupScore: 0,
+              finisherScore: 0,
+              syntheticFollowup: true,
+              syntheticFinisher: true
+            };
+          }
+        }
+      }
+    }
+  }
+  return null;
+}
+
+// bot/src/bot/trade-funded-city-plan.ts
+var MAX_TRADES2 = 3;
+function findTradeFundedCityPlan(ctx, actionPool) {
+  const self2 = selfPlayer(ctx.state, ctx.playerId);
+  if (self2 === null || ctx.state.pendingDecision !== null || self2.victoryPoints + 1 < ctx.state.victoryPointsTarget)
+    return null;
+  const settlements = Object.values(ctx.state.board.intersections).filter(
+    (intersection2) => intersection2.building?.ownerPlayerId === ctx.playerId && intersection2.building.type === "settlement"
+  );
+  if (settlements.length === 0) return null;
+  const holdsMedicine = self2.progressHand.some(
+    (card2) => ALL_CARDS_BY_ID.get(card2.cardId)?.effectHandler === "buildCityReducedCost"
+  );
+  const cost = cityCostFor(holdsMedicine || self2.medicinePlayed);
+  if (canAffordHypothetical(self2, cost)) return null;
+  const funded = fundCostWithBankTrades(
+    ctx,
+    bankTradesIn(actionPool),
+    { resources: self2.resources, commodities: self2.commodities },
+    cost,
+    // Two or more trades is the multi-trade third ply: human-table ceiling only.
+    ctx.tuning.humanEndgameMultiTradeWinEnabled ? MAX_TRADES2 : 1
+  );
+  const first = funded?.sequence[0];
+  if (funded === null || first === void 0) return null;
+  for (const settlement of settlements) {
+    const finisher = cityUpgradeFollowups(ctx.state, ctx.playerId, settlement.id, funded.hand)[0];
+    if (finisher === void 0) continue;
+    return {
+      setupAction: first,
+      followupAction: funded.sequence[1] ?? finisher,
+      finisherAction: finisher,
+      setupVpDelta: 0,
+      followupVpDelta: 0,
+      finisherVpDelta: 1,
+      setupScore: 0,
+      followupScore: 0,
+      finisherScore: 0,
+      syntheticFollowup: funded.sequence[1] === void 0,
+      syntheticFinisher: true
+    };
   }
   return null;
 }
@@ -35250,7 +35016,7 @@ function findSameTurnWinningPlan(ctx, actionPool, base) {
   if (self2.victoryPoints < target - THREE_FROM_WIN) return null;
   const planPool = actionPool.length > ENDGAME_PLAN_POOL_LIMIT ? actionPool.filter((a) => PLAN_RELEVANT_TYPES.has(a.type)) : actionPool;
   if (planPool.length > ENDGAME_PLAN_POOL_LIMIT) {
-    return findRoadSettlementCityWinningPlan(ctx, actionPool) ?? findThreeRoadWinningPlan(ctx, actionPool);
+    return findRoadSettlementCityWinningPlan(ctx, actionPool) ?? findRoadTradeSettlementWinningPlan(ctx, actionPool) ?? findThreeRoadWinningPlan(ctx, actionPool) ?? findRoadBuildingLongestRoadPlan(ctx, actionPool) ?? findTradeFundedCityPlan(ctx, actionPool);
   }
   const vpDeltaByActionId = /* @__PURE__ */ new Map();
   for (const action of planPool) {
@@ -35360,7 +35126,7 @@ function findSameTurnWinningPlan(ctx, actionPool, base) {
     const multiTradePlan = findMultiTradeWinningPlan(ctx, planPool, base);
     if (multiTradePlan !== null && planRanksAbove(multiTradePlan, best)) best = multiTradePlan;
   }
-  return best ?? findRoadSettlementCityWinningPlan(ctx, actionPool) ?? findThreeRoadWinningPlan(ctx, actionPool);
+  return best ?? findRoadSettlementCityWinningPlan(ctx, actionPool) ?? findRoadTradeSettlementWinningPlan(ctx, actionPool) ?? findThreeRoadWinningPlan(ctx, actionPool) ?? findRoadBuildingLongestRoadPlan(ctx, actionPool) ?? findTradeFundedCityPlan(ctx, actionPool);
 }
 function findThreeRoadWinningPlan(ctx, actionPool) {
   const self2 = selfPlayer(ctx.state, ctx.playerId);
@@ -35741,77 +35507,6 @@ function roadSettlementPath(board, playerId, remaining, firstPool) {
   return null;
 }
 
-// bot/src/bot/banked-road-win-plan.ts
-var TWO_ROADS_COST = { brick: 2, lumber: 2 };
-function findBankedRoadWinPlan(ctx, pool) {
-  const self2 = selfPlayer(ctx.state, ctx.playerId);
-  if (!ctx.tuning.sameTurnEndgamePlannerEnabled || !ctx.tuning.humanEndgameMultiTradeWinEnabled || self2 === null || ctx.state.phase !== Phase.Action || ctx.state.pendingDecision !== null || ctx.state.currentPlayerId !== ctx.playerId || self2.victoryPoints + 2 < ctx.state.victoryPointsTarget || ctx.state.longestRoadHolderPlayerId === ctx.playerId || self2.roadsInSupply < 2 || canAffordHypothetical(self2, TWO_ROADS_COST))
-    return null;
-  const funding = fundRoads(ctx, pool);
-  if (funding === null) return null;
-  const board = ctx.state.board;
-  for (const first of Object.values(board.edges)) {
-    if (first.roadOwnerPlayerId !== null || !isRoadConnected(ctx.boardIndex.boardView, ctx.playerId, first.id))
-      continue;
-    const afterFirst = withEdgeOwnerOverride(board, first, ctx.playerId);
-    const view = recordBoardView(afterFirst);
-    for (const endpoint of [first.intersectionA, first.intersectionB]) {
-      for (const secondId of board.intersections[endpoint]?.adjacentEdgeIds ?? []) {
-        const second = afterFirst.edges[secondId];
-        if (second === void 0 || second.roadOwnerPlayerId !== null || !isRoadConnected(view, ctx.playerId, secondId))
-          continue;
-        if (twoRoadLrWinDelta(first.id, secondId, ctx.state, ctx.playerId) !== 2) continue;
-        return [
-          ...funding,
-          ...[first.id, secondId].map((edgeId) => ({
-            id: `synthetic-banked-road-${edgeId}`,
-            type: ActionType.BuildRoad,
-            edgeId
-          }))
-        ];
-      }
-    }
-  }
-  return null;
-}
-function fundRoads(ctx, pool) {
-  const self2 = selfPlayer(ctx.state, ctx.playerId);
-  if (self2 === null) return null;
-  const deficit = roadDeficit(self2.resources);
-  if (deficit > 2) return null;
-  const trades = pool.filter(
-    (a) => a.type === ActionType.MaritimeTrade && a.want.count === 1 && (a.want.type === "brick" || a.want.type === "lumber") && (self2.resources[a.want.type] ?? 0) < 2
-  );
-  const bank = { resources: ctx.state.bankResources, commodities: ctx.state.bankCommodities };
-  const starts = [];
-  for (const first of trades) {
-    const delta = actionDelta(first);
-    if (delta === null || !canAffordHypothetical(self2, costOnly(delta)) || !canAffordHypothetical(bank, { [first.want.type]: first.want.count }))
-      continue;
-    const after = applyResourceDelta(self2, delta);
-    if (roadDeficit(after.resources) >= deficit) continue;
-    if (canAffordHypothetical(after, TWO_ROADS_COST)) return [first];
-    starts.push({ first, after });
-  }
-  for (const { first, after } of starts) {
-    const bankAfter = applyResourceDelta(bank, {
-      [first.offer.type]: first.offer.count,
-      [first.want.type]: -first.want.count
-    });
-    for (const second of trades) {
-      const delta = actionDelta(second);
-      if (delta === null || !canAffordHypothetical(after, costOnly(delta)) || !canAffordHypothetical(bankAfter, { [second.want.type]: second.want.count }))
-        continue;
-      if (canAffordHypothetical(applyResourceDelta(after, delta), TWO_ROADS_COST))
-        return [first, second];
-    }
-  }
-  return null;
-}
-function roadDeficit(resources) {
-  return Math.max(0, 2 - (resources.brick ?? 0)) + Math.max(0, 2 - (resources.lumber ?? 0));
-}
-
 // bot/src/bot/decision-trace.ts
 function racePostureTraceContext(base) {
   const posture = base.racePosture;
@@ -36037,12 +35732,8 @@ function selectComplementaryOffer(input2) {
     return ineligible(baseline, "chosenActionNotProposal");
   }
   const baselineAction = baseline.action;
-  const responders = eligibleHumanResponders(
-    baselineAction,
-    input2.knownHumanPlayerIds,
-    input2.state.players
-  );
-  if (responders.length === 0) return ineligible(baseline, "noKnownHumanResponder");
+  const responders = eligibleResponders(baselineAction, input2.opponentIds, input2.state.players);
+  if (responders.length === 0) return ineligible(baseline, "noResponder");
   const siblings = input2.ranked.filter(
     (entry) => entry.action.type === ActionType.DomesticTradePropose && sameProposalFamily(baselineAction, entry.action) && Number.isFinite(entry.score) && !isSeverelyPenalizedDomesticTradeScore(entry.score)
   );
@@ -36087,11 +35778,11 @@ function ineligible(entry, reason) {
     }
   };
 }
-function eligibleHumanResponders(action, knownHumanPlayerIds2, players) {
+function eligibleResponders(action, opponentIds, players) {
   if (action.targetPlayerId !== void 0) {
-    return knownHumanPlayerIds2.has(action.targetPlayerId) && players[action.targetPlayerId] !== void 0 ? [action.targetPlayerId] : [];
+    return opponentIds.has(action.targetPlayerId) && players[action.targetPlayerId] !== void 0 ? [action.targetPlayerId] : [];
   }
-  return [...knownHumanPlayerIds2].filter((playerId) => players[playerId] !== void 0).sort();
+  return [...opponentIds].filter((playerId) => players[playerId] !== void 0).sort();
 }
 function sameProposalFamily(a, b) {
   return (a.targetPlayerId ?? null) === (b.targetPlayerId ?? null) && canonicalBundleKey(a.want) === canonicalBundleKey(b.want) && bundleCount(a.offer) === bundleCount(b.offer);
@@ -36229,8 +35920,8 @@ function chooseActionWithDiagnostics(ctx, hooks) {
   }
   return chooseMainScoring(policyCtx, hooks);
 }
-function knownHumanSeats(ctx) {
-  return cachedKnownHumanPlayerIds(ctx.request, ctx.playerId);
+function opponentSeats(ctx) {
+  return new Set(Object.keys(ctx.state.players).filter((id) => id !== ctx.playerId));
 }
 var EXTRA_OFFER_CARD_ACCEPTANCE_ODDS_RATIO = 1.4;
 var COMMODITY_ASK_ACCEPTANCE_ODDS_RATIO = 0.57;
@@ -36239,14 +35930,14 @@ function shiftProbabilityOdds(probability, oddsMultiplier) {
   const shiftedOdds = p / (1 - p) * oddsMultiplier;
   return shiftedOdds / (1 + shiftedOdds);
 }
-function humanProposalRecipients(ctx, action, humanIds) {
+function proposalRecipients(ctx, action, opponentIds) {
   if (action.targetPlayerId !== void 0) {
-    return humanIds.has(action.targetPlayerId) ? [action.targetPlayerId] : [];
+    return opponentIds.has(action.targetPlayerId) ? [action.targetPlayerId] : [];
   }
-  return [...humanIds].filter((id) => ctx.state.players[id] !== void 0);
+  return [...opponentIds].filter((id) => ctx.state.players[id] !== void 0);
 }
-function humanProposalQuality(ctx, action, humanIds) {
-  const recipients = humanProposalRecipients(ctx, action, humanIds);
+function proposalQuality(ctx, action, opponentIds) {
+  const recipients = proposalRecipients(ctx, action, opponentIds);
   if (recipients.length === 0 || action.want.length === 0) return null;
   let best = 0;
   for (const recipientId of recipients) {
@@ -36277,8 +35968,7 @@ function tradeProposalPolicyPool(ctx) {
       }
     }
   }
-  const humanIds = knownHumanSeats(ctx);
-  if (humanIds.size === 0 && !stoppedForNearWinOpponent) return null;
+  const opponentIds = opponentSeats(ctx);
   const budget = ctx.tuning.humanFacingProposalsPerTurn;
   const qualityFloor = clamp(ctx.tuning.humanProposalMinQuality, 0, 1);
   const windowStopThreshold = ctx.tuning.domesticTradeResponderDeclineWindowStop;
@@ -36286,18 +35976,18 @@ function tradeProposalPolicyPool(ctx) {
   if (budget <= 0 && qualityFloor <= 0 && !stoppedForNearWinOpponent && !windowStopEnabled) {
     return null;
   }
-  const windowStoppedHumanIds = /* @__PURE__ */ new Set();
+  const windowStoppedOpponentIds = /* @__PURE__ */ new Set();
   if (windowStopEnabled) {
-    for (const humanId of humanIds) {
-      const declineCount = ctx.opponentModel.recentTradeDeclines?.(humanId) ?? 0;
+    for (const opponentId of opponentIds) {
+      const declineCount = ctx.opponentModel.recentTradeDeclines?.(opponentId) ?? 0;
       if (declineCount >= windowStopThreshold) {
-        windowStoppedHumanIds.add(humanId);
+        windowStoppedOpponentIds.add(opponentId);
       }
     }
   }
   const self2 = selfPlayer(ctx.state, ctx.playerId);
-  const humanFacingProposals = self2?.domesticTradeProposalsThisTurn ?? 0;
-  const humanDeclines = /* @__PURE__ */ new Map();
+  const proposalsThisTurn = self2?.domesticTradeProposalsThisTurn ?? 0;
+  const opponentDeclines = /* @__PURE__ */ new Map();
   let stoppedAfterHumanDeclines = false;
   if (budget > 0) {
     for (const event of ctx.request.recentEvents) {
@@ -36305,21 +35995,21 @@ function tradeProposalPolicyPool(ctx) {
       if (event.turnAfter !== ctx.state.turnNumber) continue;
       const action = event.payload.action;
       const actorId = event.actingPlayerId;
-      if (actorId !== null && humanIds.has(actorId) && action.type === ActionType.DomesticTradePass) {
-        const count = (humanDeclines.get(actorId) ?? 0) + 1;
-        humanDeclines.set(actorId, count);
+      if (actorId !== null && opponentIds.has(actorId) && action.type === ActionType.DomesticTradePass) {
+        const count = (opponentDeclines.get(actorId) ?? 0) + 1;
+        opponentDeclines.set(actorId, count);
         if (count >= 2) stoppedAfterHumanDeclines = true;
       }
     }
   }
-  const humanFacingPolicyApplied = budget > 0 && humanIds.size > 0 && (humanFacingProposals >= budget || stoppedAfterHumanDeclines);
+  const humanFacingPolicyApplied = budget > 0 && (proposalsThisTurn >= budget || stoppedAfterHumanDeclines);
   let lowQualityProposalCount = 0;
   let windowStopSuppressedCount = 0;
   let nearWinSuppressedCount = 0;
   const stopAllProposals = humanFacingPolicyApplied;
   const actionPool = ctx.request.validActions.filter((candidate) => {
     if (candidate.type !== ActionType.DomesticTradePropose) return true;
-    const windowStopWouldSuppress = windowStoppedHumanIds.size > 0 && (candidate.targetPlayerId === void 0 || windowStoppedHumanIds.has(candidate.targetPlayerId));
+    const windowStopWouldSuppress = windowStoppedOpponentIds.size > 0 && (candidate.targetPlayerId === void 0 || windowStoppedOpponentIds.has(candidate.targetPlayerId));
     if (windowStopWouldSuppress) windowStopSuppressedCount += 1;
     const nearWinWouldSuppress = stoppedForNearWinOpponent;
     if (nearWinWouldSuppress) nearWinSuppressedCount += 1;
@@ -36327,7 +36017,7 @@ function tradeProposalPolicyPool(ctx) {
     if (nearWinWouldSuppress) return false;
     if (windowStopWouldSuppress) return false;
     if (qualityFloor <= 0) return true;
-    const quality = humanProposalQuality(ctx, candidate, humanIds);
+    const quality = proposalQuality(ctx, candidate, opponentIds);
     if (quality === null || quality >= qualityFloor) return true;
     lowQualityProposalCount += 1;
     return false;
@@ -36437,7 +36127,7 @@ function chooseMainScoring(ctx, hooks) {
         replayFilter.repeatTradeCandidateCount
       );
     }
-    const bankedRoads = findBankedRoadWinPlan(ctx, actionPool);
+    const bankedRoads = findBankedRoadWinPlan(ctx, actionPool) ?? findMerchantBankedRoadWinPlan(ctx, actionPool);
     const bank = bankedRoads?.[0];
     if (bank !== void 0) {
       return {
@@ -36489,7 +36179,7 @@ function chooseMainScoring(ctx, hooks) {
     const selection = selectComplementaryOffer({
       chosenEntry,
       ranked,
-      knownHumanPlayerIds: knownHumanSeats(ctx),
+      opponentIds: opponentSeats(ctx),
       state: ctx.state,
       productionEstimator: ctx.productionEstimator,
       weight: ctx.tuning.domesticTradeComplementaryOfferWeight
@@ -36740,6 +36430,496 @@ function isTurnLookaheadCandidate(action, state, playerId) {
   }
 }
 
+// bot/src/bot/setup-valuation/default-weights.ts
+var DEFAULT_SETUP_VALUATION_WEIGHTS = Object.freeze({
+  // pipValue — a pip is ~2 score points; ore/grain slightly higher (city-kit
+  // gates). Resource weights apply to Setup1 settlements (feature ×1) and
+  // Setup2 pure-resource cities (Fields/Hills, feature ×2). Commodity pips fire
+  // only at Setup2: a city on a commodity hex (Mountains/Forest/Pasture) yields
+  // 1 resource + 1 commodity, so its resource feature is ×1 and the city's
+  // extra value lives in the commodity weight (≈ paired-resource + base). This
+  // keeps the Setup2 commodity-hex valuation that win-rate testing favoured
+  // while making the feature match the actual production rule.
+  pipResourceOre: 2.5,
+  pipResourceGrain: 2.5,
+  pipResourceBrick: 2,
+  pipResourceLumber: 2,
+  pipResourceWool: 1.8,
+  pipCommodityCoin: 5,
+  // 2.5 ore + 2.5 base
+  // Raised from 4.5 (2026-09-13): with the science level-3 drive live, a
+  // forest setup-2 city feeds the paper the drive spends. +2.94pp / +2.97pp
+  // on two disjoint 3,300-pair humans-knob-ab blocks
+  // (docs/bot-evals/2026-09-13-forest-city-paper.md).
+  pipCommodityPaper: 11,
+  pipCommodityCloth: 3.8,
+  // 1.8 wool + 2.0 base
+  // diversityValue
+  diversityCoef: 4,
+  setup2FirstOre: 8,
+  setup2FirstGrain: 8,
+  setup2FirstBrick: 6,
+  setup2FirstLumber: 6,
+  setup2FirstWool: 5,
+  setup2ShortfallSlopeOreGrain: 6,
+  setup2ShortfallSlopeOther: 3,
+  // expansionValue
+  expansionPipCoef: 0.5,
+  missingHexCoef: 5,
+  // × boardAvgPipsPerHex ≈ 15 per missing hex
+  setup2CoastalCityCoef: 25,
+  // harborValue
+  harborOre: 6,
+  harborGrain: 6,
+  harborBrick: 5,
+  harborLumber: 5,
+  harborWool: 5,
+  harborThreeToOne: 3,
+  harborUncoveredCoef: 1.5,
+  // setup2CityValue
+  cityKitCoef: 2,
+  cityKitBalanceCoef: 2,
+  strategyTrackCommodityCoef: 3,
+  hotConflictCoef: 1.5,
+  // setup2DoubledHexPips — hand-picked initial guess: same magnitude as
+  // hotConflictCoef. A 3-pip doubled hex incurs ~4.5 penalty; calibrate
+  // to refine. Falsifying floor: zero, which restores pre-fix behavior.
+  setup2DoubledHexPips: 1.5
+});
+
+// bot/src/tuning.ts
+var DEFAULT_TUNING = Object.freeze({
+  standingWantPostingEnabled: true,
+  standingWantExecutionEnabled: true,
+  openingBuildBonus: 30,
+  lateGameNonVpPenalty: 19,
+  endgameCloserModeEnabled: true,
+  endgameCloserVpActionBonus: 18,
+  endgameCloserPrepBonus: 24,
+  endgameCloserDistractionPenalty: 28,
+  sameTurnEndgamePlannerEnabled: true,
+  humanEndgameMultiTradeWinEnabled: false,
+  racePostureWeight: 0,
+  nearWinLeaderClampEnabled: false,
+  leaderConvertibilityWeight: 0,
+  vpActionBaseBonus: 12,
+  vpActionUrgencyMultiplier: 11,
+  blunderProbability: 0,
+  vpActionPerSelfVpBonus: 2,
+  midGameBuildCityBonus: 22,
+  settlementHoardRoadPenalty: 125,
+  // Plan-hold: off by default ⇒ bit-identical bot-vs-bot. Humans arm it.
+  planHoldPenalty: 0,
+  planHoldWindow: 2,
+  planHoldMaxPenalty: 12,
+  standingWantHoldPenalty: 6,
+  standingWantHoldMaxPenalty: 24,
+  nearKitSettlementHoldPenalty: 0,
+  nearKitSettlementHoldBroadEnabled: false,
+  nearKitSettlementHoldMaxDeficit: 1,
+  nearKitSettlementActivationReservationEnabled: false,
+  nearKitSettlementPriorityEnabled: false,
+  // Turns-saved trade bonus: off by default. Humans arm it.
+  tradeTurnsSavedBonus: 0,
+  tradeTurnsSavedMaxBonus: 18,
+  tradeInitiativeSweetenerBonus: 0,
+  cityHoardSettlementPenalty: 70,
+  handPressureCoefficient: 3,
+  truncatedFamilyScoreMultiplier: 0.9,
+  domesticTradeTruncatedFamilyScoreMultiplier: 0.65,
+  standingWantTruncatedFamilyScoreMultiplier: 1,
+  standingWantExecuteMinMargin: 6,
+  standingWantExecuteEndgameMarginMultiplier: 2,
+  standingWantExecuteTempoMarginPerTurn: 8,
+  standingWantExecuteRepeatMarginGrowth: 0.6,
+  productionScarcityWeight: 0,
+  tradeOfferSurplusOrdinalFactorDeep: 0.35,
+  tradeOfferSurplusOrdinalFactorNear: 0.6,
+  tradeProjectionPositiveBonusCap: 42,
+  tradeProjectionNegativeBonusFloor: -24,
+  domesticTradeDeclineFatiguePerDecline: 12,
+  domesticTradeDeclineFatigueCap: 48,
+  domesticTradeMaxDeclinesPerTurn: 3,
+  // Strict no-op by default: bot-vs-bot play and frozen eval baselines stay
+  // bit-identical. The `humans` table profile arms this — see personalities.ts.
+  domesticTradeResponderDeclineWindowStop: Infinity,
+  domesticTradeBotProposalLimit: 1,
+  // Bot-only default stays uncapped. The humans table overlay installs the
+  // user-facing interruption budget and proposal-quality filter.
+  humanFacingProposalsPerTurn: 0,
+  humanProposalMinQuality: 0,
+  opponentNearWinTradeStopEnabled: true,
+  strategyMilitaryControlEnabled: true,
+  domesticTradeReversalLookback: 3,
+  // Bot-vs-bot equilibrium prior (bots accept ≈0% of non-improving trades).
+  // The `humans` personality raises this — see personalities.ts.
+  opponentTradeAppetiteBaseline: 0.2,
+  // D1: 0 skips the deal-quality mix (bit-identical). `humans` raises it so the
+  // bot proposes offers the human actually gains from.
+  opponentTradeAppetiteDeltaWeight: 0,
+  opponentTradeUtilityThresholdMode: false,
+  opponentTradeUtilityVetoThreshold: -0.25,
+  opponentTradeUtilityVetoMultiplier: 0.15,
+  opponentTradeTempoPenaltyPerTurn: 0,
+  // Per-opponent observed-acceptance learning. Infinity pins the Beta posterior
+  // to the prior mean ⇒ no-op ⇒ bot-vs-bot frozen. `humans` sets a finite
+  // strength so the bot learns which opponents trade. See personalities.ts.
+  opponentTradeAppetitePriorStrength: Infinity,
+  opponentTradeSameWantResponseWeight: 0,
+  // Known-gains composition bias. 0 ⇒ gains ledger unbuilt, no-op ⇒ bot-vs-bot
+  // frozen. `humans` arms it (see personalities.ts).
+  knownGainsBiasPerCard: 0,
+  // Public-only correlated hand belief. Off by default to preserve the frozen
+  // bot-vs-bot baseline; the humans preset pays the small bounded cost.
+  opponentJointHandSamples: 0,
+  // Conservative: counters fire only on a clear improvement. DEFAULT path
+  // never sees counter candidates (enumerator flag off), so these are
+  // inert in bot-vs-bot; humans preset tunes them.
+  counterProposeMargin: 25,
+  counterEvArgmaxEnabled: false,
+  counterTakeMargin: 20,
+  // Relent ramp + counter restraint (responder side). Inert in bot-vs-bot:
+  // counter candidates only exist on human tables. The humans preset inherits
+  // these defaults; sweep via scripts/eval-vs-humanproxy.ts.
+  counterRelentRounds: 2,
+  counterRelentAcceptUtilityFloor: 0,
+  // Near-win relent floor: 0 ⇒ inert (same as the base floor). Humans raise it.
+  counterRelentNearWinAcceptFloor: 0,
+  counterOnlyWhenDeclining: true,
+  // Dark by default: the bar is a candidate mechanism, not a shipped behavior.
+  declineFirstEnabled: false,
+  declineFirstUtilityFloor: 0,
+  // Trade sociability — defaults are looser than bot-vs-bot equilibrium so
+  // the bot is a willing trade partner for humans, who accept more readily
+  // than bots do.
+  domesticTradeProposeOverheadHighSurplus: 12,
+  domesticTradeProposeOverheadDefault: 18,
+  // Pareto guard: fires only when both perspective-delta AND appetite pAccept
+  // agree the trade is hopeless. Threshold 0 = strict Pareto on opponent
+  // delta. MinPAccept 0.25 = above the APPETITE_BASELINE (0.2), so the guard
+  // doesn't fire on borderline-appetite trades that bot wants to attempt
+  // anyway. Penalty 80 sinks any propose well below endTurn (0).
+  proposeParetoThreshold: 0,
+  proposeParetoMinPAccept: 0.25,
+  proposeParetoPenalty: 80,
+  // Build-path dampener (shared propose + response). Trades with
+  // projection.bonus ≥ 20 advance a concrete build target; propose-side
+  // weights their utility delta at 5x instead of 15x, response-side
+  // skips the card-balance and last-of-needed defensive gates. Without
+  // both, the starved bot can neither propose nor accept the lopsided
+  // "give more than you get" trades that unblock resource starvation.
+  tradeBuildPathBonusThreshold: 20,
+  tradeBuildPathUtilityWeight: 5,
+  // Dark: the projection keeps crediting supply-only settlement/road targets
+  // until the placement gate clears the independent gate.
+  tradeTargetsRequirePlacement: false,
+  // Win-proximity completion leverage: 0 = factor 1 = bit-identical bot-vs-bot.
+  // The `humans` preset raises it (paired with a higher positive-bonus cap).
+  tradeCompletionVpLeverage: 0,
+  // Social constant (B2): was an inline literal 20 in computeCoreScore.
+  tradeProposeSocialConstant: 20,
+  // Need floor (B2): cap 0 ⇒ no floor ⇒ bit-identical. The `humans` preset
+  // raises the cap so a build-advancing overpay survives a low pAccept.
+  tradeNeedFloorCap: 0,
+  tradeNeedFloorShare: 0.5,
+  maritimeLowRateBuildPathBonus: 12,
+  maritimeLowRateDomesticOpportunityPenalty: 4,
+  // Domestic-trade lookahead floor: 0 = no-op for bot-vs-bot (the min-pAccept
+  // gate already short-circuits below it). The `humans` preset raises it so a
+  // build-advancing overpay isn't under-credited just because the human's
+  // modelled acceptance is uncertain.
+  domesticLookaheadFloor: 0,
+  // Maritime low-rate lookahead multiplier: 1.0 = no-op. The `humans` preset
+  // lowers it to discourage paying the bank 3:1/4:1 when a player would trade.
+  maritimeLowRateLookaheadMultiplier: 1,
+  domesticTradeTargetHasWantBonus: 6,
+  domesticTradeHumanAbundanceWeight: 0,
+  domesticTradeAudienceDiscriminationEnabled: false,
+  domesticTradeComplementaryOfferWeight: 0,
+  domesticTradeHumanLowResponseShapePenalty: 0,
+  domesticTradeDeclineSweetenPerExtraCardBonus: 8,
+  domesticTradePostDeclineMinScore: 0,
+  domesticTradeSameWantRetryBuildPathRequiredAfter: 2,
+  // OFF by default — measured, not assumed. On the humans-preset gate this
+  // lever only ever cost win rate, because the human response corpus is a
+  // threshold veto rather than a value grade: sweetening an already-acceptable
+  // offer buys ~no extra acceptance and just donates cards. Same frozen
+  // baseline, 400 seeds / 1,200 paired games unless noted:
+  //   0  (hard veto only)      +1.00pp +/- 1.52  p=0.55    PASS
+  //   3  (flat)                -1.67pp +/- 1.74  p=0.36    WARN
+  //   12 (surplus-scaled)      -2.50pp +/- 1.79  p=0.18    WARN
+  //   12 (flat, 1,100 seeds)   -9.30pp +/- 1.11  p=1e-16   FAIL
+  // The unconditional "never ask for more cards than you offer" rule lives in
+  // scoreDomesticTradePropose and is NOT this knob — it is free and always on.
+  tradeGenerosityPerExtraCardBonus: 0,
+  tradeGenerosityMaxBonus: 24,
+  tradeBuildPathTwoForOneBonus: 0,
+  domesticTradeBankAlternativePenalty: 0,
+  domesticTradeLeaderNonBuildPenalty: 0,
+  // 80 preserves the prior hardcoded TURN_LOOKAHEAD_CANDIDATE_LIMIT. The
+  // `humans` preset raises it so crowded trade pools don't disable lookahead.
+  turnLookaheadCandidateLimit: 80,
+  // Surplus-dump accept branch off by default (bot-vs-bot equilibrium); the
+  // `humans` preset enables it.
+  surplusDumpAcceptEnabled: false,
+  domesticTradeAcceptStrongProjection: 12,
+  domesticTradeAcceptModerateProjection: 6,
+  domesticTradeAcceptModerateUtility: 15,
+  domesticTradeAcceptUtilityFloor: 45,
+  buildCityBase: 50,
+  buildCityOreGrainBonus: 5,
+  buildCityCommodityBonus: 2,
+  buildCityImminentBerserkerExposurePenalty: 240,
+  buildSettlementBase: 70,
+  buildRoadBase: 20,
+  recruitKnightBase: 10,
+  knightDeferBeforeCitiesPenalty: 30,
+  firstKnightTrackThreshold: 3,
+  knightSaturationScale: 1,
+  knightRecruitOpponentCityChokeBonus: 10,
+  displaceKnightKillBonus: 0,
+  knightRetreatRedisplacePenalty: 60,
+  metropolisPushBonus: 20,
+  activateKnightBase: 40,
+  kitBreakRoadPenaltyPerTurn: 0,
+  kitBreakRoadMaxDelayTurns: 6,
+  knightExpectedLossModelEnabled: false,
+  knightPillageLossValue: 120,
+  knightDefenderTokenValue: 60,
+  knightDefenderDrawValue: 20,
+  promoteKnightBase: 34,
+  chaseRobberBase: 44,
+  // Inert until an expansion-gate discovery and disjoint confirmation justify
+  // arming it in a personality preset.
+  knightChaseDeactivationFriction: 0,
+  // 3p:1.0 keeps seat-0 closest to fair share. 4p weight intentionally lower:
+  // at 4p the iterative opponent-pick simulation already strongly biases the
+  // bot's expected Setup2 pick toward diverse-but-modest intersections, so
+  // 1.0 over-corrects and crashes seat-0 win rate. See bot-tuning-findings.md.
+  setupPlacementLookaheadWeight: Object.freeze({ 3: 1, 4: 0.3 }),
+  setupPlacementLookaheadWeightDefault: 1,
+  // 3p saturates at ≥0.10; 4p needs ~0.40 to close the seat-3 gap.
+  // See bot-tuning-findings.md.
+  setupOpponentDenialWeight: Object.freeze({ 3: 0.1, 4: 0.4 }),
+  setupOpponentDenialWeightDefault: 0.15,
+  // Setup2 denial: half the Setup1 magnitude as a conservative default —
+  // Setup2's own shortfall/gap/first-of-type features already pull toward
+  // strong remaining spots, so denial only needs to break ties toward the
+  // seat-above picker's best remaining intersection. Integration eval should
+  // watch seat-balance deltas before raising these.
+  setup2OpponentDenialWeight: Object.freeze({ 3: 0.05, 4: 0.2 }),
+  setup2OpponentDenialWeightDefault: 0.075,
+  // Calibrated for human-play: strong humans block more aggressively than
+  // bot-vs-bot equilibrium suggests. Well below the bot's own settlement-
+  // scoring magnitudes, so the bot won't sacrifice a clearly stronger spot.
+  actionPhaseOpponentDenialWeight: Object.freeze({ 3: 0.1, 4: 0.15 }),
+  actionPhaseOpponentDenialWeightDefault: 0.1,
+  // Empty ⇒ every rule contributes unscaled. Populated only by offline
+  // ablation harnesses; production never sets it.
+  scoreRuleScale: Object.freeze({}),
+  knightResourceTradeMinUrgency: 0.8,
+  knightResourceTradeImminentTrackRemaining: 3,
+  knightResourceTradeActivateCompleteBonus: 55,
+  knightResourceTradeRecruitCompleteBonus: 60,
+  knightResourceTradeRecruitProgressBonus: 35,
+  // Default-on with a conservative discount after narrowing the participating
+  // setup families. The path now mainly values trades and roads that unlock
+  // concrete same-turn follow-ups without letting a second-ply score dominate.
+  // Domestic proposals are acceptance-weighted and build-path gated in the
+  // lookahead scorer, which avoids the unweighted proposal spam found in the
+  // first 30-game calibration run.
+  turnLookaheadEnabled: true,
+  turnLookaheadDiscount: 0.18,
+  // Second follow-up ply is OFF by default (0 = legacy single-ply, bit-identical).
+  // Kept off until an eval/gauntlet proves it, so the frozen-gauntlet baseline
+  // stays comparable. The `humans`/aggressive presets may opt in once swept.
+  turnLookaheadSecondPlyK: 0,
+  turnLookaheadSecondPlyDiscount: 0.5,
+  vpTransitionTradeGuardEnabled: true,
+  opponentTradeFairnessGuardEnabled: true,
+  opponentTradeFairnessRatio: 1.25,
+  metropolisLockoutPenalty: 10,
+  opponentTradeFairnessProposerVpFloor: 7,
+  opponentTradeFairnessMinProposerGain: 0.4,
+  opponentTradeFairnessLeaderMargin: 2,
+  opponentTradeFairnessLeaderRatio: 1.1,
+  // Near-win pricing disabled by default (only the strict leader gets the tight
+  // ratio) ⇒ bit-identical bot-vs-bot. Humans arm it.
+  opponentTradeFairnessNearWinMargin: -1,
+  // B3: count-based card-balance by default (bit-identical). `humans` flips to
+  // the value-aware gate with slack 45 (x100 utility).
+  tradeCardBalanceUtilityGate: false,
+  tradeCardBalanceUtilitySlack: 0,
+  // B4: fairness self-build escape off by default. Ceiling 0.45 is the
+  // "we gain a lot too, don't veto" threshold used only when the escape is on.
+  fairnessSelfBuildEscapeEnabled: false,
+  opponentTradeFairnessSelfGainCeiling: 0.45,
+  // B5: confirm tightening off by default (prior bonus<0 && utilityGain<0 rule).
+  // Floor 1 (x100) is "strictly positive" — applied only when the gate is on.
+  confirmTightenEnabled: false,
+  confirmUtilityFloor: 1,
+  // B6: winning-build resource-trade bonuses disabled by default.
+  winningBuildResourceTradeMaritimeCompleteBonus: 0,
+  winningBuildResourceTradeDomesticProgressBonus: 0,
+  // Competitive fair-play pressure: all of these read only public/redacted
+  // state, but make bots more adversarial about contested expansion, leader
+  // pursuit, hidden-VP pressure, and Longest Road denial.
+  opponentDenialConcentrationScale: 0.35,
+  knightActivationLeaderBonus: 12,
+  hiddenVpThreatWeight: 9,
+  // VP comparisons are exact by default — the non-VP card-holding tempo proxy
+  // is NOT folded into VP-threshold gates (VP cards auto-reveal into visible
+  // `victoryPoints`). Recoverable for eval via a positive value.
+  opponentTempoVpNudge: 0,
+  // Leader-affordability gating of endgame panic-defense. Conservative
+  // starting floors — a cashless win-1 leader keeps half its defensive
+  // pull (a topdeck can still win); a cashless win-2 leader keeps a fifth.
+  // A/B via eval:gauntlet before tightening.
+  threatAffordabilityFloor: 0.2,
+  threatAffordabilityImmediateFloor: 0.5,
+  leaderTradePenaltyMultiplier: 1,
+  // Robber card-denial: weight neutral by default; chase penalty lowered
+  // 14 → 10 so the bot stops shying off card-rich centre hexes. A/B both
+  // via eval:gauntlet (the human-replay robber-hex metric is too small to
+  // tune on — directional check only).
+  robberDenialWeight: 1,
+  robberChaseKnightPenalty: 10,
+  robberLongestRoadDenialWeight: 10,
+  robberMerchantDenialWeight: 8,
+  metropolisChokeRobberWeight: 0,
+  leaderAcquisitionChokeWeight: 0,
+  // Must dominate the commodity-discard bias (5 × cards) plus the
+  // resource-over-commodity utility gap so a metropolis-push bundle isn't
+  // dumped; 60 covers a ≤5-card commodity bundle. A/B via eval:gauntlet.
+  discardBreaksBuildPenalty: 60,
+  // Per-commodity discard bias: small so resourceUtility still dominates; the
+  // discardBreaksBuildPenalty above is sized to clear (5 × cards) of this.
+  discardCommodityBias: 5,
+  // Science-L3 build-path priority scale: 1 preserves the frozen priority map.
+  scienceL3TargetBonusScale: 1,
+  // Dark candidate: 1 preserves production behavior until measured.
+  scienceL3RecruitBonusScale: 1,
+  // Draw-engine: modest by default so it complements (not dominates) the
+  // metropolis-race terms; A/B via eval:sweep. No-production tracks are
+  // discounted to 0.4 (the bot can't feed them).
+  drawEngineWeight: 12,
+  drawEngineNoProductionFactor: 0.4,
+  scienceLevel3DriveWeight: 8,
+  scienceLevel3DenialEnabled: true,
+  roadCutWeight: 18,
+  winSiteDenialWeight: 22,
+  opponentWantTellWeight: 0,
+  // Free-ride discount disabled by default — the prior -6 penalty made the
+  // bot concede DoC tokens to the strongest defender. Raise above 0 to
+  // restore that behaviour.
+  militaryFreeRideDiscount: 0,
+  // Metropolis-race gap boost: per level of lag behind the leading opponent
+  // when no metro is placed. 12 × gap ranges from 0 (tied) to ~36 (gap=3),
+  // about half the base improveCity score — enough to outscore a road or
+  // maritime trade when chasing, not so large it preempts a settlement.
+  metropolisGapBoost: 12,
+  metropolisDefendOwnedBonus: 0,
+  metropolisStealRequiresStealable: true,
+  deckDisruptionPivotEnabled: false,
+  pillagePreferUnwalledTieBreak: false,
+  // Race penalty per gap step, replacing prior flat -5 in scoreScienceRush
+  // / scoreTradeEngine. 5 reproduces the historical magnitude at gap=1.
+  metropolisRacePenaltyPerGap: 5,
+  // Deactivation friction — every move forces the knight Inactive, so the
+  // marginal positional gain must repay the burned activation (~8 on the
+  // resource scale) plus tempo. 12 keeps an at-risk city guard (+16 → +4)
+  // and site unblocks (+60 → +48) positive while killing the +1..+4
+  // shuffle noise self-play traces showed.
+  knightMoveDeactivationFriction: 12,
+  // DoC contest defaults: 30 is roughly half a city-improvement score —
+  // enough to flip recruit/activate over a maritime trade when contested,
+  // not so large it preempts a settlement build. Track-remaining ceiling 3
+  // matches `berserkerContributionFlipBonus`'s existing window; raise to
+  // widen the urgency horizon.
+  defenderTokenContestBonus: 30,
+  defenderTokenContestTrackRemaining: 3,
+  trappedRoadEscapeMultiplier: 3,
+  auguryRobberValueWeight: 0.4,
+  auguryRobberValueCap: 40,
+  auguryEndgameThreatBonus: 14,
+  auguryEndgameThreatHandCap: 12,
+  intrigueHoldKnightStrengthWeight: 8,
+  intrigueHoldActiveBonus: 8,
+  intrigueHoldCap: 60,
+  // Off: the confirmation A/B measured the lever at −3.01pp (2026-09-14).
+  // Symmetric opponent-win-prevention. Master weight 1.0; per-channel bonuses
+  // sized to lift the blocking family above off-theme builds when a leader is
+  // one move from winning, without dominating the bot's own winning line. The
+  // robber/road/settlement lifts (~40-55) sit between a maritime trade and a
+  // city build; the trade-denial penalty stacks with the existing
+  // leaderTradePenalty to make funding the leader clearly negative. A/B via
+  // eval:gauntlet before tightening.
+  opponentWinBlockWeight: 1,
+  opponentWinBlockRobberBonus: 50,
+  opponentWinBlockRoadCutBonus: 45,
+  opponentWinBlockSettlementBonus: 40,
+  opponentWinBlockDefenderTokenBonus: 40,
+  opponentWinBlockTradeDenialPenalty: 55,
+  lrSprintWinningGap0: 90,
+  lrSprintWinningGap1: 55,
+  lrSprintWinningGap2: 25,
+  lrSprintPrepStep: 15,
+  lrSprintStealGap0: 25,
+  lrSprintStealGap1: 12,
+  lrMidGameObjectiveStep: 6,
+  expansionPressureTargetBuildings: 4,
+  expansionPressureStep: 5,
+  expansionPressureEarlyThreshold: 2,
+  expansionPressureEarlyBonus: 6,
+  expansionPressureCityKitBonus: 4,
+  level1PrimingBonus: 8,
+  level2TrackBonus: 12,
+  metropolisRaceBonus: 15,
+  metropolisChaseBonus: 10,
+  preRacePrimingBonus: 8,
+  metropolisHungerBonus: 20,
+  metropolisSecureOrStealBonus: 60,
+  metropolisUnclaimedRaceBonus: 80,
+  metropolisStealRaceBonus: 45,
+  metropolisCliffStealBonus: 18,
+  metropolisCliffRaceBonus: 10,
+  metropolisCliffEntryBonus: 6,
+  setupValuationWeights: DEFAULT_SETUP_VALUATION_WEIGHTS
+});
+var PLAYER_COUNT_KEYED_TUNING_KEYS = [
+  "setupPlacementLookaheadWeight",
+  "setupOpponentDenialWeight",
+  "setup2OpponentDenialWeight",
+  "actionPhaseOpponentDenialWeight"
+];
+var PER_KEY_MERGED_TUNING_KEYS = [
+  ...PLAYER_COUNT_KEYED_TUNING_KEYS,
+  "setupValuationWeights",
+  "scoreRuleScale"
+];
+function unknownTuningOverrideKeys(overrides) {
+  const defaultKeys = new Set(Object.keys(DEFAULT_TUNING));
+  return Object.keys(overrides).filter((key) => !defaultKeys.has(key));
+}
+function validateTuningPresetRegistry(label, presets) {
+  for (const [name, preset] of Object.entries(presets)) {
+    const [firstUnknown] = unknownTuningOverrideKeys(preset);
+    if (firstUnknown !== void 0) {
+      throw new Error(
+        `[${label}] preset "${name}" contains unknown tuning key "${firstUnknown}" \u2014 typo? See bot/src/tuning.ts for the canonical Tuning shape.`
+      );
+    }
+  }
+}
+function mergeTuningOverrides(overrides, base = DEFAULT_TUNING) {
+  const merged = { ...base, ...overrides };
+  const writable = merged;
+  for (const key of PER_KEY_MERGED_TUNING_KEYS) {
+    writable[key] = key in overrides ? Object.freeze({ ...base[key], ...overrides[key] }) : base[key];
+  }
+  return Object.freeze(merged);
+}
+
 // bot/src/difficulty.ts
 var DIFFICULTY_KEYS = ["easy", "normal", "hard"];
 var isDifficultyKey = createKeyGuard(DIFFICULTY_KEYS);
@@ -36861,9 +37041,6 @@ var HUMANS = Object.freeze({
   // estimate down, a few accepts pull it up, but a single noisy event barely
   // moves it. The recentEvents window self-limits how much history accrues.
   opponentTradeAppetitePriorStrength: 8,
-  // At mixed tables, apply the human prior only to seats publicly observed
-  // taking human actions; bot/unknown seats retain the bot-vs-bot prior.
-  humanOpponentTradeCalibrationEnabled: true,
   opponentTradeSameWantResponseWeight: 1.5,
   // Historical guardrail for the 5/5/10 bundle below: the old uniform proxy
   // (`eval-vs-humanproxy --humans --proxy-humans --accept=0.5
