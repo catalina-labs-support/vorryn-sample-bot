@@ -21539,6 +21539,29 @@ function deckCountsFromWire(client) {
     politics: client.politicsDeckCount
   };
 }
+var PRINTED_PROGRESS_COPIES = (() => {
+  const byDeck = {
+    science: [],
+    trade: [],
+    politics: []
+  };
+  for (const card2 of ALL_CARDS) byDeck[card2.deck].push([card2.id, card2.copies]);
+  return byDeck;
+})();
+function countVisibleCard(visibleCopies, card2) {
+  const def = ALL_CARDS_BY_ID.get(card2.cardId);
+  if (def === void 0) {
+    fail("progressPoolInconsistent", `visible card "${card2.cardId}" is not in the card manifest`);
+  }
+  const seen = (visibleCopies.get(card2.cardId) ?? 0) + 1;
+  if (seen > def.copies) {
+    fail(
+      "progressPoolInconsistent",
+      `card "${card2.cardId}" is visible more often than its ${def.copies} printed copies`
+    );
+  }
+  visibleCopies.set(card2.cardId, seen);
+}
 function deriveHiddenAggregates(client) {
   const { self: self2 } = findSelfEntry(client);
   const opponentResourceAggregates = {};
@@ -21574,35 +21597,21 @@ function deriveHiddenAggregates(client) {
       progressHandCount: opponent.progressHandCount
     });
   }
+  const visibleCopies = /* @__PURE__ */ new Map();
+  for (const card2 of self2.progressHand) countVisibleCard(visibleCopies, card2);
+  for (const player of Object.values(client.players)) {
+    for (const card2 of player.revealedVpCards) countVisibleCard(visibleCopies, card2);
+  }
   const unseenProgressPool = {
     science: {},
     trade: {},
     politics: {}
   };
-  for (const card2 of ALL_CARDS) {
-    unseenProgressPool[card2.deck][card2.id] = card2.copies;
-  }
-  const visible = [...self2.progressHand];
-  for (const player of Object.values(client.players)) {
-    visible.push(...player.revealedVpCards);
-  }
-  for (const card2 of visible) {
-    const def = ALL_CARDS_BY_ID.get(card2.cardId);
-    if (def === void 0) {
-      fail("progressPoolInconsistent", `visible card "${card2.cardId}" is not in the card manifest`);
-    }
-    const remaining = (unseenProgressPool[def.deck][card2.cardId] ?? 0) - 1;
-    if (remaining < 0) {
-      fail(
-        "progressPoolInconsistent",
-        `card "${card2.cardId}" is visible more often than its ${def.copies} printed copies`
-      );
-    }
-    unseenProgressPool[def.deck][card2.cardId] = remaining;
-  }
   for (const deck of COMMODITY_TRACKS) {
-    for (const [cardId, count] of Object.entries(unseenProgressPool[deck])) {
-      if (count === 0) delete unseenProgressPool[deck][cardId];
+    const pool = unseenProgressPool[deck];
+    for (const [cardId, copies] of PRINTED_PROGRESS_COPIES[deck]) {
+      const unseen = copies - (visibleCopies.get(cardId) ?? 0);
+      if (unseen !== 0) pool[cardId] = unseen;
     }
   }
   const deckCounts = deckCountsFromWire(client);
@@ -21829,42 +21838,46 @@ function endpointIsOpen(board, owner, edgeId, intId) {
 // packages/core/src/rules/longest-road.ts
 var LONGEST_ROAD_MIN = 5;
 function calculateLongestRoadFromView(board, allEdgeIds, playerId) {
-  const playerEdges = [];
+  const ownedEdgeIds = [];
+  const ownedEdges = [];
   for (const edgeId of allEdgeIds) {
     const edge = board.edge(edgeId);
     if (edge !== void 0 && edge.roadOwnerPlayerId === playerId) {
-      playerEdges.push([edgeId, edge]);
+      ownedEdgeIds.push(edgeId);
+      ownedEdges.push(edge);
     }
   }
-  if (playerEdges.length === 0) return 0;
+  if (ownedEdgeIds.length === 0) return 0;
+  const visited = /* @__PURE__ */ new Set();
   let longest = 0;
-  for (const [startEdgeId, startEdge] of playerEdges) {
-    for (const startVertex of [startEdge.intersectionA, startEdge.intersectionB]) {
-      const length = walk(board, playerId, startEdge, startEdgeId, startVertex);
-      if (length > longest) longest = length;
-    }
+  for (let index = 0; index < ownedEdgeIds.length; index += 1) {
+    const startEdgeId = ownedEdgeIds[index];
+    const startEdge = ownedEdges[index];
+    if (startEdgeId === void 0 || startEdge === void 0) continue;
+    visited.add(startEdgeId);
+    const fromA = longestTrailFrom(board, playerId, visited, startEdge, startEdge.intersectionA, 1);
+    if (fromA > longest) longest = fromA;
+    const fromB = longestTrailFrom(board, playerId, visited, startEdge, startEdge.intersectionB, 1);
+    if (fromB > longest) longest = fromB;
+    visited.delete(startEdgeId);
   }
   return longest;
 }
-function walk(board, playerId, startEdge, startEdgeId, startVertex) {
-  const visited = /* @__PURE__ */ new Set([startEdgeId]);
-  let best = 0;
-  function dfs(edge, fromVertex, lengthSoFar) {
-    if (lengthSoFar > best) best = lengthSoFar;
-    const toVertex = edgeOther(edge, fromVertex);
-    const toIntersection = board.intersection(toVertex);
-    if (toIntersection === void 0) return;
-    if (isOpponentOccupied(toIntersection, playerId)) return;
-    for (const nextEdgeId of toIntersection.adjacentEdgeIds) {
-      if (visited.has(nextEdgeId)) continue;
-      const nextEdge = board.edge(nextEdgeId);
-      if (nextEdge === void 0 || nextEdge.roadOwnerPlayerId !== playerId) continue;
-      visited.add(nextEdgeId);
-      dfs(nextEdge, toVertex, lengthSoFar + 1);
-      visited.delete(nextEdgeId);
-    }
+function longestTrailFrom(board, playerId, visited, edge, fromVertex, lengthSoFar) {
+  const toVertex = edgeOther(edge, fromVertex);
+  const toIntersection = board.intersection(toVertex);
+  if (toIntersection === void 0) return lengthSoFar;
+  if (isOpponentOccupied(toIntersection, playerId)) return lengthSoFar;
+  let best = lengthSoFar;
+  for (const nextEdgeId of toIntersection.adjacentEdgeIds) {
+    if (visited.has(nextEdgeId)) continue;
+    const nextEdge = board.edge(nextEdgeId);
+    if (nextEdge === void 0 || nextEdge.roadOwnerPlayerId !== playerId) continue;
+    visited.add(nextEdgeId);
+    const length = longestTrailFrom(board, playerId, visited, nextEdge, toVertex, lengthSoFar + 1);
+    visited.delete(nextEdgeId);
+    if (length > best) best = length;
   }
-  dfs(startEdge, startVertex, 1);
   return best;
 }
 var CLIENT_LONGEST_ROAD_CACHE = /* @__PURE__ */ new WeakMap();
@@ -22046,27 +22059,238 @@ function hasNonMetropolisCityFor(state, playerId, boardIndex) {
 // bot/src/bot/road-extension.ts
 var MAX_VERIFIED_ROAD_EXTENSION_DEPTH = 4;
 var MAX_SEARCHED_ROAD_SETS = 1e4;
+var PACKED_KEY_MAX_DEPTH = 4;
+var PACKED_KEY_BASE = 128;
 function prepareRoadConnection(board, playerId, candidate, projectedById) {
-  let projectedNeighborMask = 0n;
+  const projectedNeighbors = [];
   for (const endpoint of [candidate.owned.intersectionA, candidate.owned.intersectionB]) {
     const at = board.intersection(endpoint);
     if (at === void 0) continue;
     const owner = occupantOwnerId(at);
     if (owner !== null) {
-      if (owner === playerId) return { connectedToExisting: true, projectedNeighborMask };
+      if (owner === playerId) return { connectedToExisting: true, projectedNeighbors };
       continue;
     }
     for (const id of at.adjacentEdgeIds) {
       if (id === candidate.id) continue;
       const projected = projectedById.get(id);
       if (projected !== void 0) {
-        projectedNeighborMask |= projected.bit;
+        projectedNeighbors.push(projected.index);
       } else if (board.edge(id)?.roadOwnerPlayerId === playerId) {
-        return { connectedToExisting: true, projectedNeighborMask };
+        return { connectedToExisting: true, projectedNeighbors };
       }
     }
   }
-  return { connectedToExisting: false, projectedNeighborMask };
+  return { connectedToExisting: false, projectedNeighbors };
+}
+function anyFlagged(flags, indices) {
+  for (const index of indices) {
+    if (flags[index] === 1) return true;
+  }
+  return false;
+}
+function packedSetKey(sortedPath, pathStart, pathEnd, added) {
+  let key = 0;
+  let pending = true;
+  for (let slot = pathStart; slot < pathEnd; slot += 1) {
+    const edge = sortedPath[slot];
+    if (edge === void 0) continue;
+    if (pending && added < edge) {
+      key = key * PACKED_KEY_BASE + added + 1;
+      pending = false;
+    }
+    key = key * PACKED_KEY_BASE + edge + 1;
+  }
+  return pending ? key * PACKED_KEY_BASE + added + 1 : key;
+}
+function pushSortedChild(into, sortedPath, pathStart, pathEnd, added) {
+  let pending = true;
+  for (let slot = pathStart; slot < pathEnd; slot += 1) {
+    const edge = sortedPath[slot];
+    if (edge === void 0) continue;
+    if (pending && added < edge) {
+      into.push(added);
+      pending = false;
+    }
+    into.push(edge);
+  }
+  if (pending) into.push(added);
+}
+function vertexIndexOf(vertexId, indexById, ids) {
+  const known = indexById.get(vertexId);
+  if (known !== void 0) return known;
+  const index = ids.length;
+  indexById.set(vertexId, index);
+  ids.push(vertexId);
+  return index;
+}
+function compileRoadWalker(board, playerId, projectedEdges, ownedEdges) {
+  const edgeCount = projectedEdges.length + ownedEdges.length;
+  const edgeIndexById = /* @__PURE__ */ new Map();
+  const vertexIndexById = /* @__PURE__ */ new Map();
+  const vertexIds = [];
+  const edgeA = new Int32Array(edgeCount);
+  const edgeB = new Int32Array(edgeCount);
+  const owned = new Uint8Array(edgeCount);
+  const baseOwned = new Int32Array(ownedEdges.length);
+  for (const projected of projectedEdges) {
+    edgeIndexById.set(projected.id, projected.index);
+    edgeA[projected.index] = vertexIndexOf(
+      projected.owned.intersectionA,
+      vertexIndexById,
+      vertexIds
+    );
+    edgeB[projected.index] = vertexIndexOf(
+      projected.owned.intersectionB,
+      vertexIndexById,
+      vertexIds
+    );
+  }
+  let ownedIndex = projectedEdges.length;
+  for (const { id, edge } of ownedEdges) {
+    edgeIndexById.set(id, ownedIndex);
+    edgeA[ownedIndex] = vertexIndexOf(edge.intersectionA, vertexIndexById, vertexIds);
+    edgeB[ownedIndex] = vertexIndexOf(edge.intersectionB, vertexIndexById, vertexIds);
+    owned[ownedIndex] = 1;
+    baseOwned[ownedIndex - projectedEdges.length] = ownedIndex;
+    ownedIndex += 1;
+  }
+  const blocked = new Uint8Array(vertexIds.length);
+  const adjacencyStart = new Int32Array(vertexIds.length + 1);
+  const adjacency = [];
+  let vertex = 0;
+  for (const vertexId of vertexIds) {
+    adjacencyStart[vertex] = adjacency.length;
+    const at = board.intersection(vertexId);
+    const occupant = at === void 0 ? null : occupantOwnerId(at);
+    if (at === void 0 || occupant !== null && occupant !== playerId) {
+      blocked[vertex] = 1;
+    } else {
+      for (const edgeId of at.adjacentEdgeIds) {
+        const listed = edgeIndexById.get(edgeId);
+        if (listed === void 0) continue;
+        if (edgeA[listed] !== vertex && edgeB[listed] !== vertex) return null;
+        adjacency.push(listed);
+      }
+    }
+    vertex += 1;
+  }
+  adjacencyStart[vertex] = adjacency.length;
+  const incidentLists = vertexIds.map(() => []);
+  for (let edge = 0; edge < edgeCount; edge += 1) {
+    const a = edgeA[edge];
+    const b = edgeB[edge];
+    if (a !== void 0) incidentLists[a]?.push(edge);
+    if (b !== void 0 && b !== a) incidentLists[b]?.push(edge);
+  }
+  const incidenceStart = new Int32Array(vertexIds.length + 1);
+  const incidence = [];
+  let incidentVertex = 0;
+  for (const list of incidentLists) {
+    incidenceStart[incidentVertex] = incidence.length;
+    incidence.push(...list);
+    incidentVertex += 1;
+  }
+  incidenceStart[incidentVertex] = incidence.length;
+  return {
+    edgeA,
+    edgeB,
+    adjacencyStart,
+    adjacency: Int32Array.from(adjacency),
+    incidenceStart,
+    incidence: Int32Array.from(incidence),
+    blocked,
+    baseOwned,
+    owned,
+    onTrail: new Uint8Array(edgeCount),
+    componentMark: new Uint32Array(edgeCount),
+    componentQueue: new Int32Array(edgeCount),
+    componentEpoch: 0
+  };
+}
+function trailReaches(walker, vertex, length, target) {
+  if (length >= target) return true;
+  if (walker.blocked[vertex] === 1) return false;
+  const end = walker.adjacencyStart[vertex + 1] ?? 0;
+  for (let slot = walker.adjacencyStart[vertex] ?? end; slot < end; slot += 1) {
+    const next = walker.adjacency[slot];
+    if (next === void 0 || walker.onTrail[next] === 1 || walker.owned[next] !== 1) continue;
+    const far = walker.edgeA[next] === vertex ? walker.edgeB[next] : walker.edgeA[next];
+    if (far === void 0) continue;
+    walker.onTrail[next] = 1;
+    const reached = trailReaches(walker, far, length + 1, target);
+    walker.onTrail[next] = 0;
+    if (reached) return true;
+  }
+  return false;
+}
+function trailFromEdgeReaches(walker, edge, target) {
+  const a = walker.edgeA[edge];
+  const b = walker.edgeB[edge];
+  if (a === void 0 || b === void 0) return false;
+  walker.onTrail[edge] = 1;
+  const reached = trailReaches(walker, b, 1, target) || trailReaches(walker, a, 1, target);
+  walker.onTrail[edge] = 0;
+  return reached;
+}
+function projectedSetReachesTarget(walker, path, pathStart, pathLength, added, target, parentFellShort) {
+  const pathEnd = pathStart + pathLength;
+  for (let slot = pathStart; slot < pathEnd; slot += 1) {
+    const edge = path[slot];
+    if (edge !== void 0) walker.owned[edge] = 1;
+  }
+  walker.owned[added] = 1;
+  const reached = parentFellShort ? componentOfAddedReaches(walker, added, target) : ownedTrailReaches(walker, path, pathStart, pathEnd, added, target);
+  walker.owned[added] = 0;
+  for (let slot = pathStart; slot < pathEnd; slot += 1) {
+    const edge = path[slot];
+    if (edge !== void 0) walker.owned[edge] = 0;
+  }
+  return reached;
+}
+function ownedTrailReaches(walker, path, pathStart, pathEnd, added, target) {
+  for (const edge of walker.baseOwned) {
+    if (trailFromEdgeReaches(walker, edge, target)) return true;
+  }
+  for (let slot = pathStart; slot < pathEnd; slot += 1) {
+    const edge = path[slot];
+    if (edge !== void 0 && trailFromEdgeReaches(walker, edge, target)) return true;
+  }
+  return trailFromEdgeReaches(walker, added, target);
+}
+function componentOfAddedReaches(walker, added, target) {
+  walker.componentEpoch += 1;
+  const epoch = walker.componentEpoch;
+  walker.componentMark[added] = epoch;
+  walker.componentQueue[0] = added;
+  let size = 1;
+  for (let head = 0; head < size; head += 1) {
+    const edge = walker.componentQueue[head];
+    if (edge === void 0) break;
+    size = joinComponentAt(walker, walker.edgeA[edge], epoch, size);
+    size = joinComponentAt(walker, walker.edgeB[edge], epoch, size);
+  }
+  if (size < target) return false;
+  for (let head = 0; head < size; head += 1) {
+    const edge = walker.componentQueue[head];
+    if (edge !== void 0 && trailFromEdgeReaches(walker, edge, target)) return true;
+  }
+  return false;
+}
+function joinComponentAt(walker, vertex, epoch, size) {
+  if (vertex === void 0 || walker.blocked[vertex] === 1) return size;
+  let joined = size;
+  const end = walker.incidenceStart[vertex + 1] ?? 0;
+  for (let slot = walker.incidenceStart[vertex] ?? end; slot < end; slot += 1) {
+    const edge = walker.incidence[slot];
+    if (edge === void 0 || walker.owned[edge] !== 1 || walker.componentMark[edge] === epoch) {
+      continue;
+    }
+    walker.componentMark[edge] = epoch;
+    walker.componentQueue[joined] = edge;
+    joined += 1;
+  }
+  return joined;
 }
 function minimumLegalRoadsToClaimLongestRoad(state, playerId, maxRoads, options = {}) {
   if (state.longestRoadHolderPlayerId === playerId) return { kind: "none" };
@@ -22075,16 +22299,17 @@ function minimumLegalRoadsToClaimLongestRoad(state, playerId, maxRoads, options 
   const allEdgeIds = Object.keys(state.board.edges);
   const baseView = recordBoardView(state.board);
   const unindexedEmptyEdges = [];
-  let ownedEdgeCount = 0;
+  const ownedEdges = [];
   for (const edgeId of allEdgeIds) {
     const edge = baseView.edge(edgeId);
     if (edge === void 0) continue;
     if (edge.roadOwnerPlayerId === playerId) {
-      ownedEdgeCount += 1;
+      ownedEdges.push({ id: edgeId, edge });
     } else if (edge.roadOwnerPlayerId === null) {
       unindexedEmptyEdges.push({ id: edgeId, edge });
     }
   }
+  const ownedEdgeCount = ownedEdges.length;
   unindexedEmptyEdges.sort((left, right) => left.id < right.id ? -1 : left.id > right.id ? 1 : 0);
   const availableRoads = Math.min(requestedRoads, unindexedEmptyEdges.length);
   if (availableRoads === 0) return { kind: "none" };
@@ -22105,7 +22330,7 @@ function minimumLegalRoadsToClaimLongestRoad(state, playerId, maxRoads, options 
   }
   const projectedEdges = unindexedEmptyEdges.map(({ id, edge }, index) => ({
     id,
-    bit: 1n << BigInt(index),
+    index,
     owned: {
       intersectionA: edge.intersectionA,
       intersectionB: edge.intersectionB,
@@ -22117,46 +22342,97 @@ function minimumLegalRoadsToClaimLongestRoad(state, playerId, maxRoads, options 
     ...edge,
     ...prepareRoadConnection(baseView, playerId, edge, projectedEdgeById)
   }));
-  let activeMask = 0n;
+  const inParent = new Uint8Array(projectedEdges.length);
+  let walker;
+  let overlayAdded = -1;
   const overlayView = {
     intersection: (id) => baseView.intersection(id),
     edge: (id) => {
       const projected = projectedEdgeById.get(id);
-      if (projected !== void 0 && (activeMask & projected.bit) !== 0n) {
+      if (projected !== void 0 && (inParent[projected.index] === 1 || projected.index === overlayAdded)) {
         return projected.owned;
       }
       return baseView.edge(id);
     }
   };
   const searchBudget = nonNegativeInteger(options.maxSearchedRoadSets, MAX_SEARCHED_ROAD_SETS);
-  const visited = /* @__PURE__ */ new Set();
-  let frontier = [0n];
+  const packedKeys = depthLimit <= PACKED_KEY_MAX_DEPTH && projectedEdges.length < PACKED_KEY_BASE;
+  const visitedPacked = /* @__PURE__ */ new Set();
+  const visitedMasks = /* @__PURE__ */ new Set();
+  let frontierPaths = [];
+  let frontierCount = 1;
   let searched = 0;
   for (let depth = 1; depth <= depthLimit; depth += 1) {
-    const next = [];
+    const nextPaths = [];
+    let nextCount = 0;
+    const pathLength = depth - 1;
     let generatedAtDepth = false;
-    for (const mask of frontier) {
+    for (let entry = 0; entry < frontierCount; entry += 1) {
+      const pathStart = entry * pathLength;
+      const pathEnd = pathStart + pathLength;
+      let parentMask = 0n;
+      for (let slot = pathStart; slot < pathEnd; slot += 1) {
+        const edge = frontierPaths[slot];
+        if (edge === void 0) continue;
+        inParent[edge] = 1;
+        if (!packedKeys) parentMask |= 1n << BigInt(edge);
+      }
       for (const projected of searchEdges) {
-        if ((mask & projected.bit) !== 0n) continue;
-        if (!projected.connectedToExisting && (mask & projected.projectedNeighborMask) === 0n)
+        if (inParent[projected.index] === 1) continue;
+        if (!projected.connectedToExisting && !anyFlagged(inParent, projected.projectedNeighbors))
           continue;
-        const candidateMask = mask | projected.bit;
-        if (visited.has(candidateMask)) continue;
+        let fresh;
+        if (packedKeys) {
+          const before = visitedPacked.size;
+          visitedPacked.add(packedSetKey(frontierPaths, pathStart, pathEnd, projected.index));
+          fresh = visitedPacked.size !== before;
+        } else {
+          const before = visitedMasks.size;
+          visitedMasks.add(parentMask | 1n << BigInt(projected.index));
+          fresh = visitedMasks.size !== before;
+        }
+        if (!fresh) continue;
         if (searched >= searchBudget) {
           return { kind: "unknown", conservativeRoadsNeeded, reason: "budget" };
         }
-        visited.add(candidateMask);
         searched += 1;
         generatedAtDepth = true;
-        activeMask = candidateMask;
-        if (depth >= conservativeRoadsNeeded && calculateLongestRoadFromView(overlayView, allEdgeIds, playerId) >= claimTarget) {
-          return { kind: "found", roadsNeeded: depth };
+        if (depth >= conservativeRoadsNeeded) {
+          if (walker === void 0) {
+            walker = compileRoadWalker(baseView, playerId, projectedEdges, ownedEdges);
+          }
+          let reaches;
+          if (walker === null) {
+            overlayAdded = projected.index;
+            reaches = calculateLongestRoadFromView(overlayView, allEdgeIds, playerId) >= claimTarget;
+          } else {
+            reaches = projectedSetReachesTarget(
+              walker,
+              frontierPaths,
+              pathStart,
+              pathLength,
+              projected.index,
+              claimTarget,
+              depth - 1 >= conservativeRoadsNeeded
+            );
+          }
+          if (reaches) return { kind: "found", roadsNeeded: depth };
         }
-        if (depth < depthLimit) next.push(candidateMask);
+        if (depth < depthLimit) {
+          pushSortedChild(nextPaths, frontierPaths, pathStart, pathEnd, projected.index);
+          nextCount += 1;
+        }
+      }
+      for (let slot = pathStart; slot < pathEnd; slot += 1) {
+        const edge = frontierPaths[slot];
+        if (edge !== void 0) inParent[edge] = 0;
       }
     }
     if (!generatedAtDepth) return { kind: "none" };
-    if (depth < depthLimit) frontier = next;
+    if (depth < depthLimit) {
+      frontierPaths = nextPaths;
+      frontierCount = nextCount;
+    }
   }
   return depthLimit < availableRoads ? { kind: "unknown", conservativeRoadsNeeded, reason: "depth" } : { kind: "none" };
 }
@@ -22650,7 +22926,6 @@ function buildBoardIndex(state, viewerPlayerId) {
     if (hex3.robberPresent) robberHexId = hexId;
   }
   const pipsByIntersection = emptyStringRecord();
-  const intersectionResourceTypes = emptyStringRecord();
   for (const [intersectionId, intersection2] of Object.entries(state.board.intersections)) {
     const occupantPid = occupantOwnerId(intersection2);
     if (occupantPid !== null) {
@@ -22697,23 +22972,19 @@ function buildBoardIndex(state, viewerPlayerId) {
       }
     }
     let pipTotal = 0;
-    const resourceTypes = /* @__PURE__ */ new Set();
     const viewerCityHere = intersection2.building?.ownerPlayerId === viewerPlayerId && intersection2.building.type === BuildingType.City;
     for (const hexId of intersection2.adjacentHexIds) {
       const hexPips = pipsByHex[hexId] ?? 0;
       pipTotal += hexPips;
+      if (!viewerCityHere) continue;
       const hex3 = state.board.hexes[hexId];
       if (hex3 === void 0 || hex3.numberToken === null || hex3.type === HexType.Desert) continue;
-      if (viewerCityHere) {
-        const commodity = hexProducesCommodity(hex3.type);
-        if (commodity !== null) {
-          commodityProductionByTrack[trackForCommodity(commodity)] += hexPips;
-        }
+      const commodity = hexProducesCommodity(hex3.type);
+      if (commodity !== null) {
+        commodityProductionByTrack[trackForCommodity(commodity)] += hexPips;
       }
-      resourceTypes.add(hex3.type);
     }
     pipsByIntersection[intersectionId] = pipTotal;
-    intersectionResourceTypes[intersectionId] = resourceTypes;
   }
   for (const playerId of Object.keys(state.players)) {
     roadConnectedIntersections[playerId] = computeRoadReach(
@@ -22723,44 +22994,62 @@ function buildBoardIndex(state, viewerPlayerId) {
     );
   }
   const boardView = recordBoardView(state.board);
-  const reachableEmptyEdgeIds = emptyStringRecord();
   const playerIds = Object.keys(state.players);
   const intersectionIds = Object.keys(state.board.intersections);
+  const isBuildableByIntersection = emptyStringRecord();
+  const buildableSettlementSiteIdsByPlayer = emptyStringRecord();
+  for (const playerId of playerIds) {
+    buildableSettlementSiteIdsByPlayer[playerId] = /* @__PURE__ */ new Set();
+  }
+  const viewerConnected = emptyStringRecord();
+  for (const intersectionId of intersectionIds) {
+    const intersection2 = state.board.intersections[intersectionId];
+    if (intersection2 === void 0) {
+      isBuildableByIntersection[intersectionId] = false;
+      viewerConnected[intersectionId] = false;
+      continue;
+    }
+    const occupant = occupantOwnerId(intersection2);
+    let buildable = occupant === null;
+    let viewerRoadAdjacent = false;
+    for (const edgeId of intersection2.adjacentEdgeIds) {
+      const edge = state.board.edges[edgeId];
+      if (edge === void 0) continue;
+      if (edge.roadOwnerPlayerId === viewerPlayerId) viewerRoadAdjacent = true;
+      if (!buildable) continue;
+      const neighbour = state.board.intersections[edgeOther(edge, intersectionId)];
+      if (neighbour !== void 0 && neighbour.building !== null) buildable = false;
+    }
+    isBuildableByIntersection[intersectionId] = buildable;
+    viewerConnected[intersectionId] = occupant !== null ? occupant === viewerPlayerId : viewerRoadAdjacent;
+    if (!buildable) continue;
+    for (const edgeId of intersection2.adjacentEdgeIds) {
+      const owner = state.board.edges[edgeId]?.roadOwnerPlayerId;
+      if (owner === null || owner === void 0) continue;
+      buildableSettlementSiteIdsByPlayer[owner]?.add(intersectionId);
+    }
+  }
+  const reachableEmptyEdgeIds = emptyStringRecord();
   for (const playerId of playerIds) {
     reachableEmptyEdgeIds[playerId] = /* @__PURE__ */ new Set();
   }
   const viewerReachableEmptyEdges = reachableEmptyEdgeIds[viewerPlayerId];
   if (viewerReachableEmptyEdges !== void 0) {
-    for (const edge of Object.values(state.board.edges)) {
+    const edges = state.board.edges;
+    for (const edge of Object.values(edges)) {
       if (edge.roadOwnerPlayerId !== null) continue;
-      if (isRoadConnected(boardView, viewerPlayerId, edge.id)) {
-        viewerReachableEmptyEdges.add(edge.id);
-      }
+      const probed = Object.hasOwn(edges, edge.id) ? edges[edge.id] : void 0;
+      const fromA = probed === void 0 ? void 0 : viewerConnected[probed.intersectionA];
+      const fromB = probed === void 0 ? void 0 : viewerConnected[probed.intersectionB];
+      const reachable = probed !== void 0 && probed.roadOwnerPlayerId !== viewerPlayerId && fromA !== void 0 && fromB !== void 0 ? fromA || fromB : isRoadConnected(boardView, viewerPlayerId, edge.id);
+      if (reachable) viewerReachableEmptyEdges.add(edge.id);
     }
   }
-  const isBuildableByIntersection = emptyStringRecord();
-  for (const intersectionId of intersectionIds) {
-    isBuildableByIntersection[intersectionId] = canPlaceBuildingAt(boardView, intersectionId);
-  }
-  const intersectionExpansionNeighborhoodPips = emptyStringRecord();
-  for (const intersectionId of intersectionIds) {
-    intersectionExpansionNeighborhoodPips[intersectionId] = computeExpansionNeighborhoodPips(
-      state,
-      intersectionId,
-      pipsByIntersection,
-      isBuildableByIntersection
-    );
-  }
-  const buildableSettlementSiteIdsByPlayer = emptyStringRecord();
-  for (const playerId of playerIds) {
-    const siteIds = /* @__PURE__ */ new Set();
-    for (const intersectionId of intersectionIds) {
-      if (isBuildableByIntersection[intersectionId] !== true) continue;
-      if (!hasOwnRoadAdjacentToIntersection(boardView, playerId, intersectionId)) continue;
-      siteIds.add(intersectionId);
-    }
-    buildableSettlementSiteIdsByPlayer[playerId] = siteIds;
-  }
+  const expansionNeighborhoodPipsAt = lazyExpansionNeighborhoodPips(
+    state.board,
+    pipsByIntersection,
+    isBuildableByIntersection
+  );
   const threatScoreByPlayer = emptyStringRecord();
   const buildingIndex = { buildingsByPlayer };
   for (const playerId of playerIds) {
@@ -22784,7 +23073,7 @@ function buildBoardIndex(state, viewerPlayerId) {
     reachableEmptyEdgeIds,
     pipsByHex,
     pipsByIntersection,
-    intersectionResourceTypes,
+    resourceTypesAt: lazyIntersectionResourceTypes(state.board),
     boardView,
     threatScoreByPlayer,
     metroBonusByPlayer,
@@ -22801,18 +23090,18 @@ function buildBoardIndex(state, viewerPlayerId) {
       hasCityByPlayer,
       pillageableCityByPlayer
     },
-    intersectionExpansionNeighborhoodPips,
+    expansionNeighborhoodPipsAt,
     buildableSettlementSiteIdsByPlayer,
     isBuildableByIntersection
   });
 }
-function computeExpansionNeighborhoodPips(state, candidateId2, pipsByIntersection, isBuildableByIntersection) {
-  const root = state.board.intersections[candidateId2];
+function computeExpansionNeighborhoodPips(board, candidateId2, pipsByIntersection, isBuildableByIntersection) {
+  const root = board.intersections[candidateId2];
   if (root === void 0) return 0;
   const seen = /* @__PURE__ */ new Set([candidateId2]);
   const queue = [];
   for (const edgeId of root.adjacentEdgeIds) {
-    const edge = state.board.edges[edgeId];
+    const edge = board.edges[edgeId];
     if (edge === void 0) continue;
     const nextId = edgeOther(edge, candidateId2);
     if (seen.has(nextId)) continue;
@@ -22829,10 +23118,10 @@ function computeExpansionNeighborhoodPips(state, candidateId2, pipsByIntersectio
       weighted += depth === 2 ? pips : pips * 0.5;
     }
     if (depth >= 3) continue;
-    const intersection2 = state.board.intersections[id];
+    const intersection2 = board.intersections[id];
     if (intersection2 === void 0) continue;
     for (const edgeId of intersection2.adjacentEdgeIds) {
-      const edge = state.board.edges[edgeId];
+      const edge = board.edges[edgeId];
       if (edge === void 0) continue;
       const nextId = edgeOther(edge, id);
       if (seen.has(nextId)) continue;
@@ -22841,6 +23130,40 @@ function computeExpansionNeighborhoodPips(state, candidateId2, pipsByIntersectio
     }
   }
   return weighted;
+}
+function lazyExpansionNeighborhoodPips(board, pipsByIntersection, isBuildableByIntersection) {
+  const memo2 = /* @__PURE__ */ new Map();
+  return (intersectionId) => {
+    const cached2 = memo2.get(intersectionId);
+    if (cached2 !== void 0) return cached2;
+    const value = Object.hasOwn(board.intersections, intersectionId) ? computeExpansionNeighborhoodPips(
+      board,
+      intersectionId,
+      pipsByIntersection,
+      isBuildableByIntersection
+    ) : 0;
+    memo2.set(intersectionId, value);
+    return value;
+  };
+}
+var NO_RESOURCE_TYPES = /* @__PURE__ */ new Set();
+function lazyIntersectionResourceTypes(board) {
+  const memo2 = /* @__PURE__ */ new Map();
+  return (intersectionId) => {
+    const cached2 = memo2.get(intersectionId);
+    if (cached2 !== void 0) return cached2;
+    if (!Object.hasOwn(board.intersections, intersectionId)) return NO_RESOURCE_TYPES;
+    const intersection2 = board.intersections[intersectionId];
+    if (intersection2 === void 0) return NO_RESOURCE_TYPES;
+    const types = /* @__PURE__ */ new Set();
+    for (const hexId of intersection2.adjacentHexIds) {
+      const hex3 = board.hexes[hexId];
+      if (hex3 === void 0 || hex3.numberToken === null || hex3.type === HexType.Desert) continue;
+      types.add(hex3.type);
+    }
+    memo2.set(intersectionId, types);
+    return types;
+  };
 }
 function countOwnBuildingsAdjacentToIntersection(state, boardIndex, ownerPlayerId, intersectionId) {
   const intersection2 = state.board.intersections[intersectionId];
@@ -24012,6 +24335,42 @@ function withEdgeOwnerOverride(board, edge, owner) {
     edges: { ...board.edges, [edge.id]: { ...edge, roadOwnerPlayerId: owner } }
   };
 }
+var EDGE_IDS_BY_RECORD = /* @__PURE__ */ new WeakMap();
+function longestRoadWithEdgeOwners(board, edges, owner, queryPlayerId) {
+  const [only] = edges;
+  if (only === void 0) return calculateLongestRoadFromClient(board, queryPlayerId);
+  for (const edge of edges) {
+    if (!Object.hasOwn(board.edges, edge.id)) {
+      let cloned = board;
+      for (const override of edges) cloned = withEdgeOwnerOverride(cloned, override, owner);
+      return calculateLongestRoadFromClient(cloned, queryPlayerId);
+    }
+  }
+  const base = recordBoardView(board);
+  let view;
+  if (edges.length === 1) {
+    const id = only.id;
+    const replaced = { ...only, roadOwnerPlayerId: owner };
+    view = {
+      intersection: base.intersection,
+      edge: (edgeId) => edgeId === id ? replaced : base.edge(edgeId)
+    };
+  } else {
+    const replaced = edges.map((edge) => ({ ...edge, roadOwnerPlayerId: owner }));
+    view = {
+      intersection: base.intersection,
+      edge: (edgeId) => {
+        for (let i = replaced.length - 1; i >= 0; i--) {
+          const edge = replaced[i];
+          if (edge !== void 0 && edge.id === edgeId) return edge;
+        }
+        return base.edge(edgeId);
+      }
+    };
+  }
+  const edgeIds = getOrCreate(EDGE_IDS_BY_RECORD, board.edges, () => Object.keys(board.edges));
+  return calculateLongestRoadFromView(view, edgeIds, queryPlayerId);
+}
 function withSettlementPlaced(board, intersection2, playerId) {
   const newBuilding = {
     ownerPlayerId: playerId,
@@ -24073,10 +24432,7 @@ function projectedLongestRoadWithEdgeOverride(board, edge, overrideOwnerId, quer
     edge,
     overrideOwnerId,
     queryPlayerId,
-    () => calculateLongestRoadFromClient(
-      withEdgeOwnerOverride(board, edge, overrideOwnerId),
-      queryPlayerId
-    )
+    () => longestRoadWithEdgeOwners(board, [edge], overrideOwnerId, queryPlayerId)
   );
 }
 function projectedLongestRoadWithSettlement(board, intersection2, settlementOwnerId, queryPlayerId) {
@@ -25399,10 +25755,10 @@ function extractFeatures(ctx, intersectionId) {
   setFeature(
     features,
     8 /* DiversityCoef */,
-    ctx.boardIndex.intersectionResourceTypes[intersectionId]?.size ?? 0
+    ctx.boardIndex.resourceTypesAt(intersectionId).size
   );
   if (isSetup2) {
-    const adjacentTypes = ctx.boardIndex.intersectionResourceTypes[intersectionId] ?? /* @__PURE__ */ new Set();
+    const adjacentTypes = ctx.boardIndex.resourceTypesAt(intersectionId);
     const existing = ctx.settlementBase.existingResourceTypes;
     if (!existing.has(HexType.Mountains) && adjacentTypes.has(HexType.Mountains))
       setFeature(features, 9 /* Setup2FirstOre */, 1);
@@ -25438,7 +25794,7 @@ function extractFeatures(ctx, intersectionId) {
   setFeature(
     features,
     16 /* ExpansionPipCoef */,
-    ctx.boardIndex.intersectionExpansionNeighborhoodPips[intersectionId] ?? 0
+    ctx.boardIndex.expansionNeighborhoodPipsAt(intersectionId)
   );
   let productive = 0;
   for (const hexId of intersection2.adjacentHexIds) {
@@ -25500,7 +25856,7 @@ function extractFeatures(ctx, intersectionId) {
       case HarborType.ThreeToOne:
         setFeature(features, 24 /* HarborThreeToOne */, 1);
         if (isSetup2) {
-          const candidate = ctx.boardIndex.intersectionResourceTypes[intersectionId] ?? /* @__PURE__ */ new Set();
+          const candidate = ctx.boardIndex.resourceTypesAt(intersectionId);
           let covered = 0;
           for (const t of ALL_PRODUCING) {
             if (ctx.settlementBase.existingResourceTypes.has(t) || candidate.has(t)) covered += 1;
@@ -26009,6 +26365,15 @@ function turnsToAffordFromCounts(cost, counts, production) {
 
 // bot/src/opponents/opponent-trade-evaluation.ts
 function tradeEvaluationBundleKey(bundle) {
+  const first = bundle[0];
+  if (first === void 0) return "";
+  const firstLine = `${first.type}:${first.count}`;
+  const second = bundle[1];
+  if (second === void 0) return firstLine;
+  if (bundle.length === 2) {
+    const secondLine = `${second.type}:${second.count}`;
+    return secondLine < firstLine ? `${secondLine},${firstLine}` : `${firstLine},${secondLine}`;
+  }
   return bundle.map((line) => `${line.type}:${line.count}`).sort().join(",");
 }
 function tradeBundleCost(bundle) {
@@ -27599,19 +27964,6 @@ function sampleFreeTable(free, rng) {
   }
   return cells;
 }
-function toRecordTable(spec, free, freeCells) {
-  const out = emptyStringRecord();
-  for (let r = 0; r < spec.rowIds.length; r++) {
-    const rowId = spec.rowIds[r] ?? "";
-    const row = emptyStringRecord();
-    for (let c = 0; c < spec.colIds.length; c++) {
-      const colId = spec.colIds[c] ?? "";
-      row[colId] = (freeCells[r]?.[c] ?? 0) + (free.floors[r]?.[c] ?? 0);
-    }
-    out[rowId] = row;
-  }
-  return out;
-}
 function handSampleSeed(parts, sampleIndex) {
   return `det:${parts.version}:${parts.turnNumber}:${parts.playerId}:${sampleIndex}:hands`;
 }
@@ -27632,24 +27984,6 @@ function bucketSpec(bucket, opponentIds, priors) {
     priors: priorTable
   };
 }
-function assembleBucket(types, table, opponentId) {
-  const out = {};
-  for (const t of types) {
-    const count = table[opponentId]?.[t] ?? 0;
-    if (count > 0) out[t] = count;
-  }
-  return out;
-}
-function assembleHands(constraints, resourceTable, commodityTable) {
-  const out = emptyStringRecord();
-  for (const id of constraints.opponentIds) {
-    out[id] = {
-      resources: assembleBucket(constraints.resources.types, resourceTable, id),
-      commodities: assembleBucket(constraints.commodities.types, commodityTable, id)
-    };
-  }
-  return out;
-}
 function sampleHands(constraints, priors, k, seedParts) {
   if (!Number.isInteger(k) || k <= 0) return [];
   const resourceSpec = bucketSpec(constraints.resources, constraints.opponentIds, priors);
@@ -27659,13 +27993,39 @@ function sampleHands(constraints, priors, k, seedParts) {
   const out = [];
   for (let sampleIndex = 1; sampleIndex <= k; sampleIndex++) {
     const rng = createSeededRng(handSampleSeed(seedParts, sampleIndex));
-    const resources = toRecordTable(resourceSpec, resourceFree, sampleFreeTable(resourceFree, rng));
-    const commodities = toRecordTable(
-      commoditySpec,
-      commodityFree,
-      sampleFreeTable(commodityFree, rng)
-    );
-    out.push(assembleHands(constraints, resources, commodities));
+    const resourceCells = sampleFreeTable(resourceFree, rng);
+    const commodityCells = sampleFreeTable(commodityFree, rng);
+    const hands = emptyStringRecord();
+    const { opponentIds } = constraints;
+    for (let row = 0; row < opponentIds.length; row++) {
+      hands[opponentIds[row] ?? ""] = {
+        resources: bucketFromCells(
+          constraints.resources.types,
+          resourceFree,
+          resourceCells,
+          row
+        ),
+        commodities: bucketFromCells(
+          constraints.commodities.types,
+          commodityFree,
+          commodityCells,
+          row
+        )
+      };
+    }
+    out.push(hands);
+  }
+  return out;
+}
+function bucketFromCells(types, free, cells, row) {
+  const out = {};
+  const cellRow = cells[row];
+  const floorRow = free.floors[row];
+  for (let col = 0; col < types.length; col++) {
+    const type = types[col];
+    if (type === void 0) continue;
+    const count = (cellRow?.[col] ?? 0) + (floorRow?.[col] ?? 0);
+    if (count > 0) out[type] = count;
   }
   return out;
 }
@@ -28528,19 +28888,23 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
     return clamp(probability, PROBABILITY_FLOOR, PROBABILITY_CAP);
   }
   function probabilityCanAfford(opponentId, cost) {
-    const entries = Object.entries(cost).filter(
-      (entry) => entry[1] !== void 0 && entry[1] > 0
-    );
-    if (entries.length === 0) return 1;
     let key = `${opponentId.length}:${opponentId}`;
+    let anyNeeded = false;
     for (const type of MATERIAL_TYPES) {
       const needed = cost[type];
-      if (needed !== void 0 && needed > 0) key += `|${type}:${needed}`;
+      if (needed !== void 0 && needed > 0) {
+        key += `|${type}:${needed}`;
+        anyNeeded = true;
+      }
     }
+    if (!anyNeeded) return 1;
     const cached2 = affordabilityCache.get(key);
     if (cached2 !== void 0) return cached2;
     const player = state.players[opponentId];
     if (player === void 0) return 0;
+    const entries = Object.entries(cost).filter(
+      (entry) => entry[1] !== void 0 && entry[1] > 0
+    );
     let resourceNeeded = 0;
     let commodityNeeded = 0;
     for (const [type, needed] of entries) {
@@ -28641,11 +29005,14 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
     opponentTradePlanContextCache.set(opponentId, context);
     return context;
   }
+  function tradeCapacity(opponentId, give, acceptanceOptions) {
+    return acceptanceOptions.targetCanFulfill === true ? 1 : probabilityCanAfford(opponentId, tradeBundleCost(give));
+  }
   function evaluateTradeForOpponent(opponentId, receive, give, acceptanceOptions = {}) {
     const key = `${opponentId}|${acceptanceOptions.targetCanFulfill === true ? "known" : "belief"}|${tradeEvaluationBundleKey(receive)}=>${tradeEvaluationBundleKey(give)}`;
     const cached2 = tradeEvaluationCache.get(key);
     if (cached2 !== void 0) return cached2;
-    const capacity = acceptanceOptions.targetCanFulfill === true ? 1 : probabilityCanAfford(opponentId, tradeBundleCost(give));
+    const capacity = tradeCapacity(opponentId, give, acceptanceOptions);
     const fallback = () => {
       const perspective = tradePerspectiveDelta(state, opponentId, receive, give);
       return {
@@ -28704,8 +29071,7 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
     if (opponentId === playerId) {
       return 0;
     }
-    const evaluation = evaluateTradeForOpponent(opponentId, offer, want, acceptanceOptions);
-    const capacity = evaluation.capacity;
+    const capacity = tradeCapacity(opponentId, want, acceptanceOptions);
     if (capacity < TRADE_CAPACITY_CUTOFF) {
       return 0;
     }
@@ -28721,7 +29087,8 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
     }
     if (tradeUtilityThresholdMode) {
       const learned = clamp(appetite, 0.01, APPETITE_CAP);
-      const veto = evaluation.fitScaleUtilityDelta < tradeUtilityVetoThreshold ? tradeUtilityVetoMultiplier : 1;
+      const fitScaleUtilityDelta = tradePerspectiveDelta(state, opponentId, offer, want);
+      const veto = fitScaleUtilityDelta < tradeUtilityVetoThreshold ? tradeUtilityVetoMultiplier : 1;
       return capacity * learned * veto;
     }
     const production = getProductionEstimator().expectedProductionPerTurn(state, opponentId);
@@ -28741,7 +29108,12 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
     const clampedAppetite = clamp(appetite, APPETITE_FLOOR, APPETITE_CAP);
     const base = capacity * clampedAppetite;
     if (appetiteDeltaWeight <= 0) return base;
-    const delta = evaluation.expectedUtilityDelta;
+    const delta = evaluateTradeForOpponent(
+      opponentId,
+      offer,
+      want,
+      acceptanceOptions
+    ).expectedUtilityDelta;
     const mix = 0.5 + 0.5 * sigmoid(appetiteDeltaWeight * delta);
     return base * mix;
   }
@@ -28770,6 +29142,9 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
 }
 
 // bot/src/bot/context.ts
+function leaderOpponentIdOf(ctx) {
+  return ctx.leaderOpponent?.get();
+}
 var InvalidBotProjectionError = class extends Error {
   constructor(message) {
     super(message);
@@ -28802,10 +29177,18 @@ function buildBotContext(request, tuning) {
     tradeUtilityVetoThreshold: tuning.opponentTradeUtilityVetoThreshold,
     tradeUtilityVetoMultiplier: tuning.opponentTradeUtilityVetoMultiplier
   });
-  const leaderId = leaderOpponentId(request.state, request.playerId, estimator, boardIndex, {
-    nearWinClampEnabled: tuning.nearWinLeaderClampEnabled,
-    opponentModel,
-    convertibilityWeight: tuning.leaderConvertibilityWeight
+  let leaderId;
+  const leaderOpponent = Object.freeze({
+    get: () => {
+      if (leaderId === void 0) {
+        leaderId = leaderOpponentId(request.state, request.playerId, estimator, boardIndex, {
+          nearWinClampEnabled: tuning.nearWinLeaderClampEnabled,
+          opponentModel,
+          convertibilityWeight: tuning.leaderConvertibilityWeight
+        });
+      }
+      return leaderId;
+    }
   });
   return Object.freeze({
     request: normalizedRequest,
@@ -28814,7 +29197,7 @@ function buildBotContext(request, tuning) {
     tuning,
     boardIndex,
     productionEstimator: estimator,
-    leaderOpponentId: leaderId,
+    leaderOpponent,
     opponentModel
   });
 }
@@ -28827,11 +29210,11 @@ function leaderThreatCtx(ctx, leaderOverride) {
     actingPlayerId: ctx.playerId,
     boardIndex: ctx.boardIndex,
     opponentModel: ctx.opponentModel,
-    leaderOpponentId: leaderOverride ?? ctx.leaderOpponentId ?? null
+    leaderOpponentId: leaderOverride ?? leaderOpponentIdOf(ctx) ?? null
   };
 }
-function leaderOpponentIdArg(ctx) {
-  return ctx.leaderOpponentId !== void 0 ? { leaderOpponentId: ctx.leaderOpponentId } : {};
+function leaderOpponentIdArg(leaderOpponentId2) {
+  return leaderOpponentId2 !== void 0 ? { leaderOpponentId: leaderOpponentId2 } : {};
 }
 
 // bot/src/bot/progress-card-scorers/context.ts
@@ -28948,8 +29331,7 @@ function scoreRoadBuildingValue(ctx) {
     Object.keys(state.players)
   );
   const roadsToPlace = Math.min(2, selfPlayer2.roadsInSupply);
-  const projectedLength = projectedLengthWithFreeRoads(ctx, currentLength, roadsToPlace);
-  if (currentLength >= 3 && projectedLength >= claimTarget) {
+  if (currentLength >= 3 && projectedLengthWithFreeRoads(ctx, currentLength, roadsToPlace, claimTarget) >= claimTarget) {
     const selfVp = selfPlayer2.victoryPoints;
     if (selfVp + 2 >= state.victoryPointsTarget) return 200;
     if (selfVp >= state.victoryPointsTarget - THREE_FROM_WIN) return 130;
@@ -28959,22 +29341,24 @@ function scoreRoadBuildingValue(ctx) {
   const gap = Math.max(0, claimTarget - currentLength - 1);
   return gap <= 3 ? 30 + (3 - gap) * 5 : 15;
 }
-function projectedLengthWithFreeRoads({ state, actingPlayerId, boardIndex }, currentLength, roads) {
+function projectedLengthWithFreeRoads({ state, actingPlayerId, boardIndex }, currentLength, roads, target) {
   const reachable = boardIndex.reachableEmptyEdgeIds[actingPlayerId];
   if (reachable === void 0 || roads <= 0) return currentLength;
-  const lengthWith = (edges) => {
-    let board = state.board;
-    for (const edge of edges) board = withEdgeOwnerOverride(board, edge, actingPlayerId);
-    return calculateLongestRoadFromClient(board, actingPlayerId);
-  };
+  const lengthWithPair = (first, second) => longestRoadWithEdgeOwners(state.board, [first, second], actingPlayerId, actingPlayerId);
   let best = currentLength;
   const improving = [];
   for (const firstId of reachable) {
     const first = state.board.edges[firstId];
     if (first === void 0) continue;
-    const single = lengthWith([first]);
+    const single = projectedLongestRoadWithEdgeOverride(
+      state.board,
+      first,
+      actingPlayerId,
+      actingPlayerId
+    );
     if (single > currentLength) improving.push(first);
     if (single > best) best = single;
+    if (best >= target) return best;
     if (roads < 2) continue;
     for (const endpoint of [first.intersectionA, first.intersectionB]) {
       if (intersectionBlockedFor(state, endpoint, actingPlayerId)) continue;
@@ -28983,7 +29367,8 @@ function projectedLengthWithFreeRoads({ state, actingPlayerId, boardIndex }, cur
         if (secondId === firstId || second === void 0 || second.roadOwnerPlayerId !== null) {
           continue;
         }
-        best = Math.max(best, lengthWith([first, second]));
+        best = Math.max(best, lengthWithPair(first, second));
+        if (best >= target) return best;
       }
     }
   }
@@ -28992,7 +29377,8 @@ function projectedLengthWithFreeRoads({ state, actingPlayerId, boardIndex }, cur
       for (let j = i + 1; j < improving.length; j++) {
         const a = improving[i];
         const b = improving[j];
-        if (a !== void 0 && b !== void 0) best = Math.max(best, lengthWith([a, b]));
+        if (a !== void 0 && b !== void 0) best = Math.max(best, lengthWithPair(a, b));
+        if (best >= target) return best;
       }
     }
   }
@@ -29342,10 +29728,11 @@ function scoreTreasonValue({ actingPlayerId, boardIndex }) {
 
 // bot/src/bot/progress-card-value.ts
 var cardValueCacheByState = /* @__PURE__ */ new WeakMap();
+var rawCardValueCacheByState = /* @__PURE__ */ new WeakMap();
 function scoreProgressCardValue(args) {
   const { state, actingPlayerId, cardId } = args;
   return memoizePerRequest(cardValueCacheByState, state, `${actingPlayerId}|${cardId}`, () => {
-    const score2 = rawProgressCardValue(args, cardId);
+    const score2 = memoizedRawProgressCardValue(args, cardId);
     return finalizeProgressCardScore(args, cardId, score2);
   });
 }
@@ -29357,7 +29744,7 @@ function scoreProgressCardValueForCtx(ctx, cardId) {
     boardIndex: ctx.boardIndex,
     productionEstimator: ctx.productionEstimator,
     opponentModel: ctx.opponentModel,
-    ...leaderOpponentIdArg(ctx),
+    ...leaderOpponentIdArg(leaderOpponentIdOf(ctx)),
     tuning: ctx.tuning
   });
 }
@@ -29367,7 +29754,7 @@ function scoreProgressCardAction(args) {
   const { action, cardId } = args;
   if (action.skip === true) return SKIP_PROGRESS_CARD_SCORE;
   const payloadScore = rawProgressCardPayloadScore(args, cardId, action);
-  const rawScore = payloadScore ?? rawProgressCardPlayOnlyScore(args, cardId) ?? rawProgressCardValue(args, cardId);
+  const rawScore = payloadScore ?? rawProgressCardPlayOnlyScore(args, cardId) ?? memoizedRawProgressCardValue(args, cardId);
   return finalizeProgressCardScore(args, cardId, rawScore);
 }
 function rawProgressCardPlayOnlyScore(ctx, cardId) {
@@ -29435,6 +29822,15 @@ var PROGRESS_CARD_VALUE_SCORERS = {
   politicsTreason: scoreTreasonValue,
   politicsCharter: () => 100
 };
+function memoizedRawProgressCardValue(ctx, cardId) {
+  const byTuning = getOrCreate(rawCardValueCacheByState, ctx.state, () => /* @__PURE__ */ new WeakMap());
+  const byCard = getOrCreate(byTuning, ctx.tuning, () => /* @__PURE__ */ new Map());
+  return getOrCreate(
+    byCard,
+    `${ctx.actingPlayerId}|${cardId}`,
+    () => rawProgressCardValue(ctx, cardId)
+  );
+}
 function rawProgressCardValue(ctx, cardId) {
   const scorer = PROGRESS_CARD_VALUE_SCORERS[cardId];
   if (scorer === void 0) {
@@ -29576,7 +29972,7 @@ function auguryRobberValue(ctx) {
       ctx.productionEstimator,
       ctx.opponentModel,
       tuning,
-      leaderOpponentIdArg(ctx)
+      leaderOpponentIdArg(ctx.leaderOpponentId)
     );
     const bestHexId = scorer.chooseBest(ctx.state, ctx.actingPlayerId, true, null);
     if (bestHexId === null) return 0;
@@ -30290,10 +30686,11 @@ function buildPendingScoringBase(ctx) {
     if (player2.roadsInSupply >= ROADS_PER_PLAYER) continue;
     roadLengthByPlayer[pid] = calculateLongestRoadFromClient(state.board, pid);
   }
+  const leaderOpponentId2 = leaderOpponentIdOf(ctx) ?? null;
   const leaderDanger = leaderDangerProfile({
     state,
     actingPlayerId: playerId,
-    leaderOpponentId: ctx.leaderOpponentId ?? null,
+    leaderOpponentId: leaderOpponentId2,
     tuning: ctx.tuning
   });
   const roadFocusIntersectionId = computeRoadFocusIntersectionId(state, playerId, boardIndex);
@@ -30367,7 +30764,7 @@ function buildPendingScoringBase(ctx) {
       {
         state,
         actingPlayerId: playerId,
-        leaderOpponentId: ctx.leaderOpponentId ?? null,
+        leaderOpponentId: leaderOpponentId2,
         boardIndex,
         opponentModel: ctx.opponentModel,
         roadLengthByPlayer,
@@ -30408,7 +30805,7 @@ function buildScoreContext(ctx, action, base) {
   populateVpActionFacts(out, action, ctx.state, ctx.playerId, ctx.boardIndex);
   out.productionEstimator = ctx.productionEstimator;
   out.opponentModel = ctx.opponentModel;
-  out.leaderOpponentId = ctx.leaderOpponentId ?? null;
+  out.leaderOpponentId = leaderOpponentIdOf(ctx) ?? null;
   if (ctx.onScore !== void 0) out.onScore = ctx.onScore;
   return out;
 }
@@ -31961,7 +32358,7 @@ function computePlan(ctx) {
   const profile = leaderDangerProfile({
     state: ctx.state,
     actingPlayerId: ctx.actingPlayerId,
-    ...leaderOpponentIdArg(ctx)
+    ...leaderOpponentIdArg(ctx.leaderOpponentId)
   });
   if (profile === null) return null;
   if (!profile.critical) return null;
@@ -32577,7 +32974,7 @@ function pickBestRobberHex(ctx, actionType, extractHexId) {
     ctx.productionEstimator,
     ctx.opponentModel,
     ctx.tuning,
-    leaderOpponentIdArg(ctx)
+    leaderOpponentIdArg(leaderOpponentIdOf(ctx))
   );
   const bestHexId = scorer.chooseBest(ctx.state, ctx.playerId, false, [...actionByHexId.keys()]);
   if (bestHexId === null) return pickFallback(ctx, null);
@@ -33176,6 +33573,7 @@ function bestModifiedBidChoices(ctx, split, self2, proposal, preTrade) {
     }
     const projection = evaluateTradeProjection(ctx, receive, give);
     const utilityGain = tradeUtilityGain(ctx, self2, receive, give, preTrade);
+    if (!forcedWin && !passesAwardValueGate(ctx, projection, utilityGain)) continue;
     const opponentTempoPenalty = tradePartnerTempoPenalty(
       ctx,
       candidate.bidResponderId,
@@ -33183,7 +33581,6 @@ function bestModifiedBidChoices(ctx, split, self2, proposal, preTrade) {
       bid.want
     );
     const decisionValue = utilityGain - opponentTempoPenalty;
-    if (!forcedWin && !passesAwardValueGate(ctx, projection, utilityGain)) continue;
     const choice = {
       candidate,
       responderId: candidate.bidResponderId,
@@ -33295,24 +33692,34 @@ function resolveAtTermsAward(ctx, decision2, atTermsCandidates, cancel, preTrade
   const safeCandidates = botOneFromWin || forcedWin ? atTermsCandidates : atTermsCandidates.filter(
     (candidate) => !responderIsUnsafe(ctx, candidate.bidResponderId, botOneFromWin)
   );
-  let safeAtTermsAward = safeCandidates[0] ?? null;
-  let opponentTempoPenalty = safeAtTermsAward === null ? 0 : tradePartnerTempoPenalty(ctx, safeAtTermsAward.bidResponderId, offer, want);
-  for (let i = 1; i < safeCandidates.length; i++) {
-    const candidate = safeCandidates[i];
-    if (candidate === void 0) continue;
-    const penalty = tradePartnerTempoPenalty(ctx, candidate.bidResponderId, offer, want);
-    if (penalty < opponentTempoPenalty || penalty === opponentTempoPenalty && safeAtTermsAward !== null && effectiveOpponentVp(ctx.state, candidate.bidResponderId, ctx.tuning) < effectiveOpponentVp(ctx.state, safeAtTermsAward.bidResponderId, ctx.tuning)) {
-      safeAtTermsAward = candidate;
-      opponentTempoPenalty = penalty;
-    }
-  }
-  if (safeAtTermsAward === null) {
+  const firstSafeAward = safeCandidates[0];
+  if (firstSafeAward === void 0) {
     return notViable(cancel ?? firstAtTermsAward);
   }
   const projection = evaluateTradeProjection(ctx, want, offer);
   const utilityGain = tradeUtilityGain(ctx, self2, want, offer, preTrade);
-  if (!forcedWin && !passesAwardValueGate(ctx, projection, utilityGain)) {
-    return notViable(cancel ?? safeAtTermsAward);
+  const passesGate = forcedWin || passesAwardValueGate(ctx, projection, utilityGain);
+  if (!passesGate && cancel !== null) {
+    return notViable(cancel);
+  }
+  let safeAtTermsAward = firstSafeAward;
+  let opponentTempoPenalty = tradePartnerTempoPenalty(
+    ctx,
+    safeAtTermsAward.bidResponderId,
+    offer,
+    want
+  );
+  for (let i = 1; i < safeCandidates.length; i++) {
+    const candidate = safeCandidates[i];
+    if (candidate === void 0) continue;
+    const penalty = tradePartnerTempoPenalty(ctx, candidate.bidResponderId, offer, want);
+    if (penalty < opponentTempoPenalty || penalty === opponentTempoPenalty && effectiveOpponentVp(ctx.state, candidate.bidResponderId, ctx.tuning) < effectiveOpponentVp(ctx.state, safeAtTermsAward.bidResponderId, ctx.tuning)) {
+      safeAtTermsAward = candidate;
+      opponentTempoPenalty = penalty;
+    }
+  }
+  if (!passesGate) {
+    return notViable(safeAtTermsAward);
   }
   return {
     result: safeAtTermsAward,
@@ -33490,13 +33897,7 @@ function fairnessVetoFor(ctx, proposerId, receive, give, advancesBuildPath) {
   const pricing = fairnessGuardPricing(ctx.state, ctx.tuning, ctx.playerId, proposerId, proposerVp);
   if (!pricing.armed) return null;
   const selfGain = tradePerspectiveDelta(ctx.state, ctx.playerId, receive, give);
-  const proposerEvaluation = ctx.opponentModel.evaluateTradeForOpponent?.(
-    proposerId,
-    give,
-    receive,
-    { targetCanFulfill: true }
-  );
-  const proposerGain = proposerEvaluation?.fitScaleUtilityDelta ?? tradePerspectiveDelta(ctx.state, proposerId, give, receive);
+  const proposerGain = tradePerspectiveDelta(ctx.state, proposerId, give, receive);
   const selfBuildEscape = ctx.tuning.fairnessSelfBuildEscapeEnabled && (advancesBuildPath || selfGain >= ctx.tuning.opponentTradeFairnessSelfGainCeiling);
   return !selfBuildEscape && proposerGain >= ctx.tuning.opponentTradeFairnessMinProposerGain && proposerGain >= Math.max(1e-4, selfGain) * pricing.ratio ? { selfGain, proposerGain, proposerVp, leaderPriced: pricing.leaderPriced } : null;
 }
@@ -34294,8 +34695,6 @@ function findMerchantBankedRoadWinPlan(ctx, pool) {
   const self2 = selfPlayer(ctx.state, ctx.playerId);
   if (!ctx.tuning.sameTurnEndgamePlannerEnabled || !ctx.tuning.humanEndgameMultiTradeWinEnabled || self2 === null || ctx.state.phase !== Phase.Action || ctx.state.pendingDecision !== null || ctx.state.currentPlayerId !== ctx.playerId || ctx.state.merchantOwnerPlayerId === ctx.playerId || self2.victoryPoints + 3 < ctx.state.victoryPointsTarget || ctx.state.longestRoadHolderPlayerId === ctx.playerId || self2.roadsInSupply < 2)
     return null;
-  const chain = twoRoadLongestRoadChain(ctx);
-  if (chain === null) return null;
   for (const play of pool) {
     if (play.type !== ActionType.PlayProgressCard || play.hexId === void 0) continue;
     const card2 = self2.progressHand.find((c) => c.instanceId === play.instanceId);
@@ -34317,7 +34716,9 @@ function findMerchantBankedRoadWinPlan(ctx, pool) {
       want: { type: want, count: 1 }
     }));
     const funding = fundRoads(ctx, [...pool, ...merchantTrades], 2);
-    if (funding !== null) return [play, ...funding, ...chain];
+    if (funding === null) continue;
+    const chain = twoRoadLongestRoadChain(ctx);
+    return chain === null ? null : [play, ...funding, ...chain];
   }
   return null;
 }
@@ -35283,7 +35684,14 @@ function findSameTurnWinningPlan(ctx, actionPool, base) {
     const setupCtx = buildScoreContext(ctx, setupAction, base);
     let setupScore = null;
     const lazySetupScore = () => setupScore ??= score(setupCtx);
-    for (const followup of enumerateFollowups(ctx, setupCtx, setupAction, planPool, projected)) {
+    for (const followup of enumerateFollowups(
+      ctx,
+      setupCtx,
+      setupAction,
+      planPool,
+      projected,
+      vpDeltaByActionId
+    )) {
       const plannedFollowup = planningActionForCandidate(followup, ctx.state, ctx.playerId);
       let rawFollowupVpDelta = plannedFollowup.type === ActionType.ImproveCity ? winningVpDelta(followup, ctx.state, ctx.playerId, {
         boardIndex: ctx.boardIndex,
@@ -35502,7 +35910,7 @@ function projectedMetropolisDeps(ctx, plannedSetup, setupVpDelta, eligibleCityCo
     eligibleMetropolisCityCount: Math.max(0, projectedEligibleCityCount)
   };
 }
-function enumerateFollowups(ctx, setupCtx, setupAction, actionPool, projected) {
+function enumerateFollowups(ctx, setupCtx, setupAction, actionPool, projected, vpDeltaByActionId) {
   const out = [];
   const seen = /* @__PURE__ */ new Set();
   const supplyScratch = { roads: 0, settlements: 0, cities: 0 };
@@ -35511,6 +35919,7 @@ function enumerateFollowups(ctx, setupCtx, setupAction, actionPool, projected) {
   const medicineConsumed = plannedSetup.type === ActionType.BuildCity && self2 !== null && self2.medicinePlayed;
   const craneConsumed = plannedSetup.type === ActionType.ImproveCity && self2 !== null && self2.cranePlayed;
   for (const followup of actionPool) {
+    if (followupCannotGainVp(followup, vpDeltaByActionId)) continue;
     if (followup.id === setupAction.id && followup.type !== ActionType.ImproveCity) continue;
     if (progressCardPlaysConflict(setupAction, followup)) continue;
     if (!hasSupplyAfterSetup(ctx, setupAction, followup, supplyScratch)) continue;
@@ -35572,6 +35981,20 @@ function enumerateFollowups(ctx, setupCtx, setupAction, actionPool, projected) {
     }
   }
   return out;
+}
+function followupCannotGainVp(followup, vpDeltaByActionId) {
+  switch (followup.type) {
+    case ActionType.BuildRoad:
+    case ActionType.BuildSettlement:
+    case ActionType.BuildCity:
+    case ActionType.ImproveCity:
+    case ActionType.PlayProgressCard:
+      return false;
+    default: {
+      const vpDelta = vpDeltaByActionId.get(followup.id);
+      return vpDelta !== void 0 && vpDelta <= 0;
+    }
+  }
 }
 function intersectionPlacementForPlanning(action) {
   if (action.type === ActionType.BuildSettlement) {
@@ -35744,7 +36167,11 @@ function racePostureTraceContext(base) {
     racePostureLeaderId: posture.leaderId
   };
 }
-function buildDecisionTrace(ranked, chosen, base, ctx, winningMovePoolOnly, scoredPoolSize, nonFiniteScoreCount, lookaheadSuppressedByPoolSize, repeatTradeCandidateCount, complementaryOfferScalars) {
+function buildDecisionTrace(ranked, chosen, base, ctx, winningMovePoolOnly, scoredPoolSize, nonFiniteScoreCount, lookaheadSuppressedByPoolSize, repeatTradeCandidateCount, complementaryOfferScalars, includeRuleBreakdown) {
+  const leaderId = leaderOpponentIdOf(ctx);
+  const [first, second] = ranked;
+  const scoreGapTop1Top2 = first !== void 0 && second !== void 0 ? round2(first.score - second.score) : void 0;
+  const withRuleBreakdown = includeRuleBreakdown?.(scoreGapTop1Top2) ?? true;
   const decisionTrace = {
     strategy: base.strategy,
     candidateCount: scoredPoolSize,
@@ -35760,9 +36187,9 @@ function buildDecisionTrace(ranked, chosen, base, ctx, winningMovePoolOnly, scor
       immediateWinThreat: base.immediateWinThreat,
       ...racePostureTraceContext(base),
       ...repeatTradeCandidateCount > 0 ? { repeatTradeCandidateCount } : {},
-      ...ctx.leaderOpponentId !== void 0 && ctx.leaderOpponentId !== null ? {
-        leaderOpponentId: ctx.leaderOpponentId,
-        leaderOpponentVp: ctx.state.players[ctx.leaderOpponentId]?.victoryPoints ?? null
+      ...leaderId !== void 0 && leaderId !== null ? {
+        leaderOpponentId: leaderId,
+        leaderOpponentVp: ctx.state.players[leaderId]?.victoryPoints ?? null
       } : {},
       ...nonFiniteScoreCount > 0 ? { nonFiniteScoreCount } : {},
       // Emitted only when it fires, so the key's PRESENCE is the signal and a
@@ -35774,16 +36201,21 @@ function buildDecisionTrace(ranked, chosen, base, ctx, winningMovePoolOnly, scor
     // The emitted trace stays 3-wide regardless of an observer-widened ranked
     // list (trace size + analytics-join stability — recorded decision).
     top3: ranked.slice(0, 3).map((e) => {
-      const breakdown = scoreWithBreakdown(e.ctx);
-      const rounded = {};
-      for (const [name, value] of Object.entries(breakdown.ruleBreakdown)) {
-        if (value !== 0) rounded[name] = round2(value);
+      let extra;
+      if (withRuleBreakdown) {
+        const breakdown = scoreWithBreakdown(e.ctx);
+        const rounded = {};
+        for (const [name, value] of Object.entries(breakdown.ruleBreakdown)) {
+          if (value !== 0) rounded[name] = round2(value);
+        }
+        extra = {
+          candidateId: e.action.id,
+          ruleBreakdown: rounded,
+          strategyWeight: round2(breakdown.strategyWeight)
+        };
+      } else {
+        extra = { candidateId: e.action.id, strategyWeight: round2(strategyWeightFor(e.ctx)) };
       }
-      const extra = {
-        candidateId: e.action.id,
-        ruleBreakdown: rounded,
-        strategyWeight: round2(breakdown.strategyWeight)
-      };
       if (e.turnLookaheadBonus !== 0) {
         extra["turnLookaheadBonus"] = round2(e.turnLookaheadBonus);
       }
@@ -35801,13 +36233,10 @@ function buildDecisionTrace(ranked, chosen, base, ctx, winningMovePoolOnly, scor
       };
     })
   };
-  const [first, second] = ranked;
   if (first !== void 0) {
     const chosenEntry = ranked.find((e) => e.action.id === chosen.id) ?? first;
     decisionTrace.chosenScore = round2(chosenEntry.score);
-    if (second !== void 0) {
-      decisionTrace.scoreGapTop1Top2 = round2(first.score - second.score);
-    }
+    if (scoreGapTop1Top2 !== void 0) decisionTrace.scoreGapTop1Top2 = scoreGapTop1Top2;
   }
   return decisionTrace;
 }
@@ -35893,8 +36322,7 @@ function filterRedundantTradeCandidates(ctx, actionPool) {
   const filtered = [];
   let repeatTradeCandidateCount = 0;
   for (const action of actionPool) {
-    const keys = candidateTradeReplayKeys(action);
-    const repeatsProposal = keys.some((key) => repeatedKeys.has(key));
+    const repeatsProposal = repeatedKeys.size > 0 && repeatsSameTurnProposal(action, repeatedKeys);
     const reversesCompletedTrade = proposalReversesCompletedTrade(
       opponentIds,
       reversalGuard,
@@ -35921,7 +36349,7 @@ function sameTurnTradeReplayKeys(ctx) {
   return out;
 }
 function priorTradeReplayKey(action) {
-  return action.type === ActionType.DomesticTradePropose ? domesticTradeReplayKey(action.targetPlayerId ?? "*", action.offer, action.want) : null;
+  return action.type === ActionType.DomesticTradePropose ? domesticTradeReplayKey(action.targetPlayerId ?? "*", tradeTermsKey(action.offer, action.want)) : null;
 }
 function proposalReversesCompletedTrade(opponentIds, guard, action) {
   if (action.type !== ActionType.DomesticTradePropose) return false;
@@ -35930,22 +36358,17 @@ function proposalReversesCompletedTrade(opponentIds, guard, action) {
   }
   return opponentIds.length > 0 && opponentIds.every((partnerId) => guard.blocks(partnerId, action.offer, action.want));
 }
-function candidateTradeReplayKeys(action) {
-  switch (action.type) {
-    case ActionType.DomesticTradePropose: {
-      const exactKey = domesticTradeReplayKey(
-        action.targetPlayerId ?? "*",
-        action.offer,
-        action.want
-      );
-      return action.targetPlayerId === void 0 ? [exactKey] : [exactKey, domesticTradeReplayKey("*", action.offer, action.want)];
-    }
-    default:
-      return [];
-  }
+function repeatsSameTurnProposal(action, repeatedKeys) {
+  if (action.type !== ActionType.DomesticTradePropose) return false;
+  const terms = tradeTermsKey(action.offer, action.want);
+  if (repeatedKeys.has(domesticTradeReplayKey(action.targetPlayerId ?? "*", terms))) return true;
+  return action.targetPlayerId !== void 0 && repeatedKeys.has(domesticTradeReplayKey("*", terms));
 }
-function domesticTradeReplayKey(targetPlayerId, offer, want) {
-  return `domestic|${targetPlayerId}|${tradeBundleKey(offer)}>${tradeBundleKey(want)}`;
+function domesticTradeReplayKey(targetPlayerId, terms) {
+  return `domestic|${targetPlayerId}|${terms}`;
+}
+function tradeTermsKey(offer, want) {
+  return `${tradeBundleKey(offer)}>${tradeBundleKey(want)}`;
 }
 
 // bot/src/bot/complementary-offer-selector.ts
@@ -36328,15 +36751,19 @@ function chooseMainScoring(ctx, hooks) {
   const winningMovePoolOnly = winningMoves.length > 0;
   const replayFilter = winningMovePoolOnly ? { actionPool: winningMoves, repeatTradeCandidateCount: 0 } : filterRedundantTradeCandidates(ctx, request.validActions);
   const base = buildPendingScoringBase(ctx);
-  const marginEligibleActionPool = replayFilter.actionPool.filter(
-    (action) => action.type !== ActionType.ExecuteStandingWant || isExecuteStandingWantEligible(buildScoreContext(ctx, action, base), action)
-  );
-  const proposalScoreContexts = /* @__PURE__ */ new Map();
+  const prebuiltScoreContexts = /* @__PURE__ */ new Map();
+  const marginEligibleActionPool = replayFilter.actionPool.filter((action) => {
+    if (action.type !== ActionType.ExecuteStandingWant) return true;
+    const candidateCtx = buildScoreContext(ctx, action, base);
+    if (!isExecuteStandingWantEligible(candidateCtx, action)) return false;
+    prebuiltScoreContexts.set(action, candidateCtx);
+    return true;
+  });
   const policyEligibleActionPool = marginEligibleActionPool.filter((action) => {
     if (action.type !== ActionType.DomesticTradePropose) return true;
     const candidateCtx = buildScoreContext(ctx, action, base);
     if (!isDomesticTradeProposalEligible(candidateCtx, action)) return false;
-    proposalScoreContexts.set(action, candidateCtx);
+    prebuiltScoreContexts.set(action, candidateCtx);
     return true;
   });
   const nearKitReservation = applyNearKitActivationReservation(ctx, policyEligibleActionPool, base);
@@ -36375,7 +36802,7 @@ function chooseMainScoring(ctx, hooks) {
   const productionRankedWidth = 3;
   const observerRankedWidth = Math.max(3, Math.floor(hooks?.rankingObserver?.width ?? 3));
   const rankedWidth = Math.max(productionRankedWidth, observerRankedWidth);
-  const scored = scoreActionPool(ctx, actionPool, base, rankedWidth, proposalScoreContexts);
+  const scored = scoreActionPool(ctx, actionPool, base, rankedWidth, prebuiltScoreContexts);
   const { ranked: diagnosticRanked, nonFiniteScoreCount, lookaheadSuppressedByPoolSize } = scored;
   hooks?.rankingObserver?.observe(
     diagnosticRanked.map(
@@ -36426,7 +36853,8 @@ function chooseMainScoring(ctx, hooks) {
       nonFiniteScoreCount,
       lookaheadSuppressedByPoolSize,
       replayFilter.repeatTradeCandidateCount,
-      complementaryOfferScalars
+      complementaryOfferScalars,
+      hooks?.includeRuleBreakdown
     );
     if (nearKitReservation.suppressedCount > 0) {
       decisionTrace = {
@@ -36538,14 +36966,18 @@ function scoreActionPool(ctx, actionPool, base, rankedWidth, prebuiltContexts) {
   const lookaheadEnabled = ctx.tuning.turnLookaheadEnabled && withinLookaheadPoolLimit && actionPool.some((action) => isTurnLookaheadCandidate(action, ctx.state, ctx.playerId));
   const lookaheadSuppressedByPoolSize = ctx.tuning.turnLookaheadEnabled && !withinLookaheadPoolLimit;
   const followupScoreCache = lookaheadEnabled ? /* @__PURE__ */ new Map() : null;
+  const followupContexts = lookaheadEnabled ? /* @__PURE__ */ new Map() : null;
   const followupScorer = (followup) => {
     if (followupScoreCache !== null) {
       const cached2 = followupScoreCache.get(followup.id);
       if (cached2 !== void 0) return cached2;
     }
-    const followupScore = score(
-      prebuiltContexts.get(followup) ?? buildScoreContext(ctx, followup, base)
-    );
+    let followupCtx = prebuiltContexts.get(followup);
+    if (followupCtx === void 0) {
+      followupCtx = buildScoreContext(ctx, followup, base);
+      followupContexts?.set(followup, followupCtx);
+    }
+    const followupScore = score(followupCtx);
     followupScoreCache?.set(followup.id, followupScore);
     return followupScore;
   };
@@ -36559,7 +36991,7 @@ function scoreActionPool(ctx, actionPool, base, rankedWidth, prebuiltContexts) {
   for (let i = 0; i < actionPool.length; i++) {
     const action = actionPool[i];
     if (action === void 0) continue;
-    const candidateCtx = prebuiltContexts.get(action) ?? buildScoreContext(ctx, action, base);
+    const candidateCtx = prebuiltContexts.get(action) ?? followupContexts?.get(action) ?? buildScoreContext(ctx, action, base);
     const baseScore = followupScoreCache?.get(action.id) ?? score(candidateCtx);
     followupScoreCache?.set(action.id, baseScore);
     if (!Number.isFinite(baseScore)) {
