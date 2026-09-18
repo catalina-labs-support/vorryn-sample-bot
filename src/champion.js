@@ -22285,6 +22285,40 @@ function selfPlayer(state, playerId) {
   return player !== void 0 && isSelf(player) ? player : null;
 }
 
+// bot/src/bot/opponent-tie-break.ts
+function expectedProductionTotal(state, playerId, estimator) {
+  let total = 0;
+  for (const amount of Object.values(estimator.expectedProductionPerTurn(state, playerId))) {
+    total += amount ?? 0;
+  }
+  return total;
+}
+function opponentOutranksOnTie(candidateId2, incumbentId, ctx) {
+  const { state, actingPlayerId, productionOf } = ctx;
+  const candidateVp = playerVp(state, candidateId2);
+  const incumbentVp = playerVp(state, incumbentId);
+  if (candidateVp !== incumbentVp) return candidateVp > incumbentVp;
+  if (productionOf !== void 0) {
+    const candidateProduction = productionOf(candidateId2);
+    const incumbentProduction = productionOf(incumbentId);
+    if (candidateProduction !== incumbentProduction) {
+      return candidateProduction > incumbentProduction;
+    }
+  }
+  return playsSoonerAfter(state, candidateId2, incumbentId, actingPlayerId);
+}
+function playsSoonerAfter(state, aId, bId, actingPlayerId) {
+  const a = state.players[aId]?.seatIndex;
+  const b = state.players[bId]?.seatIndex;
+  if (a === void 0 || b === void 0) return a !== void 0 && b === void 0;
+  const acting = state.players[actingPlayerId]?.seatIndex;
+  if (acting === void 0) return a < b;
+  const aAfter = a > acting;
+  const bAfter = b > acting;
+  if (aAfter !== bAfter) return aAfter;
+  return a < b;
+}
+
 // bot/src/bot/resource-utility.ts
 function hiddenVpEstimateForPlayer(player) {
   const politicsFactor = 1 + Math.max(0, player.politicsLevel - 2) * 0.25;
@@ -22427,6 +22461,11 @@ function estimatedHandUtility(hand, state, playerId) {
 function leaderOpponentId(state, actingPlayerId, estimator, boardIndex, options = {}) {
   const { nearWinClampEnabled = false, opponentModel, convertibilityWeight = 0 } = options;
   const convertibilityActive = opponentModel !== void 0 && convertibilityWeight > 0;
+  const tieBreak = {
+    state,
+    actingPlayerId,
+    productionOf: (playerId) => expectedProductionTotal(state, playerId, estimator)
+  };
   let bestId = null;
   let bestScore = -Infinity;
   for (const playerId of Object.keys(state.players)) {
@@ -22435,7 +22474,7 @@ function leaderOpponentId(state, actingPlayerId, estimator, boardIndex, options 
     if (convertibilityActive) {
       s += convertibilityBias(state, playerId, boardIndex, opponentModel, convertibilityWeight);
     }
-    if (s > bestScore) {
+    if (s > bestScore || s === bestScore && bestId !== null && opponentOutranksOnTie(playerId, bestId, tieBreak)) {
       bestScore = s;
       bestId = playerId;
     }
@@ -24589,12 +24628,13 @@ function hasCriticalOpponentThreat(state, playerId, tuning) {
   return effectiveMaxOpponentVp(state, playerId, tuning) >= criticalThreshold + 0.5;
 }
 function criticalOpponentId(state, playerId, tuning) {
+  const tieBreak = { state, actingPlayerId: playerId };
   let bestId = null;
   let bestVp = -Infinity;
   for (const pid of Object.keys(state.players)) {
     if (pid === playerId) continue;
     const vp = effectiveOpponentVp(state, pid, tuning);
-    if (vp > bestVp) {
+    if (vp > bestVp || vp === bestVp && bestId !== null && opponentOutranksOnTie(pid, bestId, tieBreak)) {
       bestId = pid;
       bestVp = vp;
     }
@@ -24940,7 +24980,8 @@ function isHoardingForSettlement(player) {
 }
 
 // bot/src/bot/score-rules/action-base-scorers/city.ts
-var METROPOLIS_CONTEST_LEVEL = 3;
+var METROPOLIS_STEAL_THREAT_LEVEL = 4;
+var METROPOLIS_LOCK_LEVEL = 5;
 var IMPROVE_CITY_BASE = {
   [CommodityTrack.Science]: 78,
   [CommodityTrack.Trade]: 72,
@@ -24964,15 +25005,23 @@ function scoreImproveCityAction(ctx, track) {
   const { state, actingPlayerId, boardIndex, tuning } = ctx;
   const player = state.players[actingPlayerId];
   const level = player !== void 0 ? trackLevelFor(track, player) : 0;
+  const metroOwner = boardIndex.metropolisOwnerByTrack[track];
+  const maxOppLevel = boardIndex.maxOpponentTrackLevelByTrack[track];
+  const holder = metroOwner === null ? void 0 : state.players[metroOwner];
+  const holderLevel = holder !== void 0 ? trackLevelFor(track, holder) : 0;
+  const trackLocked = metroOwner !== null && metroOwner !== actingPlayerId && holderLevel >= METROPOLIS_LOCK_LEVEL;
+  const lockedClimb = trackLocked && level >= 3;
+  const uncontestedTopClimb = level === 4 && metroOwner === actingPlayerId && maxOppLevel < METROPOLIS_STEAL_THREAT_LEVEL;
   let score2 = IMPROVE_CITY_BASE[track] + cityImprovementLevelProgressBonus(level);
   if (level === 1) score2 += tuning.level1PrimingBonus;
   if (level === 2) score2 += tuning.level2TrackBonus;
   if (level <= 3) {
-    const maxOppLevel = boardIndex.maxOpponentTrackLevelByTrack[track];
     if (level === 3) {
-      score2 += tuning.metropolisPushBonus;
-      if (maxOppLevel >= 3) score2 += tuning.metropolisRaceBonus;
-      if (maxOppLevel >= 4) score2 += tuning.metropolisChaseBonus;
+      if (!trackLocked) {
+        score2 += tuning.metropolisPushBonus;
+        if (maxOppLevel >= 3) score2 += tuning.metropolisRaceBonus;
+        if (maxOppLevel >= 4) score2 += tuning.metropolisChaseBonus;
+      }
     } else if (maxOppLevel >= 3) {
       if (level === 2) {
         score2 += maxOppLevel >= 4 ? tuning.metropolisCliffStealBonus : tuning.preRacePrimingBonus;
@@ -24982,7 +25031,7 @@ function scoreImproveCityAction(ctx, track) {
         score2 += tuning.metropolisCliffEntryBonus;
       }
     }
-    if (boardIndex.metropolisOwnerByTrack[track] === null) {
+    if (metroOwner === null) {
       const gap = maxOppLevel - level;
       if (gap > 0) score2 += gap * tuning.metropolisGapBoost;
     }
@@ -24996,9 +25045,7 @@ function scoreImproveCityAction(ctx, track) {
   if (level <= 2 && state.turnNumber >= 15 && !boardIndex.anyMetropolisPlaced) {
     score2 += tuning.metropolisHungerBonus;
   }
-  const uncontestedTopClimb = level === 4 && boardIndex.metropolisOwnerByTrack[track] === actingPlayerId && boardIndex.maxOpponentTrackLevelByTrack[track] < METROPOLIS_CONTEST_LEVEL;
   if (level === 4) {
-    const metroOwner = boardIndex.metropolisOwnerByTrack[track];
     if (metroOwner === actingPlayerId) {
       if (!uncontestedTopClimb) {
         score2 += tuning.metropolisSecureOrStealBonus + tuning.metropolisDefendOwnedBonus;
@@ -25006,9 +25053,7 @@ function scoreImproveCityAction(ctx, track) {
     } else if (metroOwner === null) {
       score2 += tuning.metropolisUnclaimedRaceBonus;
     } else {
-      const holder = state.players[metroOwner];
-      const holderLevel = holder !== void 0 ? trackLevelFor(track, holder) : 0;
-      if (!tuning.metropolisStealRequiresStealable || holderLevel < 5) {
+      if (!tuning.metropolisStealRequiresStealable || holderLevel < METROPOLIS_LOCK_LEVEL) {
         score2 += tuning.metropolisStealRaceBonus;
       }
     }
@@ -25021,6 +25066,8 @@ function scoreImproveCityAction(ctx, track) {
       tuning.metropolisHungerBonus + tuning.preRacePrimingBonus + tuning.level2TrackBonus
     );
   }
+  if (uncontestedTopClimb) score2 -= tuning.metropolisUncontestedTopClimbPenalty;
+  if (lockedClimb) score2 -= tuning.metropolisLockedTrackClimbPenalty;
   if (ctx.criticalOpponentThreat) {
     if (level >= 4) score2 += 28;
     else if (level === 3) score2 += 12;
@@ -25028,7 +25075,7 @@ function scoreImproveCityAction(ctx, track) {
   const leader = ctx.leaderDanger;
   if (leader !== null) {
     const leaderLevel = trackLevelFor(track, leader.player);
-    const leaderOwnsTrack = boardIndex.metropolisOwnerByTrack[track] === leader.id;
+    const leaderOwnsTrack = metroOwner === leader.id;
     if (leaderOwnsTrack && leaderLevel < 5 && level >= 3) {
       score2 += leader.immediate ? 34 : 20;
     } else if (leaderLevel >= 3 && level >= 2) {
@@ -26744,9 +26791,12 @@ function evaluatePotentialTradeResponders(ctx, action, opponents, opponentModel)
     if (!risk && p >= 0.05 && opponentAcceptanceCreatesVpRisk(ctx, action, opp.id, opponentModel)) {
       risk = true;
     }
+    const planTurnsSaved = tradeEvaluation?.expectedPlanTurnsSaved ?? 0;
     if (responderP > bestAdjustedP) {
       bestAdjustedP = responderP;
-      bestPlanTurnsSaved = tradeEvaluation?.expectedPlanTurnsSaved ?? 0;
+      bestPlanTurnsSaved = planTurnsSaved;
+    } else if (responderP === bestAdjustedP && responderP > 0 && planTurnsSaved > bestPlanTurnsSaved) {
+      bestPlanTurnsSaved = planTurnsSaved;
     }
     const oppDelta = tradeEvaluation?.fitScaleUtilityDelta ?? tradePerspectiveDelta(ctx.state, opp.id, action.offer, action.want);
     if (oppDelta > bestDelta) bestDelta = oppDelta;
@@ -26849,6 +26899,22 @@ function discardCountForHand(handSize) {
 var CITY_KIT_COST = cityCostFor(false);
 var SETTLEMENT_KIT_COST = actionCost(ActionType.BuildSettlement);
 var threatByEstimator = /* @__PURE__ */ new WeakMap();
+function hexOutranksOnTie(candidateHexId, incumbentHexId, boardIndex, actingPlayerId) {
+  const candidateBuildings = opponentBuildingCount(boardIndex, candidateHexId, actingPlayerId);
+  const incumbentBuildings = opponentBuildingCount(boardIndex, incumbentHexId, actingPlayerId);
+  if (candidateBuildings !== incumbentBuildings) return candidateBuildings > incumbentBuildings;
+  const candidatePips = boardIndex.pipsByHex[candidateHexId] ?? 0;
+  const incumbentPips = boardIndex.pipsByHex[incumbentHexId] ?? 0;
+  if (candidatePips !== incumbentPips) return candidatePips > incumbentPips;
+  return candidateHexId < incumbentHexId;
+}
+function opponentBuildingCount(boardIndex, hexId, actingPlayerId) {
+  let count = 0;
+  for (const entry of boardIndex.buildingsAdjacentToHex[hexId] ?? []) {
+    if (entry.building.ownerPlayerId !== actingPlayerId) count++;
+  }
+  return count;
+}
 function createRobberHexScorer(boardIndex, productionEstimator, opponentModel, tuning, opts = {}) {
   const threatByState = getOrCreate(
     getOrCreate(
@@ -26882,6 +26948,7 @@ function createRobberHexScorer(boardIndex, productionEstimator, opponentModel, t
     let bestScore = -Infinity;
     let strictBestHexId = null;
     let strictBestScore = -Infinity;
+    const outranks = (candidateHexId, incumbentHexId) => incumbentHexId !== null && hexOutranksOnTie(candidateHexId, incumbentHexId, boardIndex, actingPlayerId);
     for (const [hexId, hex3] of Object.entries(state.board.hexes)) {
       if (candidateSet !== null && !candidateSet.has(hexId)) continue;
       if (hex3.robberPresent) continue;
@@ -26897,11 +26964,11 @@ function createRobberHexScorer(boardIndex, productionEstimator, opponentModel, t
         tuning,
         threatByState
       );
-      if (score2 > bestScore) {
+      if (score2 > bestScore || score2 === bestScore && outranks(hexId, bestHexId)) {
         bestScore = score2;
         bestHexId = hexId;
       }
-      if (!touchesOwnBuilding && !ownKnightHexes.has(hexId) && score2 > strictBestScore) {
+      if (!touchesOwnBuilding && !ownKnightHexes.has(hexId) && (score2 > strictBestScore || score2 === strictBestScore && outranks(hexId, strictBestHexId))) {
         strictBestScore = score2;
         strictBestHexId = hexId;
       }
@@ -30078,15 +30145,50 @@ function computeRoadFocusIntersectionId(state, actingPlayerId, boardIndex) {
   }
   let bestId = null;
   let bestPips = -1;
+  let hops = null;
+  const outranks = (candidateId2, incumbentId) => {
+    hops ??= roadHopsFromOwnPieces(state, actingPlayerId);
+    const candidateHops = hops.get(candidateId2) ?? Number.POSITIVE_INFINITY;
+    const incumbentHops = hops.get(incumbentId) ?? Number.POSITIVE_INFINITY;
+    if (candidateHops !== incumbentHops) return candidateHops < incumbentHops;
+    return candidateId2 < incumbentId;
+  };
   for (const iid of reach) {
     if (boardIndex.isBuildableByIntersection[iid] !== true) continue;
     const pips = boardIndex.pipsByIntersection[iid] ?? 0;
-    if (pips > bestPips) {
+    if (pips > bestPips || pips === bestPips && bestId !== null && outranks(iid, bestId)) {
       bestPips = pips;
       bestId = iid;
     }
   }
   return bestId;
+}
+function roadHopsFromOwnPieces(state, actingPlayerId) {
+  const hops = /* @__PURE__ */ new Map();
+  const queue = [];
+  for (const [intersectionId, intersection2] of Object.entries(state.board.intersections)) {
+    if (intersection2.building?.ownerPlayerId === actingPlayerId || intersection2.knight?.ownerPlayerId === actingPlayerId) {
+      hops.set(intersectionId, 0);
+      queue.push(intersectionId);
+    }
+  }
+  let head = 0;
+  while (head < queue.length) {
+    const cur = queue[head++];
+    if (cur === void 0) break;
+    const depth = hops.get(cur);
+    const intersection2 = state.board.intersections[cur];
+    if (depth === void 0 || intersection2 === void 0) continue;
+    for (const edgeId of intersection2.adjacentEdgeIds) {
+      const edge = state.board.edges[edgeId];
+      if (edge === void 0 || edge.roadOwnerPlayerId !== actingPlayerId) continue;
+      const other = edgeOther(edge, cur);
+      if (hops.has(other) || intersectionBlockedFor(state, other, actingPlayerId)) continue;
+      hops.set(other, depth + 1);
+      queue.push(other);
+    }
+  }
+  return hops;
 }
 
 // bot/src/bot/settlement-scoring-base.ts
@@ -30154,16 +30256,18 @@ function computeRacePosture(state, selfId, opponentIds, estimator, oneMoveSwingI
     estimator,
     oneMoveSwingIds?.has(selfId) ?? false
   );
+  const tieBreak = {
+    state,
+    actingPlayerId: selfId,
+    productionOf: (playerId) => expectedProductionTotal(state, playerId, estimator)
+  };
   let leaderId = null;
   let leaderTurnsToWin = TURNS_TO_WIN_CAP;
-  let leaderVp = -1;
   for (const oppId of opponentIds) {
     const turns = estimateTurnsToWin(state, oppId, estimator, oneMoveSwingIds?.has(oppId) ?? false);
-    const vp = playerVp(state, oppId);
-    if (leaderId === null || turns < leaderTurnsToWin || turns === leaderTurnsToWin && vp > leaderVp) {
+    if (leaderId === null || turns < leaderTurnsToWin || turns === leaderTurnsToWin && opponentOutranksOnTie(oppId, leaderId, tieBreak)) {
       leaderId = oppId;
       leaderTurnsToWin = turns;
-      leaderVp = vp;
     }
   }
   const tempoMargin = leaderTurnsToWin - selfTurnsToWin;
@@ -30362,6 +30466,24 @@ function roadsCost(roads) {
   return cost;
 }
 
+// bot/src/bot/score-rules/setup-sim-argmax.ts
+function compareByScoreDescThenId(a, b) {
+  if (a.score !== b.score) return b.score - a.score;
+  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+}
+function bestIntersectionByScore(ids, scoreOf) {
+  let bestId = null;
+  let bestScore = Number.NEGATIVE_INFINITY;
+  for (const id of ids) {
+    const score2 = scoreOf(id);
+    if (score2 > bestScore || score2 === bestScore && bestId !== null && id < bestId) {
+      bestScore = score2;
+      bestId = id;
+    }
+  }
+  return bestId;
+}
+
 // bot/src/bot/setup-base-with-candidate.ts
 function settlementBaseWithCandidate(base, state, candidateIntersectionId) {
   const intersection2 = state.board.intersections[candidateIntersectionId];
@@ -30437,18 +30559,12 @@ function projectedSetupRoadSurvivorsWith(ctx, scoreFn) {
       settlementBase: base,
       state: stateByPhase[placement.phase]
     });
-    let bestId = null;
-    let bestScore = -Infinity;
-    for (const intersectionId of remaining) {
+    const bestId = bestIntersectionByScore(remaining, (intersectionId) => {
       const candidateCtx = deriveScoreContext(placementCtx, {
         action: { type: ActionType.PlaceSetupBuilding, intersectionId }
       });
-      const score2 = scoreFn(candidateCtx, intersectionId);
-      if (score2 > bestScore) {
-        bestScore = score2;
-        bestId = intersectionId;
-      }
-    }
+      return scoreFn(candidateCtx, intersectionId);
+    });
     if (bestId === null) break;
     runningBaseByPlayer.set(placement.playerId, settlementBaseWithCandidate(base, state, bestId));
     removeDistanceBlocked(state, remaining, bestId);
@@ -31385,7 +31501,7 @@ function setupPlacementLookaheadWith(ctx, scoreFn) {
       scored.push({ id: intersectionId, score: score2 });
       scoreById2.set(intersectionId, score2);
     }
-    scored.sort((a, b) => b.score - a.score);
+    scored.sort(compareByScoreDescThenId);
     ranking = { entries: scored, scoreById: scoreById2 };
     if (useCache) rankingCache.set(state, ranking);
   }
@@ -31471,14 +31587,7 @@ function runOpponentDraft(ctx, scoreFn, ranking, blocked, useInitialRanking) {
         settlementBase: opponentBase ?? EMPTY_SETTLEMENT_BASE,
         actingPlayerId: opponentId
       });
-      let bestScore = -Infinity;
-      for (const id of remaining) {
-        const s = scoreFn(opponentCtx, id);
-        if (s > bestScore) {
-          bestScore = s;
-          bestId = id;
-        }
-      }
+      bestId = bestIntersectionByScore(remaining, (id) => scoreFn(opponentCtx, id));
     }
     if (bestId === null) break;
     remaining.delete(bestId);
@@ -32392,7 +32501,6 @@ function ranksAbove(a, b, direction = "max") {
   if (a.score !== b.score) {
     return direction === "max" ? a.score > b.score : a.score < b.score;
   }
-  if (a.action.id !== b.action.id) return a.action.id < b.action.id;
   return a.poolIndex < b.poolIndex;
 }
 
@@ -33322,6 +33430,21 @@ function declineWith(ctx, rationale) {
     traceContext: buildTrace(rationale)
   };
 }
+function counterRanksAbove(candidate, incumbent, evArgmax) {
+  if (candidate.key !== incumbent.key) return candidate.key > incumbent.key;
+  if (evArgmax) {
+    if (candidate.termChanges !== incumbent.termChanges) {
+      return candidate.termChanges < incumbent.termChanges;
+    }
+    if (candidate.utilityGain !== incumbent.utilityGain) {
+      return candidate.utilityGain > incumbent.utilityGain;
+    }
+  }
+  if (candidate.cardsMoved !== incumbent.cardsMoved) {
+    return candidate.cardsMoved < incumbent.cardsMoved;
+  }
+  return candidate.poolIndex < incumbent.poolIndex;
+}
 function bundleCountFor(bundle, type) {
   return bundle.find((item) => item.type === type)?.count ?? 0;
 }
@@ -33430,12 +33553,14 @@ function bestCounterChoice(ctx, decision2, self2, preTrade) {
   const proposerId = decision2.actingPlayerId;
   const target = ctx.state.victoryPointsTarget;
   let best = null;
-  let bestKey = -Infinity;
   const proposal = {
     offer: decision2.payload.offer,
     want: decision2.payload.want
   };
+  const evArgmax = ctx.tuning.counterEvArgmaxEnabled;
+  let poolIndex = -1;
   for (const action of counterBidCandidates(ctx.request.validActions, proposal)) {
+    poolIndex++;
     const receive = action.offer;
     const give = action.want;
     if (ctx.tuning.vpTransitionTradeGuardEnabled && proposerId !== null && proposerId !== ctx.playerId && effectiveOpponentVp(ctx.state, proposerId, ctx.tuning) >= target - SEVEN_FROM_WIN && tradeUnlocksProposerVpTransition(
@@ -33466,18 +33591,20 @@ function bestCounterChoice(ctx, decision2, self2, preTrade) {
       );
     }
     const expectedUtilityGain = utilityGain * takeProbability;
-    const key = ctx.tuning.counterEvArgmaxEnabled ? expectedUtilityGain : utilityGain;
+    const key = evArgmax ? expectedUtilityGain : utilityGain;
     const termChanges = counterTermChanges(proposal, action);
-    if (best === null || key > bestKey || ctx.tuning.counterEvArgmaxEnabled && key === bestKey && (termChanges < best.termChanges || termChanges === best.termChanges && utilityGain > best.utilityGain)) {
+    let cardsMoved = 0;
+    for (const line of action.offer) cardsMoved += line.count;
+    for (const line of action.want) cardsMoved += line.count;
+    const rank = { key, termChanges, utilityGain, cardsMoved, poolIndex };
+    if (best === null || counterRanksAbove(rank, best, evArgmax)) {
       best = {
+        ...rank,
         candidate: action,
-        utilityGain,
         takeProbability,
         expectedUtilityGain,
-        projectionBonus: projection.bonus,
-        termChanges
+        projectionBonus: projection.bonus
       };
-      bestKey = key;
     }
   }
   return best;
@@ -34886,8 +35013,13 @@ function hasSupplyForChain(state, playerId, player, priorA, priorB, followup, su
   applyPieceSupplyEffect(supply, state, playerId, priorB);
   return hasPieceForAction(supply, state, playerId, followup);
 }
+function topChainStarters(chainStarters, k) {
+  return chainStarters.map((starter, poolIndex) => ({ starter, poolIndex })).sort(
+    (a, b) => b.starter.score - a.starter.score || b.starter.chainScore - a.starter.chainScore || a.poolIndex - b.poolIndex
+  ).slice(0, k).map((entry) => entry.starter);
+}
 function bestTwoPlyScore(ctx, candidate, projectedAfterCandidate, chainStarters, followupPool, costCache, scoreCandidate, secondPly, medicineArmed, craneArmed, plannedCandidate, candidateIsProgressCard) {
-  const topK = [...chainStarters].sort((a, b) => b.score - a.score).slice(0, secondPly.secondPlyK);
+  const topK = topChainStarters(chainStarters, secondPly.secondPlyK);
   const candidateShapeKey = actionShapeKey(candidate);
   const poolShapeKeys = shapeKeysForPool(followupPool);
   const player = ctx.state.players[ctx.actingPlayerId];
@@ -36921,6 +37053,8 @@ var DEFAULT_TUNING = Object.freeze({
   metropolisGapBoost: 12,
   metropolisDefendOwnedBonus: 0,
   metropolisStealRequiresStealable: true,
+  metropolisUncontestedTopClimbPenalty: 80,
+  metropolisLockedTrackClimbPenalty: 80,
   deckDisruptionPivotEnabled: false,
   pillagePreferUnwalledTieBreak: false,
   // Race penalty per gap step, replacing prior flat -5 in scoreScienceRush
