@@ -3,6 +3,9 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BotRequestSchema } from '../src/schemas.js';
 import { simulateActions } from '../src/simulator.js';
+import { deepStrictEqual, strictEqual } from 'node:assert';
+import { searchActions } from '../src/search.js';
+import { pickAction } from '../src/strategy.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fixture = BotRequestSchema.parse(
@@ -183,6 +186,94 @@ const immediateWin = BotRequestSchema.parse({
 });
 if (simulateActions(immediateWin, { samples: 20, seed: 8 })[0]?.action.id !== 'win') {
   throw new Error('simulator failed to take an immediate public victory');
+}
+
+// Equal opponents and identical terms isolate seat labels from public strategy.
+// Exercise the fallback itself: ordinary HTTP smoke tests use the champion.
+const fairRequest = BotRequestSchema.parse({
+  ...fixture,
+  playerId: 'actor',
+  state: {
+    ...fixture.state,
+    players: {
+      host: { seatIndex: 0, victoryPoints: 4, resourceCount: 3, commodityCount: 0 },
+      actor: { seatIndex: 1, victoryPoints: 4, resources: { ore: 3 }, commodities: {} },
+      next: { seatIndex: 2, victoryPoints: 4, resourceCount: 3, commodityCount: 0 },
+    },
+    opponentMaterialTypes: ['grain'],
+  },
+  recentEvents: [],
+  validActions: ['host', 'next'].map((targetPlayerId, index) => ({
+    id: `action-${index}`,
+    type: 'domesticTradePropose',
+    targetPlayerId,
+    offer: [{ type: 'ore', count: 1 }],
+    want: [{ type: 'grain', count: 1 }],
+  })),
+});
+const fallbackOptions = { samples: 512, seed: 7, deadlineMs: 60_000 };
+const { humanPlayerIds: _labels, ...unlabeled } = fairRequest;
+const expectedFairScores = simulateActions(BotRequestSchema.parse(unlabeled), fallbackOptions);
+strictEqual(expectedFairScores.length, 2);
+const expectedFallback = pickAction(BotRequestSchema.parse(unlabeled));
+strictEqual(
+  expectedFallback.decisionTrace?.strategy,
+  'public-information-monte-carlo-fallback-v1',
+  'fixture must exercise the served fallback, not the bundled champion'
+);
+for (const humanPlayerIds of [[], ['host'], ['next'], ['host', 'next'], ['actor']]) {
+  const labeled = BotRequestSchema.parse({ ...unlabeled, humanPlayerIds });
+  deepStrictEqual(
+    simulateActions(labeled, fallbackOptions),
+    expectedFairScores,
+    `fallback scores changed for human seats ${humanPlayerIds.join(',')}`
+  );
+  deepStrictEqual(
+    searchActions(labeled, fallbackOptions),
+    searchActions(BotRequestSchema.parse(unlabeled), fallbackOptions),
+    'fallback search depends on human labels'
+  );
+  deepStrictEqual(pickAction(labeled), expectedFallback, 'served fallback depends on human labels');
+}
+
+// Wire IDs follow enumeration order. They must not always break target ties
+// toward the host. Rotate seats and rename action IDs as well as their order.
+for (const type of ['chooseStealTarget', 'domesticTradePropose']) {
+  for (const rotation of [0, 1, 2]) {
+    for (const reversed of [false, true]) {
+      const targets = reversed ? ['next', 'host'] : ['host', 'next'];
+      const request = BotRequestSchema.parse({
+        ...unlabeled,
+        state: {
+          ...fairRequest.state,
+          players: Object.fromEntries(
+            Object.entries(
+              fairRequest.state.players as Record<string, Record<string, unknown>>
+            ).map(([id, player]) => [
+              id,
+              { ...player, seatIndex: (Number(player.seatIndex) + rotation) % 3 },
+            ])
+          ),
+        },
+        validActions: targets.map((targetPlayerId, index) => ({
+          ...fairRequest.validActions[0],
+          id: `action-${index}`,
+          type,
+          targetPlayerId,
+        })),
+      });
+      strictEqual(
+        simulateActions(request, fallbackOptions)[0]?.action.targetPlayerId,
+        'next',
+        'fallback target tie followed host/order instead of relative turn order'
+      );
+      strictEqual(
+        searchActions(request, fallbackOptions)[0]?.action.targetPlayerId,
+        'next',
+        'search discarded the seat-neutral fallback tie'
+      );
+    }
+  }
 }
 
 console.log(

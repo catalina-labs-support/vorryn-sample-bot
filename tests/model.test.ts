@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { buildOpponentBeliefs } from '../src/opponent-beliefs.js';
 import { buildPublicStateModel, playerProduction } from '../src/public-state.js';
 import { BotRequestSchema } from '../src/schemas.js';
+import { deepStrictEqual } from 'node:assert';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const request = BotRequestSchema.parse(
@@ -20,8 +21,12 @@ const opponentId = [...model.players.keys()].find((id) => id !== request.playerI
 if (opponentId === undefined) throw new Error('fixture needs an opponent');
 const withHumans = BotRequestSchema.parse({ ...request, humanPlayerIds: [opponentId] });
 const belief = buildOpponentBeliefs(withHumans).get(opponentId);
-if (belief?.isHuman !== true) throw new Error('known human seat was not represented in beliefs');
-if (belief.materialTypes.size === 0)
+if (belief === undefined || belief.materialTypes.size === 0)
   throw new Error('public material evidence was not represented');
+deepStrictEqual(
+  buildOpponentBeliefs(withHumans),
+  buildOpponentBeliefs(request),
+  'opponent beliefs must ignore human/bot labels'
+);
 
 console.log('PASS - typed public model and opponent beliefs derive from redacted state');

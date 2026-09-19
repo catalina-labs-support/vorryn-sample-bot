@@ -27723,7 +27723,7 @@ function createProductionEstimator(diceHistogram = {}, recentEvents = [], boardI
       return cached2;
     }
     const production = {};
-    const ownedBuildings = boardIndex?.buildingsByPlayer[actingPlayerId];
+    const ownedBuildings2 = boardIndex?.buildingsByPlayer[actingPlayerId];
     const walkIntersection = (intersectionId, occupant) => {
       if (occupant === null || occupant.ownerPlayerId !== actingPlayerId) return;
       const intersection2 = state.board.intersections[intersectionId];
@@ -27739,8 +27739,8 @@ function createProductionEstimator(diceHistogram = {}, recentEvents = [], boardI
         }
       }
     };
-    if (ownedBuildings !== void 0) {
-      for (const entry of ownedBuildings) {
+    if (ownedBuildings2 !== void 0) {
+      for (const entry of ownedBuildings2) {
         walkIntersection(entry.intersectionId, entry.building);
       }
     } else {
@@ -33930,6 +33930,54 @@ function canGiveAll(player, give) {
   return true;
 }
 
+// bot/src/bot/proposer-build-unlock.ts
+var TRACKS = [
+  ["scienceLevel", CommodityType.Paper],
+  ["tradeLevel", CommodityType.Cloth],
+  ["politicsLevel", CommodityType.Coin]
+];
+var MAX_IMPROVEMENT_LEVEL = 5;
+function ownedBuildings(state, playerId) {
+  let settlements = 0;
+  let cities = 0;
+  for (const intersection2 of Object.values(state.board.intersections)) {
+    const building = intersection2.building;
+    if (building === null || building.ownerPlayerId !== playerId) continue;
+    if (building.type === BuildingType.City) cities++;
+    else if (building.type === BuildingType.Settlement) settlements++;
+  }
+  return { settlements, cities };
+}
+function affordableBuilds(state, playerId, hand) {
+  const player = state.players[playerId];
+  const out = /* @__PURE__ */ new Set();
+  if (player === void 0) return out;
+  const { settlements, cities } = ownedBuildings(state, playerId);
+  if (settlements > 0 && player.citiesInSupply > 0 && canAffordResourceCost(hand, actionCost(ActionType.BuildCity))) {
+    out.add("city");
+  }
+  if (player.settlementsInSupply > 0 && canAffordResourceCost(hand, actionCost(ActionType.BuildSettlement))) {
+    out.add("settlement");
+  }
+  if (cities > 0) {
+    for (const [track, commodity] of TRACKS) {
+      const level = player[track];
+      if (level >= MAX_IMPROVEMENT_LEVEL) continue;
+      if ((hand[commodity] ?? 0) >= improvementCost(false, level)) out.add(track);
+    }
+  }
+  return out;
+}
+function tradeCompletesProposerBuild(state, proposerId, proposerGives, proposerReceives, opponentModel) {
+  const before = opponentModel.estimatedHand(proposerId);
+  const after = projectProposerHand(before, proposerGives, proposerReceives);
+  const affordableBefore = affordableBuilds(state, proposerId, before);
+  for (const build of affordableBuilds(state, proposerId, after)) {
+    if (!affordableBefore.has(build)) return true;
+  }
+  return false;
+}
+
 // bot/src/pending/domestic-trade-response.ts
 var TRACE_KEY = {
   projectionBonus: "tradeResponseProjectionBonus",
@@ -34096,6 +34144,9 @@ function vpTransitionVetoFor(ctx, proposerId, target, offer, want) {
 function scienceDenialApplies(ctx, proposerId, given) {
   return ctx.tuning.scienceLevel3DenialEnabled && proposerId !== null && proposerId !== ctx.playerId && tradeCompletesOpponentScienceLevel3(ctx.state, proposerId, given, ctx.opponentModel);
 }
+function proposerBuildDenialApplies(ctx, proposerId, received, given, advancesBuildPath) {
+  return ctx.tuning.proposerBuildUnlockDenialEnabled && !advancesBuildPath && proposerId !== null && proposerId !== ctx.playerId && tradeCompletesProposerBuild(ctx.state, proposerId, received, given, ctx.opponentModel);
+}
 function cardBalanceVetoFor(ctx, self2, offer, want, desperate, advancesBuildPath, declineCount) {
   if (desperate || advancesBuildPath) return null;
   const giving = bundleCount(want);
@@ -34142,6 +34193,7 @@ function bestCounterChoice(ctx, decision2, self2, preTrade) {
     const projection = evaluateTradeProjection(ctx, receive, give);
     if (projection.bonus < 0) continue;
     const advancesBuildPath = projection.bonus >= ctx.tuning.tradeBuildPathBonusThreshold;
+    if (proposerBuildDenialApplies(ctx, proposerId, receive, give, advancesBuildPath)) continue;
     if (neededTypeGivenAway(ctx, self2, receive, give, advancesBuildPath) !== null) continue;
     if (fairnessVetoFor(ctx, proposerId, receive, give, advancesBuildPath) !== null) continue;
     const utilityGain = tradeUtilityGain(ctx, self2, receive, give, preTrade);
@@ -34240,6 +34292,9 @@ var domesticTradeResponse = (ctx, decision2) => {
       proposerEffectiveVp: fairnessVeto.proposerVp,
       leaderPriced: fairnessVeto.leaderPriced
     });
+  }
+  if (proposerBuildDenialApplies(ctx, proposerId, offer, want, advancesBuildPath)) {
+    return declineWith(ctx, { gate: "proposer-build-unlock", advancesBuildPath });
   }
   const desperate = self2.victoryPoints >= target - ONE_FROM_WIN;
   const declineCount = ctx.state.domesticTradeDeclinesThisTurn.filter(
@@ -37675,6 +37730,7 @@ var DEFAULT_TUNING = Object.freeze({
   drawEngineNoProductionFactor: 0.4,
   scienceLevel3DriveWeight: 8,
   scienceLevel3DenialEnabled: true,
+  proposerBuildUnlockDenialEnabled: false,
   roadCutWeight: 18,
   winSiteDenialWeight: 22,
   opponentWantTellWeight: 0,
@@ -38009,15 +38065,14 @@ var HUMANS = Object.freeze({
   domesticTradeAcceptModerateProjection: 3,
   domesticTradeAcceptModerateUtility: 10,
   domesticTradeAcceptUtilityFloor: 20,
-  // Trade only for our own builds (owner ruling 2026-09-18: bots play to win,
-  // never to help). Prod 2026-09-18, 317 completed trades the bot took as
-  // responder: the proposer made a major build on their next turn 68% of the
-  // time (baseline 51.5%), the bot 30% (baseline 48.6%), and 215 of the 317
-  // advanced no build path of the bot's. An unreachable floor (finite, so the
-  // tuning stays JSON-safe) makes the decline-first bar pass on every
-  // non-desperate offer that advances no build.
-  declineFirstEnabled: true,
-  declineFirstUtilityFloor: 1e6,
+  // Decline-first stays DISARMED here. Arming it at an unreachable floor (trade
+  // only for our own builds, 1fcd27639) failed its powered gate on 2026-09-19:
+  // the opportunistic profile lost about 1.1pp (p≈0.003) on both judges. See
+  // docs/bot-evals/2026-09-18-responder-own-build-gate.md.
+  // Never hand an opponent the cards that complete their build unless the same
+  // trade advances one of ours (prod 2026-09-18: proposers built on their next
+  // turn 68% of the time after the bot took their trade, baseline 51.5%).
+  proposerBuildUnlockDenialEnabled: true,
   surplusDumpAcceptEnabled: true,
   // Counter-offers (Stage 2): counter when meaningfully better than both
   // accept and decline — low enough to actually fire on real tables,

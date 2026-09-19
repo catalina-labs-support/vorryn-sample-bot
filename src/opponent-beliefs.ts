@@ -5,7 +5,6 @@ export type OpponentBelief = {
   playerId: string;
   materialTypes: ReadonlySet<string>;
   observedNetFlow: Readonly<Record<string, number>>;
-  isHuman: boolean | undefined;
   confidence: number;
 };
 
@@ -20,7 +19,6 @@ const BUILD_COSTS: Readonly<Record<string, Readonly<Record<string, number>>>> = 
 /** Reconstructs a conservative, public-only estimate from the bounded event window. */
 export function buildOpponentBeliefs(req: BotRequest): ReadonlyMap<string, OpponentBelief> {
   const model = buildPublicStateModel(req);
-  const humanIds = req.humanPlayerIds === undefined ? undefined : new Set(req.humanPlayerIds);
   const publicTypes = new Set(
     Array.isArray(req.state.opponentMaterialTypes)
       ? req.state.opponentMaterialTypes.filter(
@@ -59,7 +57,6 @@ export function buildOpponentBeliefs(req: BotRequest): ReadonlyMap<string, Oppon
                 .map(([material]) => material),
             ]),
             observedNetFlow,
-            isHuman: humanIds?.has(player.id),
             confidence: Math.min(1, req.recentEvents.length / 60),
           },
         ];

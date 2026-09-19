@@ -4,6 +4,7 @@ import type { SimulationResult } from './simulator.js';
 import {
   asObject,
   buildPublicStateModel,
+  compareActionTies,
   intersectionProduction,
   numberField,
   stringField,
@@ -48,9 +49,11 @@ export function searchActions(
       combinedUtility: result.meanUtility + planValue * planWeight,
     });
   }
+  const model = buildPublicStateModel(req);
   return ranked.sort(
     (left, right) =>
-      right.combinedUtility - left.combinedUtility || left.action.id.localeCompare(right.action.id)
+      right.combinedUtility - left.combinedUtility ||
+      compareActionTies(model, left.action, right.action)
   );
 }
 

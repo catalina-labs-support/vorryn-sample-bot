@@ -2,6 +2,7 @@ import type { BotActionCandidate, BotRequest } from './schemas.js';
 import {
   adjacentIntersectionIds,
   buildPublicStateModel,
+  compareActionTies,
   intersectionProduction,
 } from './public-state.js';
 import type { PublicStateModel } from './public-state.js';
@@ -87,7 +88,10 @@ export function simulateActions(
         samples,
       };
     })
-    .sort((a, b) => b.meanUtility - a.meanUtility || a.action.id.localeCompare(b.action.id));
+    .sort(
+      (a, b) =>
+        b.meanUtility - a.meanUtility || compareActionTies(modelFor(req), a.action, b.action)
+    );
 }
 
 function scoreAction(req: BotRequest, action: BotActionCandidate, world: SampledWorld): number {
@@ -207,10 +211,7 @@ function simulateTradeProposal(
 ): number {
   const strategicSurplus = tradeValue(req, action);
   const tableSurplus = baseBundleValue(action.offer) - baseBundleValue(action.want);
-  const targetId = stringField(action, 'targetPlayerId');
-  const humanAdjustment =
-    targetId === undefined || beliefsFor(req).get(targetId)?.isHuman !== true ? 0 : 0.35;
-  const acceptanceProbability = 1 / (1 + Math.exp(-(tableSurplus - 0.4 - humanAdjustment)));
+  const acceptanceProbability = 1 / (1 + Math.exp(-(tableSurplus - 0.4)));
   return acceptanceSample < acceptanceProbability ? strategicSurplus + 4 : -1.25;
 }
 function bundleValue(req: BotRequest, value: unknown): number {

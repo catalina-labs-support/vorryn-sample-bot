@@ -1,4 +1,4 @@
-import type { BotRequest } from './schemas.js';
+import type { BotActionCandidate, BotRequest } from './schemas.js';
 
 export type JsonObject = Record<string, unknown>;
 export type MaterialInventory = Readonly<Record<string, number>>;
@@ -68,6 +68,29 @@ export function publicLeader(model: PublicStateModel): PublicPlayer | undefined 
     .sort(
       (left, right) => right.victoryPoints - left.victoryPoints || left.id.localeCompare(right.id)
     )[0];
+}
+
+/** Total order for equally valued actions. Wire IDs often follow lobby order,
+ * so different targets tie by turn order after the actor before considering IDs.
+ * Grouping by action type first keeps the comparator transitive across families. */
+export function compareActionTies(
+  model: PublicStateModel,
+  left: BotActionCandidate,
+  right: BotActionCandidate
+): number {
+  const family = left.type.localeCompare(right.type);
+  if (family !== 0) return family;
+  const actingSeat = numberField(model.ownPlayer.raw, 'seatIndex');
+  const turnKey = (action: BotActionCandidate): readonly [number, number] => {
+    const targetId = stringField(action, 'targetPlayerId') ?? stringField(action, 'responderId');
+    const target = targetId === undefined ? undefined : model.players.get(targetId);
+    const seat = numberField(target?.raw, 'seatIndex');
+    if (seat === undefined) return [2, 0];
+    return [actingSeat === undefined || seat > actingSeat ? 0 : 1, seat];
+  };
+  const a = turnKey(left);
+  const b = turnKey(right);
+  return a[0] - b[0] || a[1] - b[1] || left.id.localeCompare(right.id);
 }
 
 export function intersectionProduction(model: PublicStateModel, intersectionId: string): number {
