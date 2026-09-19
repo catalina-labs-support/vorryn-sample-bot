@@ -20085,7 +20085,29 @@ var PAYLOAD_CLONERS = {
   [PendingDecisionType.EspionageChooseCard]: structuredClone
 };
 
+// packages/core/src/state/payload-accessors.ts
+function parsePositiveInt(value) {
+  if (typeof value === "number") {
+    return Number.isInteger(value) && value > 0 && value <= INT_SAFE_MAX ? value : null;
+  }
+  if (typeof value !== "string" || !/^[1-9]\d*$/.test(value)) return null;
+  const parsed = Number.parseInt(value, 10);
+  return parsed <= INT_SAFE_MAX ? parsed : null;
+}
+
 // packages/core/src/services/trade.ts
+function parseTradeLine(entry) {
+  if (entry === null || typeof entry !== "object" || Array.isArray(entry)) return null;
+  const e = entry;
+  const type = e["type"];
+  if (typeof type !== "string") return null;
+  const count = parsePositiveInt(e["count"]);
+  if (count === null) return null;
+  return { type, count };
+}
+function isMaterialLine(line) {
+  return isMaterialType(line.type);
+}
 function isAtTermsBid(bid, offer, want) {
   return sameTradeMultiset(bid.offer, offer) && sameTradeMultiset(bid.want, want);
 }
@@ -28185,13 +28207,8 @@ function readObject(value) {
 
 // bot/src/util/trade-selections.ts
 function readTradeSelection(raw) {
-  if (raw === null || typeof raw !== "object" || Array.isArray(raw)) return null;
-  const entry = raw;
-  const type = entry["type"];
-  const count = entry["count"];
-  if (typeof type !== "string" || !isMaterialType(type)) return null;
-  if (typeof count !== "number" || !Number.isInteger(count) || count <= 0) return null;
-  return { type, count };
+  const line = parseTradeLine(raw);
+  return line !== null && isMaterialLine(line) ? line : null;
 }
 function readTradeSelections(raw) {
   if (!Array.isArray(raw)) return null;
@@ -28556,13 +28573,10 @@ function recordPublicGains(gains, actorId, actionType, action) {
     return;
   }
   if (actionType === ActionType.MaritimeTrade) {
-    const want = readObject(action["want"]);
-    if (want === null) return;
-    const type = readString(want["type"]);
-    if (type === null || !isMaterialType(type)) return;
-    const count = want["count"];
-    if (typeof count !== "number" || !Number.isFinite(count) || count <= 0) return;
-    addGain(gains, actorId, type, Math.floor(count));
+    const want = readTradeSelection(action["want"]);
+    if (want !== null) addGains(gains, actorId, [want]);
+    const additionalWants = readTradeSelections(action["additionalWants"]);
+    if (additionalWants !== null) addGains(gains, actorId, additionalWants);
   }
 }
 function recordWitnessedSteals(spend, gains, trackGains, steals) {
@@ -30935,18 +30949,24 @@ function deriveScoreContext(ctx, overrides) {
 var ROAD_COST2 = actionCost(ActionType.BuildRoad);
 var exposureByState = /* @__PURE__ */ new WeakMap();
 function longestRoadExposure(ctx) {
-  return memoizePerRequest(
-    exposureByState,
-    ctx.state,
-    ctx.actingPlayerId,
-    () => computeExposure(ctx)
-  );
+  const byTuning = getOrCreate(exposureByState, ctx.state, () => /* @__PURE__ */ new WeakMap());
+  const byModel = getOrCreate(byTuning, ctx.tuning, () => /* @__PURE__ */ new WeakMap());
+  const byPlayer = getOrCreate(byModel, ctx.opponentModel, () => /* @__PURE__ */ new Map());
+  return getOrCreate(byPlayer, ctx.actingPlayerId, () => computeExposure(ctx));
+}
+function isMoreDangerous(a, b, affordFloor) {
+  const aFunded = a.affordProbability >= affordFloor;
+  const bFunded = b.affordProbability >= affordFloor;
+  if (aFunded !== bFunded) return aFunded;
+  if (a.roadsNeeded !== b.roadsNeeded) return a.roadsNeeded < b.roadsNeeded;
+  return a.affordProbability > b.affordProbability;
 }
 function computeExposure(ctx) {
   const { state, actingPlayerId } = ctx;
   if (state.longestRoadHolderPlayerId !== actingPlayerId) return null;
   const maxGap = Math.floor(ctx.tuning.longestRoadDefenseMaxGap);
   if (maxGap <= 0) return null;
+  const affordFloor = ctx.tuning.longestRoadDefenseAffordFloor;
   let best = null;
   for (const [opponentId, opponent] of Object.entries(state.players)) {
     if (opponentId === actingPlayerId) continue;
@@ -30966,9 +30986,8 @@ function computeExposure(ctx) {
       opponentId,
       roadsCost(roadsNeeded)
     );
-    if (best === null || roadsNeeded < best.roadsNeeded || roadsNeeded === best.roadsNeeded && affordProbability > best.affordProbability) {
-      best = { threatenedBy: opponentId, roadsNeeded, affordProbability };
-    }
+    const candidate = { threatenedBy: opponentId, roadsNeeded, affordProbability };
+    if (best === null || isMoreDangerous(candidate, best, affordFloor)) best = candidate;
   }
   return best;
 }
@@ -34181,7 +34200,7 @@ var domesticTradeResponse = (ctx, decision2) => {
       if (priorCounters < relentRounds) {
         const preTrade2 = evaluatePlayerStateUtility(ctx.state, ctx.playerId);
         const counter2 = bestCounterChoice(ctx, decision2, self2, preTrade2);
-        if (counter2 !== null && counter2.expectedUtilityGain > rampMargin) {
+        if (counter2 !== null && counter2.expectedUtilityGain > rampMargin && !counterFailsDeclineFirst(ctx, self2, counter2)) {
           return {
             action: counter2.candidate,
             traceContext: buildTrace({
@@ -34318,6 +34337,9 @@ var domesticTradeResponse = (ctx, decision2) => {
   }
   return acceptWith(ctx, { gate: "accept", ...sharedRationale });
 };
+function counterFailsDeclineFirst(ctx, self2, counter) {
+  return ctx.tuning.declineFirstEnabled && self2.victoryPoints < ctx.state.victoryPointsTarget - ONE_FROM_WIN && counter.projectionBonus < ctx.tuning.tradeBuildPathBonusThreshold && counter.utilityGain < ctx.tuning.declineFirstUtilityFloor;
+}
 function isAcceptableTradeValue(tuning, projectionBonus, surplusGiveShare, utilityGain, desperate, declineCount) {
   if (desperate) {
     return projectionBonus > 0 || utilityGain > 0;
@@ -37987,6 +38009,15 @@ var HUMANS = Object.freeze({
   domesticTradeAcceptModerateProjection: 3,
   domesticTradeAcceptModerateUtility: 10,
   domesticTradeAcceptUtilityFloor: 20,
+  // Trade only for our own builds (owner ruling 2026-09-18: bots play to win,
+  // never to help). Prod 2026-09-18, 317 completed trades the bot took as
+  // responder: the proposer made a major build on their next turn 68% of the
+  // time (baseline 51.5%), the bot 30% (baseline 48.6%), and 215 of the 317
+  // advanced no build path of the bot's. An unreachable floor (finite, so the
+  // tuning stays JSON-safe) makes the decline-first bar pass on every
+  // non-desperate offer that advances no build.
+  declineFirstEnabled: true,
+  declineFirstUtilityFloor: 1e6,
   surplusDumpAcceptEnabled: true,
   // Counter-offers (Stage 2): counter when meaningfully better than both
   // accept and decline — low enough to actually fire on real tables,
