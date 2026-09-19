@@ -4227,6 +4227,7 @@
               "domesticTradePropose",
               "setStandingWant",
               "playProgressCard",
+              "moveKnight",
               "discardResources",
               "discardProgress",
               "weddingGiveCards",
