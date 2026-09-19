@@ -45,7 +45,7 @@ decision, so you never need to have played the game).
   search once you're hooked. The first-party bot is 25+ scoring rules —
   you can absolutely beat it.
 - **Any language.** The TypeScript starter is here, but the wire format
-  is a documented JSON schema — generate a typed client in Go, Rust,
+  is a documented JSON schema — generate a typed client in Go,
   Python, or C# and skip straight to strategy.
 - **Play for real.** Register it once and invite it to games against
   friends. Watch it win (or lose gloriously), then tune.

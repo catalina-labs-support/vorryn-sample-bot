@@ -258,7 +258,7 @@ A shortage of one type does not affect payouts of other types. Resources and com
 
 ### 6.5 Science bonus (Aqueduct)
 
-Players with `scienceLevel >= 3` who receive **zero** production from a roll are eligible for the Aqueduct bonus: they choose one resource to take from the bank (`scienceLevel3Bonus` pending decision). The offered list contains only resource types the bank still stocks; if every resource stack is empty, the bonus is skipped for that roll and no pending is queued. This is queued after production resolves, one player at a time in seat order. See §13 for science track details, §16 for the pending-decision format.
+Players with `scienceLevel >= 3` who receive **zero resources and zero commodities** from a **non-7** production roll are eligible for the Aqueduct bonus: they choose one resource to take from the bank (`scienceLevel3Bonus` pending decision). Eligibility uses the cards actually granted, so robber-blocked or bank-shorted production can qualify. The offered list contains only resource types the bank still stocks and is recomputed for each queued player; if every resource stack is empty, the remaining bonuses are skipped. This is queued after production resolves, one player at a time in seat order starting with the current player. See §13 for science track details, §16 for the pending-decision format.
 
 ### 6.6 Wire fields
 
@@ -378,7 +378,7 @@ Downgrading returns the wall, if any. Normally the city returns to supply and a 
 
 Losing the last city does **not** discard or return the player's progress-card hand.
 
-If no player has any city at all when the attack resolves (`eligiblePlayerIds.length === 0`), the attack is recorded as a berserker victory with no pillage.
+If defense loses but there are no eligible cities, every remaining city is protected by a metropolis. The attack is recorded as a berserker victory with no pillage. A board with no cities has berserker strength zero and instead follows the successful-defense rules in §8.4.
 
 ### 8.6 Post-attack bookkeeping
 
@@ -656,9 +656,11 @@ The proposer is the pending's `actingPlayerId` and is not a member of `allowedPl
 
 **Award ranking is a public partial order.** Bid A _dominates_ bid B only when the proposer gives the same multiset and A gives the proposer a strict superset of what B does; bids with different give sides are incomparable and no public rule orders them. A bot proposer applies its hard eligibility gates first — it can pay the bid's give side, the responder is not within two victory points of winning (unless the bot itself is one point away and racing), and the bid clears its value floor — and only then drops dominated bids. So a strictly-dominant eligible bid always beats a plain eligible acceptance, while an **ineligible** dominant bid is still refused; a near-win responder cannot buy an award by sweetening. Bids that remain incomparable are separated by the bot's own private valuation, which is never sent to responders and never presented as an objective ranking.
 
-**Decline records:** fully-declined proposals (all opponents declined, no acceptances) push a `DomesticTradeDeclineRecord` onto `state.domesticTradeDeclinesThisTurn`. Each record holds `{ proposerId, targetPlayerId?, offer, want }`. With the enumerator's escalation option on (the default; with it off the records are never read and no escalated variants are generated), the enumerator reads these records to avoid re-generating identical 1-for-1 proposals to the same opponent that already declined; instead it generates a 2-for-1 sweetened bid for that target — offering 2 of the same material in exchange for 1 of the wanted type. If the proposer holds 3 or more of the offered material and the wanted type is on a "build-path" shortlist, a 3-for-1 escalation is also generated. Proposals that were never declined continue to generate the standard 1-for-1 candidate; a 2-for-1 variant reaches never-declined responders only when the wanted type is on the build-path shortlist (the escalation option alone does not add higher-count variants for fresh responders). Candidate generation is grouped per exact terms: the enumerator emits ONE broadcast (targetless) candidate only when every opponent can fulfill the complete ask, there are at least two eligible opponents (a lone qualifying opponent receives a targeted candidate instead), and none was already asked those terms this turn. A partial qualifying audience receives one targeted candidate per eligible opponent; zero emits nothing. This matches action semantics because a targetless proposal always opens the auction to every opponent. On the public-safe external list the fulfill check is disabled, so broadcast presence is uniform whenever every opponent is fresh for those terms and encodes no hidden holdings.
+**Proposal history and escalation:** An auction with every responder recorded as passed and no standing bid records a `DomesticTradeDeclineRecord` containing `{ proposerId, targetPlayerId?, offer, want }`. With `tradeEscalationEnabled` on (the default), a declined 1-for-1 pair can produce a 2-for-1 proposal when the proposer holds enough cards; a build-path want can also produce a 3-for-1 proposal. Fresh responders receive these higher ratios only for build-path wants. Turning escalation off disables these grouped ratio variants and decline-history checks. Independently, exact bundles already proposed this turn are suppressed regardless of whether they were taken, declined, or cancelled.
 
-**Candidate truncation:** the `DomesticTradePropose` family is generated with a global cap of `MAX_GENERATED_CANDIDATES = 96` and a reserved subcap for richer bundle candidates (want-2 or mixed-surplus offers, off by default). When the family exceeds the cap, `truncatedFamilies` gains `'domesticTradePropose'` and `validActionsTruncated` is set on the wire response.
+**Proposal audiences:** Candidates depend on the proposer's hand, build needs, and public proposal history; they never inspect opponents' hidden holdings. For each exact bundle, an eligible audience containing every opponent and at least two players produces a broadcast proposal. A smaller audience produces targeted proposals; an empty audience produces none. Selected build-path reservations also supply targeted alternatives alongside their broadcast, allowing the bot to choose the audience. A prior broadcast suppresses that exact bundle for every opponent; a prior targeted proposal suppresses it for that recipient.
+
+**Candidate truncation:** The primary proposal list is capped at `MAX_GENERATED_CANDIDATES = 96`, including up to 16 reserved candidates for mixed-surplus offers and exact mixed-material build-completion asks. Both richer families are off by default. Targeted alternatives for reserved build-path broadcasts are appended after this cap, and only when their broadcast survived, so the final proposal count can exceed 96. Truncation in the capped generation is reported through `truncatedFamilies` and `validActionsTruncated`.
 
 ### 12.2 Maritime trade (with the bank)
 
@@ -1094,7 +1096,7 @@ If no opponent must discard, the card may still be played for no benefit.
 
 **Window:** `actionPhase`. **Payload:** `hexId`.
 
-Moves the robber to `hexId` (must differ from its current position; robber must already be active — i.e., after the first berserker attack has been resolved). Then steals 1 random resource or commodity card from each distinct opponent who owns a building adjacent to the new robber hex. Each steal is processed independently via `stealRandom`.
+Moves the robber to `hexId` (must differ from its current position; robber must already be active — i.e., after the first berserker attack has been resolved). Then steals 1 random resource or commodity card from each distinct opponent who owns a building adjacent to the new robber hex. Each steal is processed independently via `stealRandom`, in seat order starting with the current player and wrapping. This deterministic resolution order is independent of board and player object-key order after persistence.
 
 No pendings triggered. Unplayable before the robber is placed (before the first berserker attack), or if `hexId` equals the current robber hex.
 
@@ -1157,7 +1159,9 @@ Revealed immediately when drawn into `revealedVpCards`. Awards +1 VP. Cannot be 
 
 ### 15.2 Win condition
 
-**Reaching the VP target wins** — 13 in a standard game, but configurable per game via `state.victoryPointsTarget` (for example, 8 for short / guest games). Victory is checked only for `state.currentPlayerId` at the end of every applied action — off-turn VP gains (a Defender-of-Vorryn token from a berserker defense, a longest-road transfer away from another player, or an opponent drawing a VP card) do **not** immediately end the game. The player wins automatically when their next turn begins: `advanceTurn` calls `checkVictory` after switching `currentPlayerId`, so a player who silently crossed the target during someone else's turn wins **while the outgoing player's `endTurn` (or their deferred progress-discard) is still resolving** — the crossing player never submits an action of their own, and no request will be sent for the seat that just won.
+**Reaching the VP target wins** — 13 in a standard game, but configurable per game via `state.victoryPointsTarget` (for example, 8 for short / guest games). Victory is checked only for `state.currentPlayerId` at the end of every applied action — off-turn VP gains (a Defender-of-Vorryn token from a berserker defense, a longest-road transfer away from another player, or an opponent drawing a VP card) do **not** immediately end the game. The player wins automatically if their score still meets the target when their next turn begins: `advanceTurn` calls `checkVictory` after switching `currentPlayerId`, so a player who still meets the target wins **while the outgoing player's `endTurn` (or their deferred progress-discard) is still resolving** — the crossing player never submits an action of their own, and no request will be sent for the seat that just won.
+
+An off-turn crossing does not reserve a win: losing points before the next turn can put the player below the target again.
 
 On a win: `state.phase` transitions to `'gameOver'` and `state.winnerPlayerId` is set to the winning player's id.
 

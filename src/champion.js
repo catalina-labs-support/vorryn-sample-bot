@@ -21780,6 +21780,7 @@ var PIPS_BY_NUMBER = Object.freeze({
   11: 2,
   12: 1
 });
+var TOTAL_PIPS = 36;
 
 // packages/core/src/rules/distance-rule.ts
 function canPlaceBuildingAt(board, intersectionId) {
@@ -24388,14 +24389,14 @@ function endgameCloserMode(ctx) {
   if (ctx.isVpAction) {
     return ctx.tuning.endgameCloserVpActionBonus;
   }
+  if (isMetropolisPrepAction(ctx)) {
+    return ctx.tuning.endgameCloserPrepBonus;
+  }
   if (ctx.action.type === ActionType.PlayProgressCard) {
     return 0;
   }
   if (ctx.action.type === ActionType.EndTurn) {
     return 0;
-  }
-  if (isMetropolisPrepAction(ctx)) {
-    return ctx.tuning.endgameCloserPrepBonus;
   }
   const distraction = distractionPenalty(ctx);
   if (distraction !== 0) return distraction;
@@ -26536,13 +26537,14 @@ function acquisitionTargetTurns(player, cost, production) {
     if (deficit <= 0) continue;
     const rate = production[entry.type] ?? 0;
     if (rate <= 0) tradeOnly.push(entry.type);
-    const lineTurns = lineTurnsFor(deficit, rate);
+    const lineTurns = turnsForProductionDeficit(deficit, rate);
     if (lineTurns > turns) turns = lineTurns;
   }
   return { turns, tradeOnly };
 }
-function lineTurnsFor(deficit, rate) {
-  return rate > 0 ? Math.ceil(deficit / rate) : NO_PRODUCTION_TURNS;
+function turnsForProductionDeficit(deficit, productionPips) {
+  if (deficit <= 0) return 0;
+  return productionPips > 0 ? Math.ceil(deficit * TOTAL_PIPS / productionPips) : NO_PRODUCTION_TURNS;
 }
 function turnsToAffordFromCounts(cost, counts, production) {
   let turns = 0;
@@ -26550,7 +26552,7 @@ function turnsToAffordFromCounts(cost, counts, production) {
     const deficit = Math.max(0, entry.needed - (counts[entry.type] ?? 0));
     if (deficit <= 0) continue;
     const rate = production[entry.type] ?? 0;
-    const lineTurns = lineTurnsFor(deficit, rate);
+    const lineTurns = turnsForProductionDeficit(deficit, rate);
     if (lineTurns > turns) turns = lineTurns;
   }
   return turns;
@@ -26629,7 +26631,7 @@ function sampledTurnsToAfford(cost, hand, production, transfers = []) {
     const deficit = Math.max(0, entry.needed - held);
     if (deficit <= 0) continue;
     const rate = production[entry.type] ?? 0;
-    const lineTurns = rate > 0 ? Math.ceil(deficit / rate) : NO_PRODUCTION_TURNS;
+    const lineTurns = turnsForProductionDeficit(deficit, rate);
     if (lineTurns > turns) turns = lineTurns;
   }
   return turns;
@@ -27311,21 +27313,12 @@ function evaluatePotentialTradeResponders(ctx, action, opponents, opponentModel)
   let risk = false;
   let noAcceptProbability = 1;
   for (const opp of opponents) {
-    const acceptanceOptions = {
-      targetCanFulfill: action.targetPlayerId === opp.id
-    };
     const tradeEvaluation = opponentModel.evaluateTradeForOpponent?.(
       opp.id,
       action.offer,
-      action.want,
-      acceptanceOptions
+      action.want
     );
-    const p = opponentModel.probabilityOpponentAcceptsTrade(
-      opp.id,
-      action.offer,
-      action.want,
-      acceptanceOptions
-    );
+    const p = opponentModel.probabilityOpponentAcceptsTrade(opp.id, action.offer, action.want);
     const responderP = p * nearWinLeaderFactor(ctx, opp.victoryPoints);
     noAcceptProbability *= 1 - clamp(responderP, 0, 1);
     if (!risk && p >= 0.05 && opponentAcceptanceCreatesVpRisk(ctx, action, opp.id, opponentModel)) {
@@ -29476,7 +29469,7 @@ function scoreRoadBuildingValue(ctx) {
     Object.keys(state.players)
   );
   const roadsToPlace = Math.min(2, selfPlayer2.roadsInSupply);
-  if (currentLength >= 3 && projectedLengthWithFreeRoads(ctx, currentLength, roadsToPlace, claimTarget) >= claimTarget) {
+  if (currentLength * (roadsToPlace + 1) + roadsToPlace >= claimTarget && projectedLengthWithFreeRoads(ctx, currentLength, roadsToPlace, claimTarget) >= claimTarget) {
     const selfVp = selfPlayer2.victoryPoints;
     if (selfVp + 2 >= state.victoryPointsTarget) return 200;
     if (selfVp >= state.victoryPointsTarget - THREE_FROM_WIN) return 130;
@@ -32405,7 +32398,7 @@ function longestRoadClaimDenialBonus(ctx, opponentId, edge) {
   const deniesHighPressureClaim = opponentVp >= target - THREE_FROM_WIN || leader?.id === opponentId;
   if (!deniesImmediateWin && !deniesHighPressureClaim) return 0;
   const currentLength = roadLengthFor(ctx.state, opponentId, ctx.roadLengthByPlayer);
-  if (currentLength < 3) return 0;
+  if (currentLength < 2) return 0;
   const projectedLength = projectedLongestRoadWithEdgeOverride(
     ctx.state.board,
     edge,
@@ -33370,13 +33363,18 @@ var smithingPromote = (ctx) => {
 // bot/src/pending/treason-place-knight.ts
 var HOLDER_CUT_WEIGHT = 1e4;
 var RIVAL_CUT_WEIGHT = 3e3;
+var SETTLEMENT_COST4 = actionCost(ActionType.BuildSettlement);
 var treasonPlaceKnight = (ctx) => {
+  const winningSettlementSite = soleWinningSettlementSite(ctx);
   const adjacencyCountByIntersection = /* @__PURE__ */ new Map();
   const cutValueByIntersection = /* @__PURE__ */ new Map();
   return pickArgmaxOptionalEffectWithSkip(ctx, (action) => {
     const intersectionId = action.intersectionId;
     const level = action.level;
     if (intersectionId === void 0 || level === void 0) return null;
+    if (intersectionId === winningSettlementSite && !isWinningAction(action, ctx.state, ctx.playerId, { boardIndex: ctx.boardIndex })) {
+      return null;
+    }
     const adjacency = getOrCreate(
       adjacencyCountByIntersection,
       intersectionId,
@@ -33395,6 +33393,24 @@ var treasonPlaceKnight = (ctx) => {
     return adjacency * 1e4 + cut + knightStrength(level) * 100 + (ctx.boardIndex.pipsByIntersection[intersectionId] ?? 0);
   });
 };
+function soleWinningSettlementSite(ctx) {
+  const player = self(ctx);
+  if (player === null || ctx.state.currentPlayerId !== ctx.playerId || player.settlementsInSupply < 1 || !couldImmediatelyWin(ctx.state, ctx.playerId) || !canAffordResourceCost(player.resources, SETTLEMENT_COST4))
+    return null;
+  let only = null;
+  for (const intersectionId of ctx.boardIndex.buildableSettlementSiteIdsByPlayer[ctx.playerId] ?? []) {
+    if (!isWinningAction(
+      { type: ActionType.BuildSettlement, intersectionId },
+      ctx.state,
+      ctx.playerId,
+      { boardIndex: ctx.boardIndex }
+    ))
+      continue;
+    if (only !== null) return null;
+    only = intersectionId;
+  }
+  return only;
+}
 function roadCutValue(ctx, intersectionId) {
   const { state, playerId } = ctx;
   const intersection2 = state.board.intersections[intersectionId];
@@ -35167,7 +35183,7 @@ function actionShapeKey(action) {
 }
 
 // bot/src/bot/lookahead/synthetic-followup.ts
-var SETTLEMENT_COST4 = costOnly(SETTLEMENT_DELTA);
+var SETTLEMENT_COST5 = costOnly(SETTLEMENT_DELTA);
 var ROAD_COST5 = costOnly(ROAD_DELTA);
 function enumerateSyntheticFollowups(candidate, ctx, projected, medicineConsumed = false, craneConsumed = false) {
   const out = [];
@@ -35256,7 +35272,7 @@ function affordabilityFingerprint(ctx, projected, medicineConsumed, craneConsume
   const player = ctx.state.players[ctx.actingPlayerId];
   let mask = 0;
   if (canAffordHypothetical(projected, ROAD_COST5)) mask |= 1;
-  if (canAffordHypothetical(projected, SETTLEMENT_COST4)) mask |= 2;
+  if (canAffordHypothetical(projected, SETTLEMENT_COST5)) mask |= 2;
   if (player !== void 0 && canAffordHypothetical(
     projected,
     cityCostFor(!medicineConsumed && isSelf(player) && player.medicinePlayed)
@@ -35286,7 +35302,7 @@ function candidateCanUnlockByResources(candidate, ctx) {
   return false;
 }
 function enumerateRoadUnlockedSettlements(edgeId, ctx, projected) {
-  if (!canAffordHypothetical(projected, SETTLEMENT_COST4)) return [];
+  if (!canAffordHypothetical(projected, SETTLEMENT_COST5)) return [];
   const player = ctx.state.players[ctx.actingPlayerId];
   if (player === void 0 || player.settlementsInSupply <= 0) return [];
   const edge = ctx.state.board.edges[edgeId];
@@ -35320,7 +35336,7 @@ function enumerateAffordableBuildRoads(ctx, projected) {
   return out;
 }
 function enumerateAffordableSettlements(ctx, projected) {
-  if (!canAffordHypothetical(projected, SETTLEMENT_COST4)) return [];
+  if (!canAffordHypothetical(projected, SETTLEMENT_COST5)) return [];
   const player = ctx.state.players[ctx.actingPlayerId];
   if (player === void 0 || player.settlementsInSupply <= 0) return [];
   const siteIds = ctx.boardIndex.buildableSettlementSiteIdsByPlayer[ctx.actingPlayerId];
@@ -35328,7 +35344,7 @@ function enumerateAffordableSettlements(ctx, projected) {
   return mapSettlementSiteCandidates(siteIds);
 }
 function enumerateCityUnlockedSettlements(candidate, ctx, projected) {
-  if (!canAffordHypothetical(projected, SETTLEMENT_COST4)) return [];
+  if (!canAffordHypothetical(projected, SETTLEMENT_COST5)) return [];
   const player = ctx.state.players[ctx.actingPlayerId];
   if (player === void 0) return [];
   if (player.settlementsInSupply <= 0 && isSidewaysCityRebuild(ctx.state, ctx.actingPlayerId, candidate)) {
@@ -35462,6 +35478,14 @@ function isTradeAction(action) {
 function canRepeatSameCandidate(prior, followup) {
   return prior.id === followup.id && prior.type === ActionType.MaritimeTrade && followup.type === ActionType.MaritimeTrade;
 }
+function bankCanSupplyFollowup(state, candidate, candidateDelta, followup) {
+  if (followup.type !== ActionType.MaritimeTrade) return true;
+  const { type, count } = followup.want;
+  const before = isCommodityType(type) ? state.bankCommodities[type] ?? 0 : state.bankResources[type] ?? 0;
+  const playerTransfer = candidate.type === ActionType.DomesticTradePropose || candidate.type === ActionType.ExecuteStandingWant;
+  const after = before - (playerTransfer ? 0 : candidateDelta[type] ?? 0);
+  return after >= count;
+}
 function canStartSecondPlyAfter(outer, followup, ctx) {
   return isBuildChainStarter(followup, ctx) || isTradeAction(outer) && followup.type === ActionType.MaritimeTrade;
 }
@@ -35568,6 +35592,7 @@ function computeTurnLookaheadBonus(ctx, candidate, followupPool, scoreCandidate,
       continue;
     }
     if (followup.type === ActionType.PlayProgressCard) continue;
+    if (!bankCanSupplyFollowup(ctx.state, candidate, candidateDelta, followup)) continue;
     if (actionsConflict(ctx, plannedCandidate, followup, candidateIsProgressCard)) {
       continue;
     }
@@ -35591,6 +35616,7 @@ function computeTurnLookaheadBonus(ctx, candidate, followupPool, scoreCandidate,
     medicineConsumed,
     craneConsumed
   )) {
+    if (!bankCanSupplyFollowup(ctx.state, candidate, candidateDelta, followup)) continue;
     if (actionsConflict(ctx, plannedCandidate, followup, candidateIsProgressCard)) {
       continue;
     }
@@ -36302,7 +36328,7 @@ function planRanksAbove(candidate, incumbent) {
 }
 
 // bot/src/bot/causeway-win-plan.ts
-var SETTLEMENT_COST5 = actionCost(ActionType.BuildSettlement);
+var SETTLEMENT_COST6 = actionCost(ActionType.BuildSettlement);
 function findCausewayWinPlan(ctx, pool) {
   const self2 = selfPlayer(ctx.state, ctx.playerId);
   const pending = ctx.state.pendingDecision;
@@ -36317,10 +36343,10 @@ function findCausewayWinPlan(ctx, pool) {
   const roadCount = pending === null ? 2 : self2.freeRoadsRemaining;
   if (roadCount < 1 || roadCount > 2 || self2.roadsInSupply < roadCount) return null;
   const hand = { resources: self2.resources, commodities: self2.commodities };
-  let funding = canAffordHypothetical(hand, SETTLEMENT_COST5) ? [] : null;
+  let funding = canAffordHypothetical(hand, SETTLEMENT_COST6) ? [] : null;
   if (funding === null && pending === null) {
     const trades = pool.filter(
-      (a) => a.type === ActionType.MaritimeTrade && !isCommodityType(a.want.type) && a.want.count === 1 && (self2.resources[a.want.type] ?? 0) < (SETTLEMENT_COST5[a.want.type] ?? 0)
+      (a) => a.type === ActionType.MaritimeTrade && !isCommodityType(a.want.type) && a.want.count === 1 && (self2.resources[a.want.type] ?? 0) < (SETTLEMENT_COST6[a.want.type] ?? 0)
     );
     for (const first of trades) {
       const delta = actionDelta(first);
@@ -36328,10 +36354,10 @@ function findCausewayWinPlan(ctx, pool) {
       const bank = { resources: ctx.state.bankResources, commodities: ctx.state.bankCommodities };
       if (!canAffordHypothetical(bank, { [first.want.type]: first.want.count })) continue;
       const afterFirst = applyResourceDelta(hand, delta);
-      if (costDeficit(afterFirst.resources, SETTLEMENT_COST5) >= costDeficit(hand.resources, SETTLEMENT_COST5)) {
+      if (costDeficit(afterFirst.resources, SETTLEMENT_COST6) >= costDeficit(hand.resources, SETTLEMENT_COST6)) {
         continue;
       }
-      if (canAffordHypothetical(afterFirst, SETTLEMENT_COST5)) {
+      if (canAffordHypothetical(afterFirst, SETTLEMENT_COST6)) {
         funding = [first];
         break;
       }
@@ -36343,7 +36369,7 @@ function findCausewayWinPlan(ctx, pool) {
         const secondDelta = actionDelta(second);
         if (secondDelta === null || !canAffordHypothetical(afterFirst, costOnly(secondDelta)) || !canAffordHypothetical(bankAfterFirst, { [second.want.type]: second.want.count }))
           continue;
-        if (canAffordHypothetical(applyResourceDelta(afterFirst, secondDelta), SETTLEMENT_COST5)) {
+        if (canAffordHypothetical(applyResourceDelta(afterFirst, secondDelta), SETTLEMENT_COST6)) {
           funding = [first, second];
           break;
         }
