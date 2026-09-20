@@ -1540,14 +1540,14 @@ function codePointLength(str) {
   const units = str.length;
   if (!highSurrogate.test(str))
     return units;
-  let count = units;
+  let count2 = units;
   for (let i = 0; i < units - 1; i++) {
     if ((str.charCodeAt(i) & 64512) === 55296 && (str.charCodeAt(i + 1) & 64512) === 56320) {
-      count--;
+      count2--;
       i++;
     }
   }
-  return count;
+  return count2;
 }
 function getLengthableOrigin(input2) {
   if (Array.isArray(input2))
@@ -5902,8 +5902,8 @@ function az_default() {
 }
 
 // node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/be.js
-function getBelarusianPlural(count, one, few, many) {
-  const absCount = Math.abs(count);
+function getBelarusianPlural(count2, one, few, many) {
+  const absCount = Math.abs(count2);
   const lastDigit = absCount % 10;
   const lastTwoDigits = absCount % 100;
   if (lastTwoDigits >= 11 && lastTwoDigits <= 19) {
@@ -8550,8 +8550,8 @@ function hu_default() {
 }
 
 // node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/hy.js
-function getArmenianPlural(count, one, many) {
-  return Math.abs(count) === 1 ? one : many;
+function getArmenianPlural(count2, one, many) {
+  return Math.abs(count2) === 1 ? one : many;
 }
 function withDefiniteArticle(word) {
   if (!word)
@@ -11289,8 +11289,8 @@ function ro_default() {
 }
 
 // node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/locales/ru.js
-function getRussianPlural(count, one, few, many) {
-  const absCount = Math.abs(count);
+function getRussianPlural(count2, one, few, many) {
+  const absCount = Math.abs(count2);
   const lastDigit = absCount % 10;
   const lastTwoDigits = absCount % 100;
   if (lastTwoDigits >= 11 && lastTwoDigits <= 19) {
@@ -20046,8 +20046,8 @@ function sameTradeMultiset(a, b) {
   const countsA = termCounts(a);
   const countsB = termCounts(b);
   if (countsA.size !== countsB.size) return false;
-  for (const [type, count] of countsA) {
-    if (countsB.get(type) !== count) return false;
+  for (const [type, count2] of countsA) {
+    if (countsB.get(type) !== count2) return false;
   }
   return true;
 }
@@ -20101,9 +20101,9 @@ function parseTradeLine(entry) {
   const e = entry;
   const type = e["type"];
   if (typeof type !== "string") return null;
-  const count = parsePositiveInt(e["count"]);
-  if (count === null) return null;
-  return { type, count };
+  const count2 = parsePositiveInt(e["count"]);
+  if (count2 === null) return null;
+  return { type, count: count2 };
 }
 function isMaterialLine(line) {
   return isMaterialType(line.type);
@@ -20115,12 +20115,12 @@ function strictTradeSuperset(a, b) {
   const countsA = termCounts(a);
   const countsB = termCounts(b);
   let totalB = 0;
-  for (const [type, count] of countsB) {
-    totalB += count;
-    if ((countsA.get(type) ?? 0) < count) return false;
+  for (const [type, count2] of countsB) {
+    totalB += count2;
+    if ((countsA.get(type) ?? 0) < count2) return false;
   }
   let totalA = 0;
-  for (const count of countsA.values()) totalA += count;
+  for (const count2 of countsA.values()) totalA += count2;
   return totalA > totalB;
 }
 function bidDominates(a, b) {
@@ -20853,11 +20853,11 @@ function countDomesticTradeCountersThisTurn(state, responderId, proposerId) {
   if (proposerId === null) {
     return 0;
   }
-  let count = 0;
+  let count2 = 0;
   for (const counter of state.domesticTradeCountersThisTurn) {
-    if (counter.responderId === responderId && counter.proposerId === proposerId) count++;
+    if (counter.responderId === responderId && counter.proposerId === proposerId) count2++;
   }
-  return count;
+  return count2;
 }
 
 // packages/core/src/wire/recent-event-redaction.ts
@@ -21747,8 +21747,8 @@ function costDeficit(resources, cost) {
 }
 function discountedResourceCost(base, discount) {
   const out = {};
-  for (const [type, count] of Object.entries(base)) {
-    const reduced = count - (discount[type] ?? 0);
+  for (const [type, count2] of Object.entries(base)) {
+    const reduced = count2 - (discount[type] ?? 0);
     if (reduced > 0) out[type] = reduced;
   }
   return out;
@@ -21927,6 +21927,7 @@ function calculateLongestRoadFromView(board, allEdgeIds, playerId) {
   if (ownedEdgeIds.length === 0) return 0;
   const visited = /* @__PURE__ */ new Set();
   let longest = 0;
+  let completeNetwork;
   for (let index = 0; index < ownedEdgeIds.length; index += 1) {
     const startEdgeId = ownedEdgeIds[index];
     const startEdge = ownedEdges[index];
@@ -21934,11 +21935,34 @@ function calculateLongestRoadFromView(board, allEdgeIds, playerId) {
     visited.add(startEdgeId);
     const fromA = longestTrailFrom(board, playerId, visited, startEdge, startEdge.intersectionA, 1);
     if (fromA > longest) longest = fromA;
+    if (longest > 2 && longest === ownedEdgeIds.length && (completeNetwork ??= isCompleteRoadNetwork(board, playerId, ownedEdgeIds, ownedEdges))) {
+      return longest;
+    }
     const fromB = longestTrailFrom(board, playerId, visited, startEdge, startEdge.intersectionB, 1);
     if (fromB > longest) longest = fromB;
+    if (longest > 2 && longest === ownedEdgeIds.length && (completeNetwork ??= isCompleteRoadNetwork(board, playerId, ownedEdgeIds, ownedEdges))) {
+      return longest;
+    }
     visited.delete(startEdgeId);
   }
   return longest;
+}
+function isCompleteRoadNetwork(board, playerId, ownedEdgeIds, ownedEdges) {
+  const owned = new Set(ownedEdgeIds);
+  for (const edge of ownedEdges) {
+    for (const vertexId of [edge.intersectionA, edge.intersectionB]) {
+      const intersection2 = board.intersection(vertexId);
+      if (intersection2 === void 0 || isOpponentOccupied(intersection2, playerId)) continue;
+      for (const adjacentId of intersection2.adjacentEdgeIds) {
+        const adjacent = board.edge(adjacentId);
+        if (adjacent === void 0 || adjacent.roadOwnerPlayerId !== playerId) continue;
+        if (!owned.has(adjacentId) || adjacent.intersectionA !== vertexId && adjacent.intersectionB !== vertexId) {
+          return false;
+        }
+      }
+    }
+  }
+  return true;
 }
 function longestTrailFrom(board, playerId, visited, edge, fromVertex, lengthSoFar) {
   const toVertex = edgeOther(edge, fromVertex);
@@ -22623,17 +22647,17 @@ function roadPlanCannotWin(state, playerId, opponentModel, best) {
   return bound * (1 + ROAD_PLAN_BOUND_SLACK) <= best.score;
 }
 function opponentPlanConvertibility(state, playerId, boardIndex, opponentModel) {
-  const plan = opponentModel.bestVisibleVpPlan?.(playerId) ?? inferOpponentVpPlan(state, playerId, boardIndex, opponentModel);
+  const plan = opponentModel.bestVisibleVpPlan === void 0 ? inferOpponentVpPlan(state, playerId, boardIndex, opponentModel) : opponentModel.bestVisibleVpPlan(playerId);
   return plan?.score ?? 0;
 }
 function planIntentShare(opponentModel, playerId, cost) {
   if (opponentModel.wantTellShare === void 0) return 0;
   let weighted = 0;
   let total = 0;
-  for (const [type, count] of Object.entries(cost)) {
-    if (count === void 0 || count <= 0) continue;
-    weighted += count * opponentModel.wantTellShare(playerId, type);
-    total += count;
+  for (const [type, count2] of Object.entries(cost)) {
+    if (count2 === void 0 || count2 <= 0) continue;
+    weighted += count2 * opponentModel.wantTellShare(playerId, type);
+    total += count2;
   }
   return total > 0 ? weighted / total : 0;
 }
@@ -22843,10 +22867,10 @@ function baseResourceUtility(state, playerId, type) {
 function citiesLeftFor(state, playerId, citySupply) {
   return citySupply > 0 || hasSidewaysCity(state, playerId) ? Math.max(1, citySupply) : 0;
 }
-function stackedUtility(perUnit, count) {
+function stackedUtility(perUnit, count2) {
   let total = 0;
   let factor = 1;
-  for (let i = 0; i < count; i++) {
+  for (let i = 0; i < count2; i++) {
     total += perUnit * Math.max(0.25, factor);
     factor -= 0.25;
   }
@@ -22884,12 +22908,12 @@ function evaluatePlayerStateUtility(state, playerId) {
 }
 function evaluatePlayerStateUtilityWithHand(state, playerId, resources, commodities) {
   let total = 0;
-  for (const [type, count] of Object.entries(resources)) {
-    const n = count ?? 0;
+  for (const [type, count2] of Object.entries(resources)) {
+    const n = count2 ?? 0;
     if (n > 0) total += stackedUtility(resourceUtility(state, playerId, type), n);
   }
-  for (const [type, count] of Object.entries(commodities)) {
-    const n = count ?? 0;
+  for (const [type, count2] of Object.entries(commodities)) {
+    const n = count2 ?? 0;
     if (n > 0) total += stackedUtility(resourceUtility(state, playerId, type), n);
   }
   return Math.round(total * 100);
@@ -22965,13 +22989,13 @@ var TURNS_TO_WIN_CAP = 12;
 function pendingMetropolisCount(state, player, heldTracks, metropolisOwnerByTrack, boardIndex) {
   if (player === void 0) return 0;
   if (!hasNonMetropolisCityFor(state, player.id, boardIndex)) return 0;
-  let count = 0;
+  let count2 = 0;
   const owners = metropolisOwnerByTrack;
   if (oneMoveMetroSwing(state, player?.scienceLevel ?? 0, CommodityTrack.Science, heldTracks, owners)) {
-    count++;
+    count2++;
   }
   if (oneMoveMetroSwing(state, player?.tradeLevel ?? 0, CommodityTrack.Trade, heldTracks, owners)) {
-    count++;
+    count2++;
   }
   if (oneMoveMetroSwing(
     state,
@@ -22980,9 +23004,9 @@ function pendingMetropolisCount(state, player, heldTracks, metropolisOwnerByTrac
     heldTracks,
     owners
   )) {
-    count++;
+    count2++;
   }
-  return count;
+  return count2;
 }
 function oneMoveMetroSwing(state, level, track, heldTracks, metropolisOwnerByTrack) {
   if (level >= 4) {
@@ -23810,12 +23834,12 @@ function improvementStatus(state, boardIndex, playerId, track) {
   return { kind: "transfers", hasHost: hasNonMetropolisCity(boardIndex, playerId) };
 }
 function nonMetropolisCityCount(boardIndex, playerId) {
-  let count = 0;
+  let count2 = 0;
   for (const entry of boardIndex.buildingsByPlayer[playerId] ?? []) {
     if (entry.building.type === BuildingType.City && entry.building.metropolisType === null)
-      count++;
+      count2++;
   }
-  return count;
+  return count2;
 }
 
 // bot/src/bot/science-level-3.ts
@@ -23873,7 +23897,8 @@ var EMPTY_TRADE_CACHE = {
   materialCounts: Object.freeze({}),
   targets: [],
   beforeStats: [],
-  maxProtectedByType: /* @__PURE__ */ new Map()
+  maxProtectedByType: /* @__PURE__ */ new Map(),
+  preparedHands: /* @__PURE__ */ new WeakMap()
 };
 function getTradeCache(ctx) {
   const byPlayer = requestScopedCache(tradeCacheByState, ctx.state);
@@ -23892,7 +23917,8 @@ function getTradeCache(ctx) {
       materialCounts,
       targets,
       beforeStats: targets.map((target) => targetStats(materialCounts, target.cost)),
-      maxProtectedByType: /* @__PURE__ */ new Map()
+      maxProtectedByType: /* @__PURE__ */ new Map(),
+      preparedHands: /* @__PURE__ */ new WeakMap()
     };
   }
   byPlayer.set(ctx.playerId, { boardIndex: ctx.boardIndex, requirePlacement, scienceDrive, cache: cache2 });
@@ -23932,8 +23958,8 @@ function marginalTradeUtility(ctx, receiveItems, giveItems) {
   if (player === null) return 0;
   const cache2 = getTradeCache(ctx);
   const before = cache2.materialCounts;
-  if (!hasTradeItems(before, giveItems)) return Number.NEGATIVE_INFINITY;
-  const after = applyTradeItems(before, receiveItems, giveItems);
+  const after = preparedTradeHand(cache2, receiveItems, giveItems);
+  if (after === null) return Number.NEGATIVE_INFINITY;
   const touched = /* @__PURE__ */ new Set();
   for (const item of receiveItems) touched.add(item.type);
   for (const item of giveItems) touched.add(item.type);
@@ -23973,11 +23999,10 @@ function evaluateTradeProjection(ctx, receiveItems, giveItems) {
     return emptyProjection();
   }
   const cache2 = getTradeCache(ctx);
-  const before = cache2.materialCounts;
-  if (!hasTradeItems(before, giveItems)) {
+  const after = preparedTradeHand(cache2, receiveItems, giveItems);
+  if (after === null) {
     return emptyProjection();
   }
-  const after = applyTradeItems(before, receiveItems, giveItems);
   const targets = cache2.targets;
   if (targets.length === 0) {
     return emptyProjection();
@@ -24034,21 +24059,29 @@ function materialCountsFor(player) {
 }
 function computeMaterialCounts(player) {
   const counts = {};
-  for (const [type, count] of Object.entries(player.resources)) {
-    if ((count ?? 0) > 0) counts[type] = count ?? 0;
+  for (const [type, count2] of Object.entries(player.resources)) {
+    if ((count2 ?? 0) > 0) counts[type] = count2 ?? 0;
   }
-  for (const [type, count] of Object.entries(player.commodities)) {
-    if ((count ?? 0) > 0) counts[type] = count ?? 0;
+  for (const [type, count2] of Object.entries(player.commodities)) {
+    if ((count2 ?? 0) > 0) counts[type] = count2 ?? 0;
   }
   return counts;
+}
+function preparedTradeHand(cache2, receiveItems, giveItems) {
+  const existing = cache2.preparedHands.get(receiveItems);
+  if (existing?.giveItems === giveItems) return existing.after;
+  const before = cache2.materialCounts;
+  const after = hasTradeItems(before, giveItems) ? applyTradeItems(before, receiveItems, giveItems) : null;
+  cache2.preparedHands.set(receiveItems, { giveItems, after });
+  return after;
 }
 function hasTradeItems(hand, items) {
   const required2 = {};
   for (const item of items) {
     required2[item.type] = (required2[item.type] ?? 0) + item.count;
   }
-  for (const [type, count] of Object.entries(required2)) {
-    if ((hand[type] ?? 0) < count) return false;
+  for (const [type, count2] of Object.entries(required2)) {
+    if ((hand[type] ?? 0) < count2) return false;
   }
   return true;
 }
@@ -24279,12 +24312,12 @@ function tradeBundleForAction(action) {
 function spentByMaterial(action) {
   const spent = /* @__PURE__ */ new Map();
   const cost = actionCost(action.type);
-  for (const [type, count] of Object.entries(cost)) {
-    if (count !== void 0 && count > 0) spent.set(type, count);
+  for (const [type, count2] of Object.entries(cost)) {
+    if (count2 !== void 0 && count2 > 0) spent.set(type, count2);
   }
-  const trade = tradeBundleForAction(action);
-  if (trade !== null) {
-    for (const item of trade.give) {
+  const trade2 = tradeBundleForAction(action);
+  if (trade2 !== null) {
+    for (const item of trade2.give) {
       spent.set(item.type, (spent.get(item.type) ?? 0) + item.count);
     }
   }
@@ -25949,14 +25982,14 @@ var cache = /* @__PURE__ */ new WeakMap();
 function boardAvgPipsPerHex(pipsByHex) {
   return getOrCreate(cache, pipsByHex, () => {
     let total = 0;
-    let count = 0;
+    let count2 = 0;
     for (const v of Object.values(pipsByHex)) {
       if (v > 0) {
         total += v;
-        count += 1;
+        count2 += 1;
       }
     }
-    return count === 0 ? 0 : total / count;
+    return count2 === 0 ? 0 : total / count2;
   });
 }
 
@@ -26770,8 +26803,8 @@ function summarizeBundle(bundle) {
   return { counts, total };
 }
 function bundleDominates(prior, candidate) {
-  for (const [type, count] of candidate.counts) {
-    if ((prior.counts.get(type) ?? 0) < count) return false;
+  for (const [type, count2] of candidate.counts) {
+    if ((prior.counts.get(type) ?? 0) < count2) return false;
   }
   return prior.total > candidate.total;
 }
@@ -26934,13 +26967,15 @@ function scoreMaritimeTrade(ctx, action) {
   const { state, tuning } = ctx;
   const rate = maritimeTradeRate(action);
   const tradeCtx = buildProposeTradeCtx(ctx);
-  const utilityDelta = marginalTradeUtility(tradeCtx, [action.want], [action.offer]);
+  const receive = [action.want];
+  const give = [action.offer];
+  const utilityDelta = marginalTradeUtility(tradeCtx, receive, give);
   if (!Number.isFinite(utilityDelta)) return INVALID_TRADE_PENALTY;
-  const projection = evaluateTradeProjection(tradeCtx, [action.want], [action.offer]);
+  const projection = evaluateTradeProjection(tradeCtx, receive, give);
   const lowRateBuildPathBonus = rate <= 3 && projection.bonus >= tuning.tradeBuildPathBonusThreshold ? (4 - rate) * tuning.maritimeLowRateBuildPathBonus : 0;
   const domesticOpportunityPenalty = rate >= 3 && state.opponentMaterialTypes.includes(action.want.type) ? (rate - 2) * tuning.maritimeLowRateDomesticOpportunityPenalty : 0;
   return Math.round(
-    utilityDelta * 15 + projection.bonus + lowRateBuildPathBonus - domesticOpportunityPenalty - fourToOneDomesticFirstPenalty(ctx, action, rate) - fourToOneCommodityPenalty(ctx, action, rate) + turnsSavedTradeBonus(ctx, [action.offer], [action.want])
+    utilityDelta * 15 + projection.bonus + lowRateBuildPathBonus - domesticOpportunityPenalty - fourToOneDomesticFirstPenalty(ctx, action, rate) - fourToOneCommodityPenalty(ctx, action, rate) + turnsSavedTradeBonus(ctx, give, receive)
   );
 }
 var FOUR_TO_ONE_RATE = 4;
@@ -27434,11 +27469,11 @@ function hexOutranksOnTie(candidateHexId, incumbentHexId, boardIndex, actingPlay
   return candidateHexId < incumbentHexId;
 }
 function opponentBuildingCount(boardIndex, hexId, actingPlayerId) {
-  let count = 0;
+  let count2 = 0;
   for (const entry of boardIndex.buildingsAdjacentToHex[hexId] ?? []) {
-    if (entry.building.ownerPlayerId !== actingPlayerId) count++;
+    if (entry.building.ownerPlayerId !== actingPlayerId) count2++;
   }
-  return count;
+  return count2;
 }
 function createRobberHexScorer(boardIndex, productionEstimator, opponentModel, tuning, opts = {}) {
   const threatByState = getOrCreate(
@@ -27644,18 +27679,18 @@ function scoreHex(state, actingPlayerId, hexId, leaderId, boardIndex, production
   return { score: Math.round(score2), touchesOwnBuilding };
 }
 function countAdjacentEnemyChaseKnights(state, boardIndex, hexId, actingPlayerId, victims) {
-  let count = 0;
+  let count2 = 0;
   for (const [ownerPlayerId, knights] of Object.entries(boardIndex.knightsByPlayer)) {
     if (ownerPlayerId === actingPlayerId) continue;
     for (const knight of knights) {
       if (knight.state !== KnightState.Active) continue;
       const intersection2 = state.board.intersections[knight.locationIntersectionId];
       if (intersection2 === void 0 || !intersection2.adjacentHexIds.includes(hexId)) continue;
-      count += victims.has(ownerPlayerId) ? 2 : 1;
+      count2 += victims.has(ownerPlayerId) ? 2 : 1;
       break;
     }
   }
-  return count;
+  return count2;
 }
 function evaluateExpectedStealValue(state, actingPlayerId, victimIds, opponentModel, denialWeight) {
   let bestUtility = 0;
@@ -28177,8 +28212,8 @@ function bucketFromCells(types, free, cells, row) {
   for (let col = 0; col < types.length; col++) {
     const type = types[col];
     if (type === void 0) continue;
-    const count = (cellRow?.[col] ?? 0) + (floorRow?.[col] ?? 0);
-    if (count > 0) out[type] = count;
+    const count2 = (cellRow?.[col] ?? 0) + (floorRow?.[col] ?? 0);
+    if (count2 > 0) out[type] = count2;
   }
   return out;
 }
@@ -28436,10 +28471,10 @@ function recordEmbeddedProgressBuildSpend(spend, actorId, action, inferredImprov
   }
 }
 function addMaterialCost(spend, actorId, cost) {
-  for (const [type, count] of Object.entries(cost)) {
-    if (count === void 0 || count <= 0) continue;
+  for (const [type, count2] of Object.entries(cost)) {
+    if (count2 === void 0 || count2 <= 0) continue;
     const perActor = getOrCreate(spend, actorId, () => /* @__PURE__ */ new Map());
-    perActor.set(type, (perActor.get(type) ?? 0) + count);
+    perActor.set(type, (perActor.get(type) ?? 0) + count2);
   }
 }
 function replaceTradeResponse(responses, wantResponses, declinesByProposer, active, actorId, kind, want, proposerId) {
@@ -28526,10 +28561,10 @@ function recordProductionGains(gains, productionRaw) {
     const entry = readObject(entryRaw);
     const received = entry === null ? null : readObject(entry["gains"]);
     if (received === null) continue;
-    for (const [type, count] of Object.entries(received)) {
+    for (const [type, count2] of Object.entries(received)) {
       if (!isMaterialType(type)) continue;
-      if (typeof count !== "number" || !Number.isFinite(count) || count <= 0) continue;
-      addGain(gains, playerId, type, Math.floor(count));
+      if (typeof count2 !== "number" || !Number.isFinite(count2) || count2 <= 0) continue;
+      addGain(gains, playerId, type, Math.floor(count2));
     }
   }
 }
@@ -28591,10 +28626,10 @@ function recordWitnessedSteals(spend, gains, trackGains, steals) {
 function addGains(gains, playerId, bundle) {
   for (const item of bundle) addGain(gains, playerId, item.type, item.count);
 }
-function addGain(gains, playerId, type, count) {
-  if (count <= 0) return;
+function addGain(gains, playerId, type, count2) {
+  if (count2 <= 0) return;
   const perPlayer = getOrCreate(gains, playerId, () => /* @__PURE__ */ new Map());
-  perPlayer.set(type, (perPlayer.get(type) ?? 0) + count);
+  perPlayer.set(type, (perPlayer.get(type) ?? 0) + count2);
 }
 function actionCost2(actionType, action, inferredImprovementCost) {
   if (actionType === ActionType.ImproveCity) {
@@ -28687,8 +28722,8 @@ function bucketCirculationFactors(types, bank, ownHand, stock) {
   }
   return out;
 }
-function distributeBucket(weights, types, count) {
-  if (count <= 0 || types.length === 0) {
+function distributeBucket(weights, types, count2) {
+  if (count2 <= 0 || types.length === 0) {
     return {};
   }
   const positive = {};
@@ -28701,14 +28736,14 @@ function distributeBucket(weights, types, count) {
     }
   }
   if (positiveSum <= 0) {
-    const share = count / types.length;
+    const share = count2 / types.length;
     const uniform = {};
     for (const type of types) {
       uniform[type] = share;
     }
     return uniform;
   }
-  const scale = count / positiveSum;
+  const scale = count2 / positiveSum;
   for (const type of Object.keys(positive)) {
     const w = positive[type];
     if (w !== void 0) {
@@ -28956,14 +28991,14 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
       return composition;
     }
     const next = { ...composition };
-    for (const [type, count] of spent) {
+    for (const [type, count2] of spent) {
       const current = next[type] ?? 0;
       if (current <= 0) {
         continue;
       }
       const reduction = Math.min(
         current * RECENT_SPEND_MAX_SHARE,
-        count * RECENT_SPEND_BIAS_PER_CARD
+        count2 * RECENT_SPEND_BIAS_PER_CARD
       );
       next[type] = Math.max(0, current - reduction);
     }
@@ -28978,34 +29013,34 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
       return composition;
     }
     const next = { ...composition };
-    for (const [type, count] of gained) {
-      if (count <= 0) {
+    for (const [type, count2] of gained) {
+      if (count2 <= 0) {
         continue;
       }
-      next[type] = (next[type] ?? 0) + knownGainsBiasPerCard * count;
+      next[type] = (next[type] ?? 0) + knownGainsBiasPerCard * count2;
     }
     return next;
   }
-  function probabilityHoldsAtLeast(opponentId, type, count) {
-    if (count <= 0) {
+  function probabilityHoldsAtLeast(opponentId, type, count2) {
+    if (count2 <= 0) {
       return 1;
     }
-    const key = `${opponentId}|${type}|${count}`;
+    const key = `${opponentId}|${type}|${count2}`;
     const cached2 = probabilityCache.get(key);
     if (cached2 !== void 0) {
       return cached2;
     }
-    const value = computeProbabilityHoldsAtLeast(opponentId, type, count);
+    const value = computeProbabilityHoldsAtLeast(opponentId, type, count2);
     probabilityCache.set(key, value);
     return value;
   }
-  function computeProbabilityHoldsAtLeast(opponentId, type, count) {
+  function computeProbabilityHoldsAtLeast(opponentId, type, count2) {
     const player = state.players[opponentId];
     if (player === void 0) {
       return PROBABILITY_FLOOR;
     }
     const bucketTotal = isResourceType(type) ? resourceCount(player) : commodityCount(player);
-    if (bucketTotal < count) {
+    if (bucketTotal < count2) {
       return PROBABILITY_FLOOR;
     }
     const circulation = getCirculationFactors();
@@ -29018,7 +29053,7 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
       let successes = 0;
       for (const sample of samples) {
         const hand2 = sample[opponentId];
-        if (hand2 !== void 0 && sampledHolding(hand2, type) >= count) successes++;
+        if (hand2 !== void 0 && sampledHolding(hand2, type) >= count2) successes++;
       }
       const probability2 = (successes + 1) / (samples.length + 2);
       return clamp(probability2, PROBABILITY_FLOOR, PROBABILITY_CAP);
@@ -29029,7 +29064,7 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
       return PROBABILITY_FLOOR;
     }
     const share = clamp(expected / bucketTotal, 0, 1);
-    const probability = binomialTailProbability(bucketTotal, share, count);
+    const probability = binomialTailProbability(bucketTotal, share, count2);
     return clamp(probability, PROBABILITY_FLOOR, PROBABILITY_CAP);
   }
   function probabilityCanAfford(opponentId, cost) {
@@ -29260,7 +29295,7 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
     const perType = getRecentEventIndexes().wantTells.get(opponentId);
     if (perType === void 0) return 0;
     let total = 0;
-    for (const count of perType.values()) total += count;
+    for (const count2 of perType.values()) total += count2;
     if (total <= 0) return 0;
     return (perType.get(type) ?? 0) / total;
   }
@@ -29273,7 +29308,7 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
     probabilityCanAfford,
     ...jointHandSampleCount > 0 ? { expectedCappedHolding } : {},
     evaluateTradeForOpponent,
-    bestVisibleVpPlan: opponentVpPlan,
+    ...boardIndex === void 0 ? {} : { bestVisibleVpPlan: opponentVpPlan },
     probabilityOpponentAcceptsTrade,
     wantTellShare
   };
@@ -29600,13 +29635,13 @@ function scoreMerchantFleetValue({ state, actingPlayerId, boardIndex }) {
   const player = selfPlayer(state, actingPlayerId);
   if (player === null) return 5;
   let max = 0;
-  for (const [type, count] of [
+  for (const [type, count2] of [
     ...Object.entries(player.resources),
     ...Object.entries(player.commodities)
   ]) {
-    if ((count ?? 0) <= max || !isMaterialType(type)) continue;
+    if ((count2 ?? 0) <= max || !isMaterialType(type)) continue;
     if (currentMaritimeRateFor(state, boardIndex, actingPlayerId, type) <= 2) continue;
-    max = count ?? 0;
+    max = count2 ?? 0;
   }
   return max >= 2 ? 15 + Math.min(10, max * 2) : 5;
 }
@@ -30993,6 +31028,61 @@ function roadsCost(roads) {
   return cost;
 }
 
+// bot/src/bot/longest-road-bridge-defense.ts
+var bonuses = /* @__PURE__ */ new WeakMap();
+var ONE_ROAD_COST = roadsCost(1);
+function longestRoadBridgeDefense(ctx, edgeId) {
+  if (ctx.tuning.longestRoadDefenseBonus <= 0 || ctx.state.longestRoadHolderPlayerId !== ctx.actingPlayerId || ctx.selfVp < ctx.state.victoryPointsTarget - THREE_FROM_WIN)
+    return 0;
+  const byTuning = getOrCreate(bonuses, ctx.state, () => /* @__PURE__ */ new WeakMap());
+  const byModel = getOrCreate(byTuning, ctx.tuning, () => /* @__PURE__ */ new WeakMap());
+  const byPlayer = getOrCreate(byModel, ctx.opponentModel, () => /* @__PURE__ */ new Map());
+  const byEdge = getOrCreate(byPlayer, ctx.actingPlayerId, () => /* @__PURE__ */ new Map());
+  return getOrCreate(byEdge, edgeId, () => connectionBonus(ctx, edgeId));
+}
+function connectionBonus(ctx, edgeId) {
+  const { state, actingPlayerId, tuning } = ctx;
+  const edge = state.board.edges[edgeId];
+  if (edge === void 0 || edge.roadOwnerPlayerId !== null) return 0;
+  const gain = projectedLongestRoadWithEdgeOverride(state.board, edge, actingPlayerId, actingPlayerId) - selfRoadLength(ctx);
+  if (gain < 2) return 0;
+  const exposure = longestRoadExposure(ctx);
+  if (exposure === null || exposure.affordProbability < tuning.longestRoadDefenseAffordFloor)
+    return 0;
+  const before = minimumLegalRoadsToClaimLongestRoad(
+    state,
+    exposure.threatenedBy,
+    exposure.roadsNeeded,
+    { maxSearchedRoadSets: 1e3 }
+  );
+  if (before.kind !== "found") return 0;
+  const after = { ...state, board: withEdgeOwnerOverride(state.board, edge, actingPlayerId) };
+  const horizon = Math.min(4, exposure.roadsNeeded + 2);
+  let minimumAfter = horizon + 1;
+  let rivals = 0;
+  for (const [opponentId, opponent] of Object.entries(state.players)) {
+    if (opponentId === actingPlayerId || opponent.roadsInSupply <= 0) continue;
+    if (ctx.opponentModel.probabilityCanAfford(opponentId, ONE_ROAD_COST) < tuning.longestRoadDefenseAffordFloor)
+      continue;
+    rivals++;
+    const search = minimumLegalRoadsToClaimLongestRoad(
+      after,
+      opponentId,
+      Math.min(horizon, opponent.roadsInSupply),
+      {
+        maxSearchedRoadSets: 1e3
+      }
+    );
+    if (search.kind === "unknown") return 0;
+    if (search.kind === "found") minimumAfter = Math.min(minimumAfter, search.roadsNeeded);
+  }
+  if (rivals === 0) return 0;
+  const extraRoads = Math.max(0, Math.min(2, minimumAfter - exposure.roadsNeeded - 1));
+  return Math.round(
+    tuning.longestRoadDefenseBonus * tuning.longestRoadDefenseNearWinMultiplier * exposure.affordProbability * extraRoads
+  );
+}
+
 // bot/src/bot/score-rules/setup-sim-argmax.ts
 function compareByScoreDescThenId(a, b) {
   if (a.score !== b.score) return b.score - a.score;
@@ -31129,7 +31219,7 @@ function futureSetupPlacements(state, actingPlayerId) {
   const playerCount = Object.keys(state.players).length;
   if (playerCount === 0) return [];
   const buildingCount = Object.values(state.board.intersections).reduce(
-    (count, intersection2) => count + (intersection2.building === null ? 0 : 1),
+    (count2, intersection2) => count2 + (intersection2.building === null ? 0 : 1),
     0
   );
   let currentRotatedPosition;
@@ -31269,7 +31359,7 @@ function scoreRoadAction(ctx, edgeId) {
     bothEndpointsBuilt = false;
   }
   if (bothEndpointsBuilt) score2 -= 15;
-  const defenseBonus = longestRoadDefenseBonus(ctx, edgeId, dedupScratch) + longestRoadHoldDefenseBonus(ctx, roadLengthGain);
+  const defenseBonus = longestRoadDefenseBonus(ctx, edgeId, dedupScratch) + longestRoadHoldDefenseBonus(ctx, roadLengthGain) + longestRoadBridgeDefense(ctx, edgeId);
   score2 += defenseBonus;
   const titleInReach = state.longestRoadHolderPlayerId === actingPlayerId || longestRoadClaimTarget - projectedRoadLength <= LR_OBJECTIVE_MAX_GAP;
   const usefulLengthGain = roadLengthGain > 0 && titleInReach;
@@ -31843,11 +31933,11 @@ function berserkerContributionFlipBonus(state, actingPlayerId, summary, strength
   return 0;
 }
 function countKnightsByState(actingPlayerId, boardIndex, desired) {
-  let count = 0;
+  let count2 = 0;
   for (const k of boardIndex.knightsByPlayer[actingPlayerId] ?? []) {
-    if (k.state === desired) count++;
+    if (k.state === desired) count2++;
   }
-  return count;
+  return count2;
 }
 
 // bot/src/bot/score-rules/action-base-score.ts
@@ -32061,14 +32151,16 @@ function setupPlacementLookaheadWith(ctx, scoreFn) {
     () => settlementBaseWithCandidate(ctx.settlementBase, state, action.intersectionId)
   ) : settlementBaseWithCandidate(ctx.settlementBase, state, action.intersectionId);
   const synthCtx = deriveScoreContext(ctx, { state: synthState, settlementBase: synthBase });
+  const candidateSetupScore = scoreById.get(action.intersectionId);
+  const setup2ScoreCap = candidateSetupScore === void 0 ? Infinity : Math.max(0, candidateSetupScore) * 1.3;
   let expectedSetup2Score = -Infinity;
   for (const id of remaining) {
     const s = scoreFn(synthCtx, id);
     if (s > expectedSetup2Score) expectedSetup2Score = s;
+    if (expectedSetup2Score >= setup2ScoreCap) break;
   }
   if (expectedSetup2Score === -Infinity) return 0;
-  const candidateSetupScore = scoreById.get(action.intersectionId) ?? expectedSetup2Score;
-  const cappedSetup2Score = Math.min(expectedSetup2Score, Math.max(0, candidateSetupScore) * 1.3);
+  const cappedSetup2Score = Math.min(expectedSetup2Score, setup2ScoreCap);
   const weight = tuning.setupPlacementLookaheadWeight[numPlayers] ?? tuning.setupPlacementLookaheadWeightDefault;
   return cappedSetup2Score * weight;
 }
@@ -32145,11 +32237,11 @@ function opponentStrategyConcentration(state, opponentId) {
 function channelInvestments(player) {
   const buildings = SETTLEMENTS_PER_PLAYER - player.settlementsInSupply + (CITIES_PER_PLAYER - player.citiesInSupply) * 2;
   const science = player.scienceLevel;
-  const trade = player.tradeLevel;
+  const trade2 = player.tradeLevel;
   const politics = player.politicsLevel;
   const knights = 2 - player.knightsInSupply.basic + (2 - player.knightsInSupply.strong) + (2 - player.knightsInSupply.mighty);
   const roadsUsed = ROADS_PER_PLAYER - player.roadsInSupply;
-  return [buildings, science, trade, politics, knights, roadsUsed];
+  return [buildings, science, trade2, politics, knights, roadsUsed];
 }
 function herfindahl(values) {
   let total = 0;
@@ -33249,8 +33341,8 @@ var chooseStealTarget = (ctx) => {
     if (profile?.id === action.targetPlayerId) {
       score2 += profile.immediate ? 24 : 12;
       let bestDenial = 0;
-      for (const [type, count] of Object.entries(hand)) {
-        if ((count ?? 0) <= 0) continue;
+      for (const [type, count2] of Object.entries(hand)) {
+        if ((count2 ?? 0) <= 0) continue;
         bestDenial = Math.max(
           bestDenial,
           leaderMaterialDenialWeight(denialCtx, type)
@@ -33335,8 +33427,8 @@ function hasReachableSettlementSite(ctx) {
 }
 function resourceGap(resources, cost) {
   let gap = 0;
-  for (const [type, count] of Object.entries(cost)) {
-    gap += Math.max(0, count - (resources[type] ?? 0));
+  for (const [type, count2] of Object.entries(cost)) {
+    gap += Math.max(0, count2 - (resources[type] ?? 0));
   }
   return gap;
 }
@@ -33437,10 +33529,10 @@ function discardUtilityLosses(perUnit, held) {
   losses[held] = 0;
   let full = 0;
   let factor = 1;
-  for (let count = 1; count <= held; count++) {
+  for (let count2 = 1; count2 <= held; count2++) {
     full += perUnit * Math.max(0.25, factor);
     factor -= 0.25;
-    losses[held - count] = full;
+    losses[held - count2] = full;
   }
   for (let discarded = 0; discarded <= held; discarded++) {
     losses[discarded] = full - (losses[discarded] ?? 0);
@@ -34486,8 +34578,8 @@ var ACTIVATE_DELTA = negateCost(actionCost(ActionType.ActivateKnight));
 var PROMOTE_DELTA = negateCost(actionCost(ActionType.PromoteKnight));
 function bundleDelta(receive, give) {
   const delta = {};
-  for (const { type, count } of receive) delta[type] = (delta[type] ?? 0) + count;
-  for (const { type, count } of give) delta[type] = (delta[type] ?? 0) - count;
+  for (const { type, count: count2 } of receive) delta[type] = (delta[type] ?? 0) + count2;
+  for (const { type, count: count2 } of give) delta[type] = (delta[type] ?? 0) - count2;
   return delta;
 }
 function actionDelta(action, ctx = {}) {
@@ -34632,19 +34724,19 @@ function fundCostWithBankTrades(ctx, trades, hand, cost, maxTrades) {
   const search = (projected, bank2, sequence, depth) => {
     if (canAffordHypothetical(projected, cost)) return { sequence, hand: projected };
     if (depth === 0) return null;
-    for (const trade of trades) {
-      if (!lacks(projected, trade.want.type)) continue;
-      if (materialCount(bank2, trade.want.type) < trade.want.count) continue;
-      const delta = actionDelta(trade);
+    for (const trade2 of trades) {
+      if (!lacks(projected, trade2.want.type)) continue;
+      if (materialCount(bank2, trade2.want.type) < trade2.want.count) continue;
+      const delta = actionDelta(trade2);
       if (delta === null) continue;
-      if (!canAffordHypothetical(projected, { [trade.offer.type]: trade.offer.count })) continue;
+      if (!canAffordHypothetical(projected, { [trade2.offer.type]: trade2.offer.count })) continue;
       const found = search(
         applyResourceDelta(projected, delta),
         applyResourceDelta(bank2, {
-          [trade.offer.type]: trade.offer.count,
-          [trade.want.type]: -trade.want.count
+          [trade2.offer.type]: trade2.offer.count,
+          [trade2.want.type]: -trade2.want.count
         }),
-        [...sequence, trade],
+        [...sequence, trade2],
         depth - 1
       );
       if (found !== null) return found;
@@ -35081,8 +35173,8 @@ function findRoadTradeSettlementWinningPlan(ctx, actionPool) {
     // A second trade is the multi-trade third ply: human-table ceiling only.
     ctx.tuning.humanEndgameMultiTradeWinEnabled ? MAX_TRADES : 1
   );
-  const trade = funded?.sequence[0];
-  if (trade === void 0) return null;
+  const trade2 = funded?.sequence[0];
+  if (trade2 === void 0) return null;
   const target = ctx.state.victoryPointsTarget;
   for (const road of actionPool) {
     if (road.type !== ActionType.BuildRoad) continue;
@@ -35102,7 +35194,7 @@ function findRoadTradeSettlementWinningPlan(ctx, actionPool) {
         continue;
       return {
         setupAction: road,
-        followupAction: trade,
+        followupAction: trade2,
         finisherAction: {
           id: syntheticId("settlement", intersectionId),
           type: ActionType.BuildSettlement,
@@ -35457,6 +35549,7 @@ function dedupeByActionShape(actions, excludedKey) {
 
 // bot/src/bot/lookahead/turn-lookahead.ts
 var NO_PRIOR_ACTIONS2 = [];
+var ONE_ROAD_COST2 = roadsCost(1);
 function isBuildChainStarter(action, ctx) {
   switch (action.type) {
     case ActionType.BuildRoad:
@@ -35480,40 +35573,34 @@ function canRepeatSameCandidate(prior, followup) {
 }
 function bankCanSupplyFollowup(state, candidate, candidateDelta, followup) {
   if (followup.type !== ActionType.MaritimeTrade) return true;
-  const { type, count } = followup.want;
+  const { type, count: count2 } = followup.want;
   const before = isCommodityType(type) ? state.bankCommodities[type] ?? 0 : state.bankResources[type] ?? 0;
   const playerTransfer = candidate.type === ActionType.DomesticTradePropose || candidate.type === ActionType.ExecuteStandingWant;
   const after = before - (playerTransfer ? 0 : candidateDelta[type] ?? 0);
-  return after >= count;
+  return after >= count2;
 }
 function canStartSecondPlyAfter(outer, followup, ctx) {
   return isBuildChainStarter(followup, ctx) || isTradeAction(outer) && followup.type === ActionType.MaritimeTrade;
 }
-function costOnlyDeltaFor(state, actingPlayerId, action, discountConsumed = false, priorActions = NO_PRIOR_ACTIONS2) {
+function actionDeltasFor(state, actingPlayerId, action, discountConsumed = false, priorActions = NO_PRIOR_ACTIONS2) {
   const delta = actionDelta(
     action,
     buildActionDeltaContext(state, actingPlayerId, action, discountConsumed, priorActions)
   );
-  return delta === null ? null : costOnly(delta);
+  return delta === null ? null : { delta, cost: costOnly(delta) };
 }
-function cachedFollowupCost(ctx, followup, costCache) {
+function cachedFollowupDeltas(ctx, followup, costCache) {
   const cached2 = costCache?.get(followup.id);
   if (cached2 !== void 0) return cached2;
-  return costOnlyDeltaFor(ctx.state, ctx.actingPlayerId, followup);
+  return actionDeltasFor(ctx.state, ctx.actingPlayerId, followup);
 }
-function chainFollowupCost(ctx, followup, costCache, medicineConsumed, craneConsumed, priorActions) {
+function chainFollowupDeltas(ctx, followup, costCache, medicineConsumed, craneConsumed, priorActions) {
   const discountConsumed = chainDiscountConsumed(followup, medicineConsumed, craneConsumed);
   const improvementCostChanged = followup.type === ActionType.ImproveCity && priorImprovementChangesCost(ctx.state, ctx.actingPlayerId, followup, priorActions);
   if (discountConsumed || improvementCostChanged) {
-    return costOnlyDeltaFor(
-      ctx.state,
-      ctx.actingPlayerId,
-      followup,
-      discountConsumed,
-      priorActions
-    );
+    return actionDeltasFor(ctx.state, ctx.actingPlayerId, followup, discountConsumed, priorActions);
   }
-  return cachedFollowupCost(ctx, followup, costCache);
+  return cachedFollowupDeltas(ctx, followup, costCache);
 }
 function priorImprovementChangesCost(state, playerId, followup, priorActions) {
   for (const prior of priorActions) {
@@ -35529,17 +35616,15 @@ function buildLookaheadCostCache(state, actingPlayerId, pool) {
   for (const a of pool) {
     if (a.type === ActionType.PlayProgressCard) continue;
     if (cache2.has(a.id)) continue;
-    cache2.set(a.id, costOnlyDeltaFor(state, actingPlayerId, a));
+    cache2.set(a.id, actionDeltasFor(state, actingPlayerId, a));
   }
   return cache2;
 }
-function computeTurnLookaheadBonus(ctx, candidate, followupPool, scoreCandidate, discount, costCache, secondPly) {
+function computeTurnLookaheadBonus(ctx, candidate, followupPool, scoreCandidate, discount, costCache, secondPly, knownFollowupScores) {
   const player = selfPlayer(ctx.state, ctx.actingPlayerId);
   if (player === null) return 0;
-  const candidateDelta = actionDelta(
-    candidate,
-    buildActionDeltaContext(ctx.state, ctx.actingPlayerId, candidate)
-  );
+  const cachedCandidate = costCache?.get(candidate.id);
+  const candidateDelta = cachedCandidate !== void 0 ? cachedCandidate?.delta ?? null : actionDelta(candidate, buildActionDeltaContext(ctx.state, ctx.actingPlayerId, candidate));
   if (candidateDelta === null) return 0;
   const candidateIsProgressCard = candidate.type === ActionType.PlayProgressCard;
   const plannedCandidate = candidateIsProgressCard ? planningActionForCandidate(candidate, ctx.state, ctx.actingPlayerId) : candidate;
@@ -35556,35 +35641,24 @@ function computeTurnLookaheadBonus(ctx, candidate, followupPool, scoreCandidate,
   const runSecondPly = secondPly !== void 0 && secondPly.secondPlyK > 0 && (isBuildChainStarter(candidate, ctx) || isTradeAction(candidate));
   let bestFollowupScore = 0;
   let fundedSettlementScore = 0;
+  let fundedBridgeDefenseScore = 0;
+  const creditFundedBridge = discount > 0 && candidate.type === ActionType.MaritimeTrade && (candidate.want.type === "brick" || candidate.want.type === "lumber") && !canAffordHypothetical(player, ONE_ROAD_COST2);
   const creditFundedSettlement = discount > 0 && candidate.type === ActionType.BuildRoad && player.victoryPoints >= ctx.state.victoryPointsTarget - THREE_FROM_WIN && ctx.state.berserkerTrackMax - ctx.state.berserkerTrackPosition > ctx.boardIndex.numPlayers;
   const chainStarters = [];
   const supplyScratch = { roads: 0, settlements: 0, cities: 0 };
   resetPieceSupply(supplyScratch, player);
   applyPieceSupplyEffect(supplyScratch, ctx.state, ctx.actingPlayerId, plannedCandidate);
   const firstPlyPriors = [candidate];
-  const consider = (followup) => {
+  const consider = (followup, delta) => {
     const score2 = canRepeatSameCandidate(candidate, followup) ? 0 : scoreCandidate(followup);
     if (score2 > bestFollowupScore) bestFollowupScore = score2;
     if (runSecondPly && canStartSecondPlyAfter(candidate, followup, ctx)) {
-      const discountConsumed = chainDiscountConsumed(followup, medicineConsumed, craneConsumed);
-      const delta = actionDelta(
+      chainStarters.push({
         followup,
-        buildActionDeltaContext(
-          ctx.state,
-          ctx.actingPlayerId,
-          followup,
-          discountConsumed,
-          firstPlyPriors
-        )
-      );
-      if (delta !== null) {
-        chainStarters.push({
-          followup,
-          delta,
-          score: score2,
-          chainScore: isTradeAction(followup) ? 0 : score2
-        });
-      }
+        delta,
+        score: score2,
+        chainScore: isTradeAction(followup) ? 0 : score2
+      });
     }
   };
   for (const followup of followupPool) {
@@ -35592,12 +35666,16 @@ function computeTurnLookaheadBonus(ctx, candidate, followupPool, scoreCandidate,
       continue;
     }
     if (followup.type === ActionType.PlayProgressCard) continue;
+    if (!runSecondPly) {
+      const knownScore = knownFollowupScores?.get(followup.id);
+      if (knownScore !== void 0 && knownScore <= bestFollowupScore) continue;
+    }
     if (!bankCanSupplyFollowup(ctx.state, candidate, candidateDelta, followup)) continue;
     if (actionsConflict(ctx, plannedCandidate, followup, candidateIsProgressCard)) {
       continue;
     }
     if (!hasPieceForAction(supplyScratch, ctx.state, ctx.actingPlayerId, followup)) continue;
-    const followupCost = chainFollowupCost(
+    const followupDeltas = chainFollowupDeltas(
       ctx,
       followup,
       costCache,
@@ -35605,9 +35683,9 @@ function computeTurnLookaheadBonus(ctx, candidate, followupPool, scoreCandidate,
       craneConsumed,
       firstPlyPriors
     );
-    if (followupCost === null) continue;
-    if (!canAffordHypothetical(projected, followupCost)) continue;
-    consider(followup);
+    if (followupDeltas === null) continue;
+    if (!canAffordHypothetical(projected, followupDeltas.cost)) continue;
+    consider(followup, followupDeltas.delta);
   }
   for (const followup of enumerateSyntheticFollowups(
     candidate,
@@ -35619,6 +35697,12 @@ function computeTurnLookaheadBonus(ctx, candidate, followupPool, scoreCandidate,
     if (!bankCanSupplyFollowup(ctx.state, candidate, candidateDelta, followup)) continue;
     if (actionsConflict(ctx, plannedCandidate, followup, candidateIsProgressCard)) {
       continue;
+    }
+    if (creditFundedBridge && followup.type === ActionType.BuildRoad) {
+      fundedBridgeDefenseScore = Math.max(
+        fundedBridgeDefenseScore,
+        longestRoadBridgeDefense(ctx, followup.edgeId) * (ctx.strategyWeightMap.buildRoad ?? 1)
+      );
     }
     if (creditFundedSettlement && followup.type === ActionType.BuildSettlement && !ctx.boardIndex.buildableSettlementSiteIdsByPlayer[ctx.actingPlayerId]?.has(
       followup.intersectionId
@@ -35649,7 +35733,13 @@ function computeTurnLookaheadBonus(ctx, candidate, followupPool, scoreCandidate,
     );
     if (chained > bestFollowupScore) bestFollowupScore = chained;
   }
-  return Math.round(Math.max(bestFollowupScore * discount * multiplier, fundedSettlementScore));
+  return Math.round(
+    Math.max(
+      bestFollowupScore * discount * multiplier,
+      fundedSettlementScore,
+      fundedBridgeDefenseScore
+    )
+  );
 }
 function hasSupplyAfterCandidate(state, playerId, candidate, followup, supply = { roads: 0, settlements: 0, cities: 0 }) {
   const player = state.players[playerId];
@@ -35726,9 +35816,19 @@ function bestTwoPlyScore(ctx, candidate, projectedAfterCandidate, chainStarters,
   const poolShapeKeys = shapeKeysForPool(followupPool);
   const player = ctx.state.players[ctx.actingPlayerId];
   if (player === void 0) return 0;
+  const firstPlyPriors = [candidate];
   let best = 0;
   for (const a of topK) {
-    const projectedAfterA = applyResourceDelta(projectedAfterCandidate, a.delta);
+    const delta = a.delta ?? chainFollowupDeltas(
+      ctx,
+      a.followup,
+      costCache,
+      medicineArmed && candidate.type === ActionType.BuildCity,
+      craneArmed && candidate.type === ActionType.ImproveCity,
+      firstPlyPriors
+    )?.delta;
+    if (delta === void 0) continue;
+    const projectedAfterA = applyResourceDelta(projectedAfterCandidate, delta);
     const aShapeKey = actionShapeKey(a.followup);
     const medicineConsumed = medicineArmed && (candidate.type === ActionType.BuildCity || a.followup.type === ActionType.BuildCity);
     const craneConsumed = craneArmed && (candidate.type === ActionType.ImproveCity || a.followup.type === ActionType.ImproveCity);
@@ -35756,7 +35856,7 @@ function bestTwoPlyScore(ctx, candidate, projectedAfterCandidate, chainStarters,
       )) {
         continue;
       }
-      const followupCost = chainFollowupCost(
+      const followupDeltas = chainFollowupDeltas(
         ctx,
         followup,
         costCache,
@@ -35764,8 +35864,8 @@ function bestTwoPlyScore(ctx, candidate, projectedAfterCandidate, chainStarters,
         craneConsumed,
         twoPlyPriors
       );
-      if (followupCost === null) continue;
-      if (!canAffordHypothetical(projectedAfterA, followupCost)) continue;
+      if (followupDeltas === null) continue;
+      if (!canAffordHypothetical(projectedAfterA, followupDeltas.cost)) continue;
       const score2 = scoreCandidate(followup);
       if (score2 > bestB) bestB = score2;
     }
@@ -36428,6 +36528,112 @@ function roadSettlementPath(board, playerId, remaining, firstPool) {
   return null;
 }
 
+// bot/src/bot/banked-metropolis-win-plan.ts
+function findBankedMetropolisWinPlan(ctx, pool) {
+  const self2 = selfPlayer(ctx.state, ctx.playerId);
+  if (!ctx.tuning.sameTurnEndgamePlannerEnabled || !ctx.tuning.humanEndgameMultiTradeWinEnabled || self2 === null || ctx.state.phase !== "action" || ctx.state.pendingDecision !== null || ctx.state.currentPlayerId !== ctx.playerId || self2.victoryPoints + 2 < ctx.state.victoryPointsTarget)
+    return null;
+  const tracks = COMMODITY_TRACKS.filter(
+    (track) => nextImprovementTransfersMetropolis(ctx.state, ctx.boardIndex, ctx.playerId, track)
+  );
+  if (tracks.length === 0) return null;
+  const rates = new Map(
+    MATERIAL_TYPES.map(
+      (type) => [type, currentMaritimeRateFor(ctx.state, ctx.boardIndex, ctx.playerId, type)]
+    )
+  );
+  const bank = { resources: ctx.state.bankResources, commodities: ctx.state.bankCommodities };
+  const hand = { resources: self2.resources, commodities: self2.commodities };
+  const banks = bankTradesIn(pool);
+  const irrigation = pool.find(
+    (action) => action.type === ActionType.PlayProgressCard && self2.progressHand.some(
+      (card2) => card2.instanceId === action.instanceId && card2.cardId === "scienceIrrigation"
+    )
+  );
+  for (const play of irrigation === void 0 ? [void 0] : [void 0, irrigation]) {
+    let projected = hand, stock = bank;
+    if (play !== void 0) {
+      const fields = Object.entries(ctx.state.board.hexes).filter(
+        ([id, hex3]) => hex3.type === HexType.Fields && (ctx.boardIndex.buildingsAdjacentToHex[id] ?? []).some(
+          (entry) => entry.building.ownerPlayerId === ctx.playerId
+        )
+      ).length;
+      const gain = Math.min(fields * 2, ctx.state.bankResources.grain ?? 0);
+      if (gain <= 0) continue;
+      projected = applyResourceDelta(hand, { grain: gain });
+      stock = applyResourceDelta(bank, { grain: -gain });
+    }
+    for (const track of tracks) {
+      const commodity = trackCommodity(track);
+      const cost = improvementCost(self2.cranePlayed, trackLevelFor(track, self2));
+      const deficit = cost - count(projected, commodity);
+      if (deficit <= 0) continue;
+      const firstTrades = play === void 0 ? banks : projectedFirstTrades(projected, stock, rates, commodity, deficit);
+      const funding = fundImprovement(projected, stock, rates, commodity, cost, firstTrades);
+      if (funding === null) continue;
+      const finish = {
+        id: syntheticId("banked-metropolis", track),
+        type: ActionType.ImproveCity,
+        track
+      };
+      return [...play === void 0 ? [] : [play], ...funding, finish];
+    }
+  }
+  return null;
+}
+function count(hand, type) {
+  return hand.resources[type] ?? hand.commodities[type] ?? 0;
+}
+function trade(offer, want, quantity, rates) {
+  return {
+    id: syntheticId("metropolis-bank", `${offer}-${want}-${quantity}`),
+    type: ActionType.MaritimeTrade,
+    offer: { type: offer, count: (rates.get(offer) ?? 4) * quantity },
+    want: { type: want, count: quantity }
+  };
+}
+function payable(action, hand, bank) {
+  return count(hand, action.offer.type) >= action.offer.count && count(bank, action.want.type) >= action.want.count;
+}
+function projectedFirstTrades(hand, bank, rates, commodity, deficit) {
+  const out = [];
+  for (const want of MATERIAL_TYPES) {
+    const quantities = want === commodity ? Array.from({ length: deficit }, (_, index) => index + 1) : [deficit * (rates.get(want) ?? 4) - count(hand, want)];
+    for (const quantity of quantities) {
+      if (quantity <= 0) continue;
+      for (const offer of MATERIAL_TYPES) {
+        if (offer === want || offer === commodity) continue;
+        const action = trade(offer, want, quantity, rates);
+        if (payable(action, hand, bank)) out.push(action);
+      }
+    }
+  }
+  return out;
+}
+function fundImprovement(hand, bank, rates, commodity, cost, firstTrades) {
+  for (const maxTrades of [1, 2]) {
+    for (const first of firstTrades) {
+      if (!payable(first, hand, bank)) continue;
+      const delta = actionDelta(first);
+      if (delta === null) continue;
+      const after = applyResourceDelta(hand, delta);
+      const remaining = cost - count(after, commodity);
+      if (remaining <= 0) return [first];
+      if (maxTrades === 1) continue;
+      const stock = applyResourceDelta(bank, {
+        [first.offer.type]: first.offer.count,
+        [first.want.type]: -first.want.count
+      });
+      for (const offer of MATERIAL_TYPES) {
+        if (offer === commodity) continue;
+        const second = trade(offer, commodity, remaining, rates);
+        if (payable(second, after, stock)) return [first, second];
+      }
+    }
+  }
+  return null;
+}
+
 // bot/src/bot/decision-trace.ts
 function racePostureTraceContext(base) {
   const posture = base.racePosture;
@@ -36714,7 +36920,7 @@ function sameProposalFamily(a, b) {
 function canonicalBundleKey(bundle) {
   const totals = /* @__PURE__ */ new Map();
   for (const line of bundle) totals.set(line.type, (totals.get(line.type) ?? 0) + line.count);
-  return [...totals].sort(([a], [b]) => a.localeCompare(b)).map(([type, count]) => `${type}:${String(count)}`).join("|");
+  return [...totals].sort(([a], [b]) => a.localeCompare(b)).map(([type, count2]) => `${type}:${String(count2)}`).join("|");
 }
 function distinctOfferTypes(proposals) {
   const types = /* @__PURE__ */ new Set();
@@ -36920,9 +37126,9 @@ function tradeProposalPolicyPool(ctx) {
       const action = event.payload.action;
       const actorId = event.actingPlayerId;
       if (actorId !== null && opponentIds.has(actorId) && action.type === ActionType.DomesticTradePass) {
-        const count = (opponentDeclines.get(actorId) ?? 0) + 1;
-        opponentDeclines.set(actorId, count);
-        if (count >= 2) stoppedAfterHumanDeclines = true;
+        const count2 = (opponentDeclines.get(actorId) ?? 0) + 1;
+        opponentDeclines.set(actorId, count2);
+        if (count2 >= 2) stoppedAfterHumanDeclines = true;
       }
     }
   }
@@ -37079,6 +37285,23 @@ function chooseMainScoring(ctx, hooks) {
     }
     const causeway = chooseCausewayWin(ctx, actionPool);
     if (causeway !== null) return causeway;
+    const metropolis = findBankedMetropolisWinPlan(ctx, actionPool);
+    const first = metropolis?.[0];
+    if (first !== void 0) {
+      return {
+        chosen: first,
+        decisionTrace: {
+          candidateCount: actionPool.length,
+          context: {
+            chosenActionType: first.type,
+            chosenCandidateId: first.id,
+            bankedMetropolisWin: true,
+            winningPlanActionsRemaining: metropolis?.length ?? 0
+          },
+          top3: [{ type: first.type, score: 0, extra: { candidateId: first.id } }]
+        }
+      };
+    }
   }
   const productionRankedWidth = 3;
   const observerRankedWidth = Math.max(3, Math.floor(hooks?.rankingObserver?.width ?? 3));
@@ -37298,7 +37521,8 @@ function scoreActionPool(ctx, actionPool, base, rankedWidth, prebuiltContexts) {
         followupScorer,
         ctx.tuning.turnLookaheadDiscount,
         lookaheadCostCache,
-        secondPlyConfig
+        secondPlyConfig,
+        followupScoreCache ?? void 0
       );
       if (Number.isFinite(bonus)) {
         turnLookaheadBonus = bonus;
