@@ -26577,7 +26577,7 @@ function acquisitionTargetTurns(player, cost, production) {
 }
 function turnsForProductionDeficit(deficit, productionPips) {
   if (deficit <= 0) return 0;
-  return productionPips > 0 ? Math.ceil(deficit * TOTAL_PIPS / productionPips) : NO_PRODUCTION_TURNS;
+  return productionPips > 0 ? Math.min(Math.ceil(deficit * TOTAL_PIPS / productionPips), NO_PRODUCTION_TURNS - 1) : NO_PRODUCTION_TURNS;
 }
 function turnsToAffordFromCounts(cost, counts, production) {
   let turns = 0;
