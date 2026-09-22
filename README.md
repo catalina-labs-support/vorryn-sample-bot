@@ -17,7 +17,7 @@ Watch three bots play a game right now, no account needed:
 1. **Clone and run.** `pnpm install && cp .env.example .env` (set `BOT_BEARER` to 32+
    random characters: `openssl rand -base64 32`), then `pnpm dev` — your bot listens on
    `http://localhost:3001`.
-2. **Prove it works.** `pnpm test` POSTs two real game requests to your bot.
+2. **Prove it works.** `pnpm test` POSTs examples and a four-family captured request corpus to your bot.
 3. **Deploy it** anywhere that serves HTTPS — see [Deploying](#deploying) for Fly.io.
 4. **Register it** at [Profile → Build a Bot](https://vorryn.catalina-labs.com/profile?tab=build)
    with your base URL and the same `BOT_BEARER` value.
@@ -54,24 +54,25 @@ Fork the repo, replace `pickAction`, deploy. Let's field a champion.
 
 ## What's in here
 
-| File                                  | Purpose                                                                  |
-| ------------------------------------- | ------------------------------------------------------------------------ |
-| `src/app.ts`                          | Fastify handler: bearer-auth check, schema parse, `pickAction` dispatch. |
-| `src/index.ts`                        | Process entrypoint: env setup and HTTP listen.                           |
-| `src/strategy.ts`                     | The decision function and compact decision trace.                        |
-| `src/champion.js`                     | Generated standalone competitive policy used in production.              |
-| `src/public-state.ts`                 | Typed, defensive projection of the redacted public game state.           |
-| `src/opponent-beliefs.ts`             | Public-event material flow and human-seat belief model.                  |
-| `src/simulator.ts`                    | Seedable public-information action simulator and evaluator.              |
-| `src/search.ts`                       | Deadline-bounded lookahead over inventory, production, and plans.        |
-| `src/simulate.ts`                     | Offline CLI for ranking actions in captured requests.                    |
-| `src/evaluate.ts` / `src/tune.ts`     | Corpus evaluation and guarded parameter sweep tools.                     |
-| `src/schemas.ts`                      | Zod parsers for the request/response envelopes.                          |
-| `fixtures/play-request.json`          | A small hand-readable `BotRequest` for local testing.                    |
-| `fixtures/play-request-full.json`     | A full-size `BotRequest` captured from a real self-play game.            |
-| `fixtures/corpus/self-play.ndjson.gz` | 250 real decisions from 13 complete self-play games — the tuning corpus. |
-| `tests/contract.test.ts`              | Contract tests that POST both fixtures to `/play` and assert a 200.      |
-| `Dockerfile`                          | Production Node image with a `/health` container check.                  |
+| File                                                      | Purpose                                                                                                                                                  |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/app.ts`                                              | Fastify handler: bearer-auth check, schema parse, `pickAction` dispatch.                                                                                 |
+| `src/index.ts`                                            | Process entrypoint: env setup and HTTP listen.                                                                                                           |
+| `src/strategy.ts`                                         | The decision function and compact decision trace.                                                                                                        |
+| `src/champion.js`                                         | Generated standalone competitive policy used in production.                                                                                              |
+| `src/public-state.ts`                                     | Typed, defensive projection of the redacted public game state.                                                                                           |
+| `src/opponent-beliefs.ts`                                 | Public-event material flow and human-seat belief model.                                                                                                  |
+| `src/simulator.ts`                                        | Seedable public-information action simulator and evaluator.                                                                                              |
+| `src/search.ts`                                           | Deadline-bounded lookahead over inventory, production, and plans.                                                                                        |
+| `src/simulate.ts`                                         | Offline CLI for ranking actions in captured requests.                                                                                                    |
+| `src/evaluate.ts` / `src/tune.ts`                         | Corpus evaluation and guarded parameter sweep tools.                                                                                                     |
+| `src/schemas.ts`                                          | Zod parsers for the request/response envelopes.                                                                                                          |
+| `fixtures/play-request.json`                              | A small hand-readable `BotRequest` for local testing.                                                                                                    |
+| `fixtures/play-request-full.json`                         | A full-size `BotRequest` captured from a real self-play game.                                                                                            |
+| `fixtures/corpus/self-play.ndjson.gz`                     | 250 real decisions from 13 complete self-play games — the tuning corpus.                                                                                 |
+| `tests/contract.test.ts`                                  | Contract tests that POST both fixtures to `/play` and assert a 200.                                                                                      |
+| `fixtures/http-corpus.json` / `tests/http-corpus.test.ts` | Four redacted self-play requests: action, discard, proposer award, and responder bid; literal candidate IDs, payload-size bands, and hidden-hand checks. |
+| `Dockerfile`                                              | Production Node image with a `/health` container check.                                                                                                  |
 
 ## Setup
 

@@ -12,24 +12,31 @@ function bearerMatches(header: string | undefined, expectedDigest: Buffer): bool
 }
 
 export function createSampleBotApp(botBearer: string, logger = true) {
-  const app = Fastify({ logger });
+  const app = Fastify({ logger, bodyLimit: 4 * 1024 * 1024 });
   const bearerDigest = createHash('sha256').update(botBearer).digest();
 
   app.get('/health', async () => ({ ok: true }));
 
-  app.post('/play', async (req, reply) => {
-    if (!bearerMatches(req.headers.authorization, bearerDigest)) {
-      return reply.code(401).send({ error: 'unauthorized' });
-    }
+  app.post<{ Body: unknown }>(
+    '/play',
+    {
+      // Authenticate before Fastify buffers/parses a potentially large envelope.
+      onRequest: async (req, reply) => {
+        if (!bearerMatches(req.headers.authorization, bearerDigest)) {
+          return reply.code(401).send({ error: 'unauthorized' });
+        }
+      },
+    },
+    async (req, reply) => {
+      // 422 on a bad envelope lets Vorryn fall back without retrying a malformed request.
+      const parsed = BotRequestSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return reply.code(422).send({ error: 'malformed_request', issues: parsed.error.issues });
+      }
 
-    // 422 on a bad envelope lets Vorryn fall back without retrying a malformed request.
-    const parsed = BotRequestSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return reply.code(422).send({ error: 'malformed_request', issues: parsed.error.issues });
+      return reply.code(200).send(pickAction(parsed.data));
     }
-
-    return reply.code(200).send(pickAction(parsed.data));
-  });
+  );
 
   return app;
 }

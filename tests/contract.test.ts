@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { createSampleBotApp } from '../src/app.js';
+import assert from 'node:assert/strict';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const BOT_BEARER = 'fixture-bearer';
@@ -165,5 +166,53 @@ for (const authorization of [undefined, 'Bearer wrong-secret', 'Basic fixture-be
   }
 }
 console.log('PASS — rejected missing and invalid authorization');
+
+const oversizedBody = 'x'.repeat(4 * 1024 * 1024 + 1);
+for (const body of ['{', oversizedBody]) {
+  for (const authorization of [undefined, 'Bearer wrong-token']) {
+    const result = await app.inject({
+      method: 'POST',
+      url: '/play',
+      payload: body,
+      headers: { 'content-type': 'application/json', ...(authorization ? { authorization } : {}) },
+    });
+    assert.equal(result.statusCode, 401, 'authorization must precede JSON parsing and body limits');
+    assert.deepEqual(result.json<unknown>(), { error: 'unauthorized' });
+  }
+}
+const largeValidBody = ' '.repeat(1024 * 1024) + JSON.stringify(baseFixture);
+const admitted = await app.inject({
+  method: 'POST',
+  url: '/play',
+  payload: largeValidBody,
+  headers: { 'content-type': 'application/json', authorization: `Bearer ${BOT_BEARER}` },
+});
+assert.equal(
+  admitted.statusCode,
+  200,
+  'authenticated valid envelopes over 1 MiB fit the 4 MiB contract'
+);
+for (const [payload, expectedStatus] of [
+  ['{', 400],
+  [oversizedBody, 413],
+] as const) {
+  const result = await app.inject({
+    method: 'POST',
+    url: '/play',
+    payload,
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${BOT_BEARER}` },
+  });
+  assert.equal(
+    result.statusCode,
+    expectedStatus,
+    'authenticated envelopes retain parser/size limits'
+  );
+}
+const health = await app.inject({ method: 'GET', url: '/health' });
+assert.equal(health.statusCode, 200);
+assert.deepEqual(health.json<unknown>(), { ok: true });
+console.log(
+  'PASS — authentication precedes body admission; authorized 4 MiB limit and public health remain'
+);
 
 await app.close();
