@@ -19,7 +19,7 @@ try {
     assert.throws(
       () =>
         assertHttpCorpusResponse(item, {
-          protocolVersion: 2,
+          protocolVersion: 3,
           kind: 'action',
           ...response.json<Record<string, unknown>>(),
           actionId: 'not-a-supplied-action',

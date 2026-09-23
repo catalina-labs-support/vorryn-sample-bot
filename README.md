@@ -180,7 +180,7 @@ won for many reasons — but unlike raw agreement it at least points at winning.
 
 The contract tests inject both fixtures through the Fastify handler with the
 expected bearer header and assert each response is
-`{ protocolVersion: 2, kind: 'action', actionId: '...' }` with an `actionId`
+`{ protocolVersion: 3, kind: 'action', actionId: '...' }` with an `actionId`
 from that request's candidate list.
 
 ## Registering with Vorryn

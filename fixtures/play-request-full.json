@@ -1,5 +1,5 @@
 {
-  "protocolVersion": 2,
+  "protocolVersion": 3,
   "gameId": "capture-game",
   "playerId": "p-red",
   "state": {
@@ -82,9 +82,12 @@
         "politicsLevel": 1,
         "metropolisCount": 0,
         "standingWant": null,
-        "resourceCount": 1,
-        "commodityCount": 0,
-        "progressHandCount": 1
+        "materialCount": 1,
+        "progressHandByDeck": {
+          "science": 0,
+          "trade": 1,
+          "politics": 0
+        }
       },
       "p-orange": {
         "id": "p-orange",
@@ -107,9 +110,12 @@
         "politicsLevel": 1,
         "metropolisCount": 0,
         "standingWant": null,
-        "resourceCount": 4,
-        "commodityCount": 1,
-        "progressHandCount": 0
+        "materialCount": 5,
+        "progressHandByDeck": {
+          "science": 0,
+          "trade": 0,
+          "politics": 0
+        }
       }
     },
     "board": {

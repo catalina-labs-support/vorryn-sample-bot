@@ -33,8 +33,8 @@ for (const name of FIXTURES) {
   }
 
   const body = res.json();
-  if (body.protocolVersion !== 2) {
-    console.error(`${name}: expected protocolVersion=2, got ${body.protocolVersion}`);
+  if (body.protocolVersion !== 3) {
+    console.error(`${name}: expected protocolVersion=3, got ${body.protocolVersion}`);
     process.exit(1);
   }
 

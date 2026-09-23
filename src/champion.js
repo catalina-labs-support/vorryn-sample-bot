@@ -312,18 +312,278 @@ function isSelf(player) {
 }
 var BERSERKER_RESULT = { repelled: "repelled", victory: "victory" };
 
+// packages/core/src/cards/card-manifest.ts
+function card({
+  id,
+  displayName,
+  deck,
+  copies,
+  isVp,
+  timingWindow,
+  effectHandler,
+  hiddenInformationBehavior = "privateUntilPlayed"
+}) {
+  return {
+    id,
+    displayName,
+    deck,
+    copies,
+    isVp,
+    timingWindow,
+    effectHandler,
+    hiddenInformationBehavior
+  };
+}
+var ALL_CARDS = [
+  // ── Science deck (18 cards) ────────────────────────────────────
+  card({
+    id: "scienceAugury",
+    displayName: "Augury",
+    deck: "science",
+    copies: 2,
+    isVp: false,
+    timingWindow: "preRoll",
+    effectHandler: "setProductionDice"
+  }),
+  card({
+    id: "scienceMason",
+    displayName: "Mason",
+    deck: "science",
+    copies: 2,
+    isVp: false,
+    timingWindow: "actionPhaseWithBuild",
+    effectHandler: "reduceCityImprovementCost"
+  }),
+  card({
+    id: "scienceEngineering",
+    displayName: "Engineering",
+    deck: "science",
+    copies: 1,
+    isVp: false,
+    timingWindow: "actionPhase",
+    effectHandler: "buildFreeCityWall"
+  }),
+  card({
+    id: "scienceGeomancer",
+    displayName: "Geomancer",
+    deck: "science",
+    copies: 2,
+    isVp: false,
+    timingWindow: "actionPhase",
+    effectHandler: "swapNumberTokens"
+  }),
+  card({
+    id: "scienceIrrigation",
+    displayName: "Aqueducts",
+    deck: "science",
+    copies: 2,
+    isVp: false,
+    timingWindow: "actionPhase",
+    effectHandler: "gainPerAdjacentFields"
+  }),
+  card({
+    id: "scienceMedicine",
+    displayName: "Apothecary",
+    deck: "science",
+    copies: 2,
+    isVp: false,
+    timingWindow: "actionPhaseWithBuild",
+    effectHandler: "buildCityReducedCost"
+  }),
+  card({
+    id: "scienceMining",
+    displayName: "Delving",
+    deck: "science",
+    copies: 2,
+    isVp: false,
+    timingWindow: "actionPhase",
+    effectHandler: "gainPerAdjacentMountains"
+  }),
+  card({
+    id: "scienceTempering",
+    displayName: "Tempering",
+    deck: "science",
+    copies: 2,
+    isVp: false,
+    timingWindow: "actionPhase",
+    effectHandler: "freeKnightPromotions"
+  }),
+  card({
+    id: "scienceRoadBuilding",
+    displayName: "Causeway",
+    deck: "science",
+    copies: 2,
+    isVp: false,
+    timingWindow: "actionPhase",
+    effectHandler: "buildUpToTwoFreeRoads"
+  }),
+  card({
+    id: "scienceAnnals",
+    displayName: "Annals",
+    deck: "science",
+    copies: 1,
+    isVp: true,
+    timingWindow: "immediateOnDraw",
+    effectHandler: "revealGain1Vp",
+    hiddenInformationBehavior: "revealedImmediately"
+  }),
+  // ── Trade deck (18 cards) ──────────────────────────────────────
+  card({
+    id: "tradeCommercialHarbor",
+    displayName: "Wharfage",
+    deck: "trade",
+    copies: 2,
+    isVp: false,
+    timingWindow: "actionPhase",
+    effectHandler: "commercialHarborExchange"
+  }),
+  card({
+    id: "tradeTribute",
+    displayName: "Tribute",
+    deck: "trade",
+    copies: 2,
+    isVp: false,
+    timingWindow: "actionPhase",
+    effectHandler: "takeAnyTwoFromHigherVpPlayer"
+  }),
+  card({
+    id: "tradeMerchant",
+    displayName: "Guildmaster",
+    deck: "trade",
+    copies: 6,
+    isVp: false,
+    timingWindow: "actionPhase",
+    effectHandler: "takeMerchantControl"
+  }),
+  card({
+    id: "tradeMerchantFleet",
+    displayName: "Galleon",
+    deck: "trade",
+    copies: 2,
+    isVp: false,
+    timingWindow: "actionPhase",
+    effectHandler: "enableTemp2To1ForType"
+  }),
+  card({
+    id: "tradeResourceMonopoly",
+    displayName: "Levy",
+    deck: "trade",
+    copies: 4,
+    isVp: false,
+    timingWindow: "actionPhase",
+    effectHandler: "collectResourceFromAllPlayers"
+  }),
+  card({
+    id: "tradeTradeMonopoly",
+    displayName: "Embargo",
+    deck: "trade",
+    copies: 2,
+    isVp: false,
+    timingWindow: "actionPhase",
+    effectHandler: "collectCommodityFromAllPlayers"
+  }),
+  // ── Politics deck (18 cards) ───────────────────────────────────
+  card({
+    id: "politicsDiplomacy",
+    displayName: "Diplomacy",
+    deck: "politics",
+    copies: 2,
+    isVp: false,
+    timingWindow: "actionPhase",
+    effectHandler: "removeOpenRoad"
+  }),
+  card({
+    id: "politicsEncouragement",
+    displayName: "Encouragement",
+    deck: "politics",
+    copies: 2,
+    isVp: false,
+    timingWindow: "actionPhase",
+    effectHandler: "activateAllOwnKnights"
+  }),
+  card({
+    id: "politicsEspionage",
+    displayName: "Espionage",
+    deck: "politics",
+    copies: 3,
+    isVp: false,
+    timingWindow: "actionPhase",
+    effectHandler: "stealProgressCard"
+  }),
+  card({
+    id: "politicsIntrigue",
+    displayName: "Conspiracy",
+    deck: "politics",
+    copies: 2,
+    isVp: false,
+    timingWindow: "actionPhase",
+    effectHandler: "displaceOpponentKnightWithoutUsingOwnKnightAction"
+  }),
+  card({
+    id: "politicsSabotage",
+    displayName: "Sabotage",
+    deck: "politics",
+    copies: 2,
+    isVp: false,
+    timingWindow: "actionPhase",
+    effectHandler: "forceDiscardHalfOnEqualOrHigherVpPlayers"
+  }),
+  card({
+    id: "politicsTaxation",
+    displayName: "Taxation",
+    deck: "politics",
+    copies: 2,
+    isVp: false,
+    timingWindow: "actionPhase",
+    effectHandler: "moveRobberAndStealFromAllAdjacentBuildings"
+  }),
+  card({
+    id: "politicsTreason",
+    displayName: "Treason",
+    deck: "politics",
+    copies: 2,
+    isVp: false,
+    timingWindow: "actionPhase",
+    effectHandler: "removeOpponentKnightChosenByTargetAndOptionallyPlaceOwnKnight"
+  }),
+  card({
+    id: "politicsBetrothal",
+    displayName: "Betrothal",
+    deck: "politics",
+    copies: 2,
+    isVp: false,
+    timingWindow: "actionPhase",
+    effectHandler: "collectTwoCardsFromHigherVpPlayers"
+  }),
+  card({
+    id: "politicsCharter",
+    displayName: "Charter",
+    deck: "politics",
+    copies: 1,
+    isVp: true,
+    timingWindow: "immediateOnDraw",
+    effectHandler: "revealGain1Vp",
+    hiddenInformationBehavior: "revealedImmediately"
+  })
+];
+var ALL_CARDS_BY_ID = new Map(
+  ALL_CARDS.map((c) => [c.id, c])
+);
+
 // packages/core/src/wire/player-hand.ts
 function resourceCount(player) {
-  return isSelf(player) ? sumMaterialCounts(player.resources) : player.resourceCount;
+  return sumMaterialCounts(player.resources);
 }
 function commodityCount(player) {
-  return isSelf(player) ? sumMaterialCounts(player.commodities) : player.commodityCount;
+  return sumMaterialCounts(player.commodities);
 }
 function totalHandSize(player) {
-  return resourceCount(player) + commodityCount(player);
+  return isSelf(player) ? resourceCount(player) + commodityCount(player) : player.materialCount;
 }
 function progressHandSize(player) {
-  return isSelf(player) ? player.progressHand.length : player.progressHandCount;
+  if (isSelf(player)) return player.progressHand.length;
+  const { science, trade: trade2, politics } = player.progressHandByDeck;
+  return science + trade2 + politics;
 }
 
 // node_modules/.pnpm/zod@4.6.5/node_modules/zod/v4/classic/external.js
@@ -19779,21 +20039,21 @@ function visit(schema, fnOrHandlers) {
     const h = fnOrHandlers[node2._zod.def.type];
     return h ? h(node2, rewritten) : node2;
   };
-  const cache2 = /* @__PURE__ */ new Map();
+  const cache3 = /* @__PURE__ */ new Map();
   function run(s) {
-    const cached2 = cache2.get(s);
+    const cached2 = cache3.get(s);
     if (cached2 === RESOLVING) {
       return new $ZodLazy({
         type: "lazy",
-        getter: () => cache2.get(s)
+        getter: () => cache3.get(s)
       });
     }
     if (cached2 !== void 0)
       return cached2;
-    cache2.set(s, RESOLVING);
+    cache3.set(s, RESOLVING);
     const inner = mapInner(s);
     const mapped = fn(inner, inner !== s);
-    cache2.set(s, mapped);
+    cache3.set(s, mapped);
     return mapped;
   }
   function mapInner(s) {
@@ -20273,9 +20533,12 @@ var SelfPlayerStateSchema = external_exports.object({
 });
 var OpponentPlayerStateSchema = external_exports.object({
   ...PlayerStateBaseFields,
-  resourceCount: nonNegInt(),
-  commodityCount: nonNegInt(),
-  progressHandCount: nonNegInt()
+  materialCount: nonNegInt(),
+  progressHandByDeck: external_exports.object({
+    science: nonNegInt(),
+    trade: nonNegInt(),
+    politics: nonNegInt()
+  })
 });
 var ClientPlayerStateSchema = external_exports.union([SelfPlayerStateSchema, OpponentPlayerStateSchema]);
 var DiceStateSchema = external_exports.object({
@@ -20774,7 +21037,7 @@ var VALID_ACTION_FAMILIES = [
 ];
 var ValidActionFamilySchema = external_exports.enum(VALID_ACTION_FAMILIES);
 var BOT_STYLE_KEYS = ["aggressive", "builder"];
-var PROTOCOL_VERSION = 2;
+var PROTOCOL_VERSION = 3;
 var BotDecisionMemorySchema = external_exports.object({
   version: external_exports.literal(1),
   strategy: external_exports.object({
@@ -20873,264 +21136,6 @@ var BOT_PUBLIC_EVENT_TYPES = /* @__PURE__ */ new Set([
   GameEventType.KnightReturnedToSupply,
   GameEventType.GameCompleted
 ]);
-
-// packages/core/src/cards/card-manifest.ts
-function card({
-  id,
-  displayName,
-  deck,
-  copies,
-  isVp,
-  timingWindow,
-  effectHandler,
-  hiddenInformationBehavior = "privateUntilPlayed"
-}) {
-  return {
-    id,
-    displayName,
-    deck,
-    copies,
-    isVp,
-    timingWindow,
-    effectHandler,
-    hiddenInformationBehavior
-  };
-}
-var ALL_CARDS = [
-  // ── Science deck (18 cards) ────────────────────────────────────
-  card({
-    id: "scienceAugury",
-    displayName: "Augury",
-    deck: "science",
-    copies: 2,
-    isVp: false,
-    timingWindow: "preRoll",
-    effectHandler: "setProductionDice"
-  }),
-  card({
-    id: "scienceMason",
-    displayName: "Mason",
-    deck: "science",
-    copies: 2,
-    isVp: false,
-    timingWindow: "actionPhaseWithBuild",
-    effectHandler: "reduceCityImprovementCost"
-  }),
-  card({
-    id: "scienceEngineering",
-    displayName: "Engineering",
-    deck: "science",
-    copies: 1,
-    isVp: false,
-    timingWindow: "actionPhase",
-    effectHandler: "buildFreeCityWall"
-  }),
-  card({
-    id: "scienceGeomancer",
-    displayName: "Geomancer",
-    deck: "science",
-    copies: 2,
-    isVp: false,
-    timingWindow: "actionPhase",
-    effectHandler: "swapNumberTokens"
-  }),
-  card({
-    id: "scienceIrrigation",
-    displayName: "Aqueducts",
-    deck: "science",
-    copies: 2,
-    isVp: false,
-    timingWindow: "actionPhase",
-    effectHandler: "gainPerAdjacentFields"
-  }),
-  card({
-    id: "scienceMedicine",
-    displayName: "Apothecary",
-    deck: "science",
-    copies: 2,
-    isVp: false,
-    timingWindow: "actionPhaseWithBuild",
-    effectHandler: "buildCityReducedCost"
-  }),
-  card({
-    id: "scienceMining",
-    displayName: "Delving",
-    deck: "science",
-    copies: 2,
-    isVp: false,
-    timingWindow: "actionPhase",
-    effectHandler: "gainPerAdjacentMountains"
-  }),
-  card({
-    id: "scienceTempering",
-    displayName: "Tempering",
-    deck: "science",
-    copies: 2,
-    isVp: false,
-    timingWindow: "actionPhase",
-    effectHandler: "freeKnightPromotions"
-  }),
-  card({
-    id: "scienceRoadBuilding",
-    displayName: "Causeway",
-    deck: "science",
-    copies: 2,
-    isVp: false,
-    timingWindow: "actionPhase",
-    effectHandler: "buildUpToTwoFreeRoads"
-  }),
-  card({
-    id: "scienceAnnals",
-    displayName: "Annals",
-    deck: "science",
-    copies: 1,
-    isVp: true,
-    timingWindow: "immediateOnDraw",
-    effectHandler: "revealGain1Vp",
-    hiddenInformationBehavior: "revealedImmediately"
-  }),
-  // ── Trade deck (18 cards) ──────────────────────────────────────
-  card({
-    id: "tradeCommercialHarbor",
-    displayName: "Wharfage",
-    deck: "trade",
-    copies: 2,
-    isVp: false,
-    timingWindow: "actionPhase",
-    effectHandler: "commercialHarborExchange"
-  }),
-  card({
-    id: "tradeTribute",
-    displayName: "Tribute",
-    deck: "trade",
-    copies: 2,
-    isVp: false,
-    timingWindow: "actionPhase",
-    effectHandler: "takeAnyTwoFromHigherVpPlayer"
-  }),
-  card({
-    id: "tradeMerchant",
-    displayName: "Guildmaster",
-    deck: "trade",
-    copies: 6,
-    isVp: false,
-    timingWindow: "actionPhase",
-    effectHandler: "takeMerchantControl"
-  }),
-  card({
-    id: "tradeMerchantFleet",
-    displayName: "Galleon",
-    deck: "trade",
-    copies: 2,
-    isVp: false,
-    timingWindow: "actionPhase",
-    effectHandler: "enableTemp2To1ForType"
-  }),
-  card({
-    id: "tradeResourceMonopoly",
-    displayName: "Levy",
-    deck: "trade",
-    copies: 4,
-    isVp: false,
-    timingWindow: "actionPhase",
-    effectHandler: "collectResourceFromAllPlayers"
-  }),
-  card({
-    id: "tradeTradeMonopoly",
-    displayName: "Embargo",
-    deck: "trade",
-    copies: 2,
-    isVp: false,
-    timingWindow: "actionPhase",
-    effectHandler: "collectCommodityFromAllPlayers"
-  }),
-  // ── Politics deck (18 cards) ───────────────────────────────────
-  card({
-    id: "politicsDiplomacy",
-    displayName: "Diplomacy",
-    deck: "politics",
-    copies: 2,
-    isVp: false,
-    timingWindow: "actionPhase",
-    effectHandler: "removeOpenRoad"
-  }),
-  card({
-    id: "politicsEncouragement",
-    displayName: "Encouragement",
-    deck: "politics",
-    copies: 2,
-    isVp: false,
-    timingWindow: "actionPhase",
-    effectHandler: "activateAllOwnKnights"
-  }),
-  card({
-    id: "politicsEspionage",
-    displayName: "Espionage",
-    deck: "politics",
-    copies: 3,
-    isVp: false,
-    timingWindow: "actionPhase",
-    effectHandler: "stealProgressCard"
-  }),
-  card({
-    id: "politicsIntrigue",
-    displayName: "Conspiracy",
-    deck: "politics",
-    copies: 2,
-    isVp: false,
-    timingWindow: "actionPhase",
-    effectHandler: "displaceOpponentKnightWithoutUsingOwnKnightAction"
-  }),
-  card({
-    id: "politicsSabotage",
-    displayName: "Sabotage",
-    deck: "politics",
-    copies: 2,
-    isVp: false,
-    timingWindow: "actionPhase",
-    effectHandler: "forceDiscardHalfOnEqualOrHigherVpPlayers"
-  }),
-  card({
-    id: "politicsTaxation",
-    displayName: "Taxation",
-    deck: "politics",
-    copies: 2,
-    isVp: false,
-    timingWindow: "actionPhase",
-    effectHandler: "moveRobberAndStealFromAllAdjacentBuildings"
-  }),
-  card({
-    id: "politicsTreason",
-    displayName: "Treason",
-    deck: "politics",
-    copies: 2,
-    isVp: false,
-    timingWindow: "actionPhase",
-    effectHandler: "removeOpponentKnightChosenByTargetAndOptionallyPlaceOwnKnight"
-  }),
-  card({
-    id: "politicsBetrothal",
-    displayName: "Betrothal",
-    deck: "politics",
-    copies: 2,
-    isVp: false,
-    timingWindow: "actionPhase",
-    effectHandler: "collectTwoCardsFromHigherVpPlayers"
-  }),
-  card({
-    id: "politicsCharter",
-    displayName: "Charter",
-    deck: "politics",
-    copies: 1,
-    isVp: true,
-    timingWindow: "immediateOnDraw",
-    effectHandler: "revealGain1Vp",
-    hiddenInformationBehavior: "revealedImmediately"
-  })
-];
-var ALL_CARDS_BY_ID = new Map(
-  ALL_CARDS.map((c) => [c.id, c])
-);
 
 // packages/core/src/game-constants.ts
 var RESOURCE_BANK_STOCK = 19;
@@ -21310,7 +21315,7 @@ var PENDING_PAYLOAD_SCHEMA_BY_TYPE = {
     status: KnightStateSchema
   }),
   [PendingDecisionType.RoadBuildingPlace]: external_exports.object({ maySkip: external_exports.boolean().optional() }),
-  // Storage, engine state, and Bot API v2 share this one strict shape.
+  // Storage, engine state, and the Bot API share this one strict shape.
   [PendingDecisionType.DomesticTradeResponse]: DomesticTradeAuctionPayloadSchema,
   [PendingDecisionType.EspionageChooseCard]: external_exports.object({
     eligibleCards: external_exports.array(external_exports.object({ instanceId: external_exports.string(), cardId: external_exports.string() })),
@@ -21622,9 +21627,8 @@ function deriveHiddenAggregates(client) {
     const opponent = player;
     opponentTotals.push({
       playerId,
-      resourceCount: opponent.resourceCount,
-      commodityCount: opponent.commodityCount,
-      progressHandCount: opponent.progressHandCount
+      materialCount: opponent.materialCount,
+      progressHandByDeck: { ...opponent.progressHandByDeck }
     });
   }
   const visibleCopies = /* @__PURE__ */ new Map();
@@ -21646,7 +21650,6 @@ function deriveHiddenAggregates(client) {
   }
   const deckCounts = deckCountsFromWire(client);
   const opponentProgressHeldByDeck = {};
-  let heldTotal = 0;
   for (const deck of COMMODITY_TRACKS) {
     const poolSize = sumMaterialCounts(unseenProgressPool[deck]);
     const held = poolSize - deckCounts[deck];
@@ -21657,14 +21660,13 @@ function deriveHiddenAggregates(client) {
       );
     }
     opponentProgressHeldByDeck[deck] = held;
-    heldTotal += held;
-  }
-  const rowTotal = opponentTotals.reduce((sum, o) => sum + o.progressHandCount, 0);
-  if (heldTotal !== rowTotal) {
-    fail(
-      "progressPoolInconsistent",
-      `unseen-pool math implies opponents hold ${heldTotal} progress cards but row totals sum to ${rowTotal}`
-    );
+    const rowTotal = opponentTotals.reduce((sum, o) => sum + o.progressHandByDeck[deck], 0);
+    if (held !== rowTotal) {
+      fail(
+        "progressPoolInconsistent",
+        `unseen-pool math implies opponents hold ${held} ${deck} progress cards but row totals sum to ${rowTotal}`
+      );
+    }
   }
   return {
     opponentResourceAggregates,
@@ -22083,12 +22085,36 @@ var SIX_FROM_WIN = 6;
 var SEVEN_FROM_WIN = 7;
 var EIGHT_FROM_WIN = 8;
 
+// packages/core/src/services/roll-resolution.ts
+var DISCARD_BASE_THRESHOLD = 7;
+var CITY_WALL_DISCARD_BONUS = 2;
+function discardThresholdFor(cityWalls) {
+  return DISCARD_BASE_THRESHOLD + CITY_WALL_DISCARD_BONUS * cityWalls;
+}
+function discardCountForHand(handSize) {
+  return Math.floor(handSize / 2);
+}
+
+// packages/core/src/dice/lcg.ts
+var CRC32_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let i = 0; i < 256; i++) {
+    let c = i;
+    for (let k = 0; k < 8; k++) {
+      c = (c & 1) !== 0 ? 3988292384 ^ c >>> 1 : c >>> 1;
+    }
+    t[i] = c >>> 0;
+  }
+  return t;
+})();
+var UTF8_ENCODER = new TextEncoder();
+
 // bot/src/util/get-or-create.ts
-function getOrCreate(cache2, key, factory) {
-  const cached2 = cache2.get(key);
+function getOrCreate(cache3, key, factory) {
+  const cached2 = cache3.get(key);
   if (cached2 !== void 0) return cached2;
   const value = factory();
-  cache2.set(key, value);
+  cache3.set(key, value);
   return value;
 }
 
@@ -22104,6 +22130,18 @@ function heldOfMaterial(player, type) {
   const resources = player.resources;
   const commodities = player.commodities;
   return (resources[type] ?? 0) + (commodities[type] ?? 0);
+}
+function opponentCommodityTotal(state) {
+  const self2 = Object.values(state.players).find(isSelf);
+  let total = 0;
+  for (const type of COMMODITY_TYPES) {
+    const own2 = self2?.commodities[type] ?? 0;
+    total += Math.max(0, COMMODITY_BANK_STOCK - (state.bankCommodities[type] ?? 0) - own2);
+  }
+  return total;
+}
+function mayHoldCommodity(state, player) {
+  return totalHandSize(player) > 0 && opponentCommodityTotal(state) > 0;
 }
 var progressHandIndexByPlayer = /* @__PURE__ */ new WeakMap();
 function findProgressCardByInstanceId(player, instanceId) {
@@ -23422,20 +23460,6 @@ function computeRoadReach(state, playerId, seedIntersectionIds) {
   return reach;
 }
 
-// packages/core/src/dice/lcg.ts
-var CRC32_TABLE = (() => {
-  const t = new Uint32Array(256);
-  for (let i = 0; i < 256; i++) {
-    let c = i;
-    for (let k = 0; k < 8; k++) {
-      c = (c & 1) !== 0 ? 3988292384 ^ c >>> 1 : c >>> 1;
-    }
-    t[i] = c >>> 0;
-  }
-  return t;
-})();
-var UTF8_ENCODER = new TextEncoder();
-
 // packages/core/src/cards/deck-builder.ts
 var DECK_PREFIX = {
   [CommodityTrack.Science]: "sci",
@@ -23909,11 +23933,11 @@ function getTradeCache(ctx) {
     return existing.cache;
   }
   const player = selfPlayer(ctx.state, ctx.playerId);
-  let cache2 = EMPTY_TRADE_CACHE;
+  let cache3 = EMPTY_TRADE_CACHE;
   if (player !== null) {
     const materialCounts = materialCountsFor(player);
     const targets = computeTradeTargets(ctx, player);
-    cache2 = {
+    cache3 = {
       materialCounts,
       targets,
       beforeStats: targets.map((target) => targetStats(materialCounts, target.cost)),
@@ -23921,8 +23945,8 @@ function getTradeCache(ctx) {
       preparedHands: /* @__PURE__ */ new WeakMap()
     };
   }
-  byPlayer.set(ctx.playerId, { boardIndex: ctx.boardIndex, requirePlacement, scienceDrive, cache: cache2 });
-  return cache2;
+  byPlayer.set(ctx.playerId, { boardIndex: ctx.boardIndex, requirePlacement, scienceDrive, cache: cache3 });
+  return cache3;
 }
 function handCoversCost(hand, cost) {
   for (const entry of cost) {
@@ -23931,10 +23955,10 @@ function handCoversCost(hand, cost) {
   return true;
 }
 function topAffordableBuildCost(ctx) {
-  const cache2 = getTradeCache(ctx);
+  const cache3 = getTradeCache(ctx);
   let best = null;
-  for (const target of cache2.targets) {
-    if (!handCoversCost(cache2.materialCounts, target.cost)) continue;
+  for (const target of cache3.targets) {
+    if (!handCoversCost(cache3.materialCounts, target.cost)) continue;
     if (best === null || target.completeBonus > best.completeBonus) best = target;
   }
   return best?.cost ?? null;
@@ -23956,9 +23980,9 @@ var PROMOTE_KNIGHT_TARGET_COST = tradeCostEntries(actionCost(ActionType.PromoteK
 function marginalTradeUtility(ctx, receiveItems, giveItems) {
   const player = selfPlayer(ctx.state, ctx.playerId);
   if (player === null) return 0;
-  const cache2 = getTradeCache(ctx);
-  const before = cache2.materialCounts;
-  const after = preparedTradeHand(cache2, receiveItems, giveItems);
+  const cache3 = getTradeCache(ctx);
+  const before = cache3.materialCounts;
+  const after = preparedTradeHand(cache3, receiveItems, giveItems);
   if (after === null) return Number.NEGATIVE_INFINITY;
   const touched = /* @__PURE__ */ new Set();
   for (const item of receiveItems) touched.add(item.type);
@@ -23972,7 +23996,7 @@ function marginalTradeUtility(ctx, receiveItems, giveItems) {
       delta += stackedUtility(perUnit, afterCount) - stackedUtility(perUnit, beforeCount);
       continue;
     }
-    const protectedCount = maxProtectedCountFromCache(cache2, type);
+    const protectedCount = maxProtectedCountFromCache(cache3, type);
     for (let ordinal = beforeCount; ordinal > afterCount; ordinal--) {
       const handFactor = Math.max(0.25, 1 - (ordinal - 1) * 0.25);
       const reservationFactor = protectedGiveOrdinalFactor(ctx, protectedCount, ordinal);
@@ -23998,12 +24022,12 @@ function evaluateTradeProjection(ctx, receiveItems, giveItems) {
   if (player === null) {
     return emptyProjection();
   }
-  const cache2 = getTradeCache(ctx);
-  const after = preparedTradeHand(cache2, receiveItems, giveItems);
+  const cache3 = getTradeCache(ctx);
+  const after = preparedTradeHand(cache3, receiveItems, giveItems);
   if (after === null) {
     return emptyProjection();
   }
-  const targets = cache2.targets;
+  const targets = cache3.targets;
   if (targets.length === 0) {
     return emptyProjection();
   }
@@ -24012,7 +24036,7 @@ function evaluateTradeProjection(ctx, receiveItems, giveItems) {
   let worstDelta = 0;
   for (let index = 0; index < targets.length; index++) {
     const target = targets[index];
-    const beforeStats = cache2.beforeStats[index];
+    const beforeStats = cache3.beforeStats[index];
     if (target === void 0 || beforeStats === void 0) continue;
     const delta = tradeTargetDelta(beforeStats, after, target, winProximityFactor);
     bestDelta = Math.max(bestDelta, delta);
@@ -24026,7 +24050,7 @@ function evaluateTradeProjection(ctx, receiveItems, giveItems) {
   return {
     bonus,
     bestDelta,
-    surplusOfferShare: tradeSurplusOfferShare(cache2, giveItems)
+    surplusOfferShare: tradeSurplusOfferShare(cache3, giveItems)
   };
 }
 function emptyProjection() {
@@ -24036,12 +24060,12 @@ function emptyProjection() {
     surplusOfferShare: 0
   };
 }
-function tradeSurplusOfferShare(cache2, items) {
+function tradeSurplusOfferShare(cache3, items) {
   let offered = 0;
   let surplus = 0;
   for (const item of items) {
-    const held = cache2.materialCounts[item.type] ?? 0;
-    const protectedCount = maxProtectedCountFromCache(cache2, item.type);
+    const held = cache3.materialCounts[item.type] ?? 0;
+    const protectedCount = maxProtectedCountFromCache(cache3, item.type);
     for (let i = 0; i < item.count; i++) {
       offered++;
       if (held - i > protectedCount) surplus++;
@@ -24067,12 +24091,12 @@ function computeMaterialCounts(player) {
   }
   return counts;
 }
-function preparedTradeHand(cache2, receiveItems, giveItems) {
-  const existing = cache2.preparedHands.get(receiveItems);
+function preparedTradeHand(cache3, receiveItems, giveItems) {
+  const existing = cache3.preparedHands.get(receiveItems);
   if (existing?.giveItems === giveItems) return existing.after;
-  const before = cache2.materialCounts;
+  const before = cache3.materialCounts;
   const after = hasTradeItems(before, giveItems) ? applyTradeItems(before, receiveItems, giveItems) : null;
-  cache2.preparedHands.set(receiveItems, { giveItems, after });
+  cache3.preparedHands.set(receiveItems, { giveItems, after });
   return after;
 }
 function hasTradeItems(hand, items) {
@@ -24103,16 +24127,16 @@ function adjustMaterial(hand, type, delta) {
     hand[type] = next;
   }
 }
-function maxProtectedCountFromCache(cache2, type) {
-  const cached2 = cache2.maxProtectedByType.get(type);
+function maxProtectedCountFromCache(cache3, type) {
+  const cached2 = cache3.maxProtectedByType.get(type);
   if (cached2 !== void 0) return cached2;
   let max = 0;
-  for (const target of cache2.targets) {
+  for (const target of cache3.targets) {
     for (const entry of target.cost) {
       if (entry.type === type && entry.needed > max) max = entry.needed;
     }
   }
-  cache2.maxProtectedByType.set(type, max);
+  cache3.maxProtectedByType.set(type, max);
   return max;
 }
 function computeTradeTargets(ctx, player) {
@@ -24745,8 +24769,8 @@ function withKnightCleared(board, intersectionId) {
 }
 var PROJECTED_LR_CACHE = /* @__PURE__ */ new WeakMap();
 var SETTLEMENT_PROJECTED_LR_CACHE = /* @__PURE__ */ new WeakMap();
-function memoizedProjection(cache2, board, target, owner, query, compute) {
-  const byTarget = getOrCreate(cache2, board, () => /* @__PURE__ */ new WeakMap());
+function memoizedProjection(cache3, board, target, owner, query, compute) {
+  const byTarget = getOrCreate(cache3, board, () => /* @__PURE__ */ new WeakMap());
   const byOwner = getOrCreate(byTarget, target, () => /* @__PURE__ */ new Map());
   const byQuery = getOrCreate(byOwner, owner, () => /* @__PURE__ */ new Map());
   return getOrCreate(byQuery, query, compute);
@@ -25355,6 +25379,254 @@ function populateVpActionFacts(target, action, state, playerId, boardIndex) {
   }
 }
 
+// bot/src/opponents/progress-beliefs.ts
+var cache = /* @__PURE__ */ new WeakMap();
+function progressBeliefsFor(state, viewerId) {
+  let byViewer = cache.get(state);
+  if (byViewer === void 0) {
+    byViewer = /* @__PURE__ */ new Map();
+    cache.set(state, byViewer);
+  }
+  const existing = byViewer.get(viewerId);
+  if (existing !== void 0) return existing;
+  const beliefs = buildProgressBeliefs(state, viewerId);
+  byViewer.set(viewerId, beliefs);
+  return beliefs;
+}
+function buildProgressBeliefs(state, viewerId) {
+  const knownCopies = /* @__PURE__ */ new Map();
+  const self2 = state.players[viewerId];
+  if (self2 !== void 0 && isSelf(self2)) {
+    for (const card2 of self2.progressHand) {
+      knownCopies.set(card2.cardId, (knownCopies.get(card2.cardId) ?? 0) + 1);
+    }
+  }
+  const pools = /* @__PURE__ */ new Map();
+  for (const deck of COMMODITY_TRACKS) {
+    const cards = /* @__PURE__ */ new Map();
+    let size = 0;
+    for (const card2 of ALL_CARDS) {
+      if (card2.deck !== deck || card2.isVp || card2.hiddenInformationBehavior === "revealedImmediately")
+        continue;
+      const remaining = Math.max(0, card2.copies - (knownCopies.get(card2.id) ?? 0));
+      if (remaining === 0) continue;
+      cards.set(card2.id, remaining);
+      size += remaining;
+    }
+    pools.set(deck, { cards, size });
+  }
+  const hands = /* @__PURE__ */ new Map();
+  for (const [opponentId, opponent] of Object.entries(state.players)) {
+    if (opponentId === viewerId || isSelf(opponent)) continue;
+    const counts = /* @__PURE__ */ new Map();
+    for (const deck of COMMODITY_TRACKS) {
+      const count2 = opponent.progressHandByDeck[deck];
+      counts.set(
+        deck,
+        Number.isFinite(count2) ? Math.max(0, Math.min(Math.floor(count2), pools.get(deck)?.size ?? 0)) : 0
+      );
+    }
+    hands.set(opponentId, counts);
+  }
+  const bestValueCache = /* @__PURE__ */ new WeakMap();
+  return {
+    probabilityHasAnyCard(opponentId, cardIds) {
+      const hand = hands.get(opponentId);
+      if (hand === void 0) return 0;
+      const uniqueIds = new Set(cardIds);
+      let none = 1;
+      for (const [deck, pool] of pools) {
+        let copies = 0;
+        for (const id of uniqueIds) copies += pool.cards.get(id) ?? 0;
+        none *= probabilityMiss(pool.size, copies, hand.get(deck) ?? 0);
+      }
+      return 1 - none;
+    },
+    probabilityAnyOpponentHasCard(cardId) {
+      const card2 = ALL_CARDS_BY_ID.get(cardId);
+      if (card2 === void 0) return 0;
+      const pool = pools.get(card2.deck);
+      if (pool === void 0) return 0;
+      let draws = 0;
+      for (const hand of hands.values()) draws += hand.get(card2.deck) ?? 0;
+      return 1 - probabilityMiss(pool.size, pool.cards.get(cardId) ?? 0, Math.min(draws, pool.size));
+    },
+    probabilityHasCard(opponentId, cardId, atLeast = 1) {
+      if (!Number.isFinite(atLeast)) return 0;
+      if (atLeast <= 0) return 1;
+      const card2 = ALL_CARDS_BY_ID.get(cardId);
+      if (card2 === void 0) return 0;
+      const pool = pools.get(card2.deck);
+      if (pool === void 0) return 0;
+      const copies = pool.cards.get(cardId) ?? 0;
+      const draws = hands.get(opponentId)?.get(card2.deck) ?? 0;
+      const minimum = Math.ceil(atLeast);
+      if (copies < minimum || draws < minimum) return 0;
+      let probability = 0;
+      const denominator = combinations(pool.size, draws);
+      for (let count2 = minimum; count2 <= Math.min(copies, draws); count2++) {
+        probability += combinations(copies, count2) * combinations(pool.size - copies, draws - count2) / denominator;
+      }
+      return Math.min(1, probability);
+    },
+    expectedBestCardValue(opponentId, cardValue) {
+      let byOpponent = bestValueCache.get(cardValue);
+      if (byOpponent === void 0) {
+        byOpponent = /* @__PURE__ */ new Map();
+        bestValueCache.set(cardValue, byOpponent);
+      }
+      const cachedValue = byOpponent.get(opponentId);
+      if (cachedValue !== void 0) return cachedValue;
+      const hand = hands.get(opponentId);
+      if (hand === void 0) return 0;
+      const valuedPools = [];
+      const thresholds = /* @__PURE__ */ new Set();
+      for (const deck of COMMODITY_TRACKS) {
+        const draws = hand.get(deck) ?? 0;
+        const pool = pools.get(deck);
+        if (draws === 0 || pool === void 0) continue;
+        const values = [];
+        for (const [cardId, copies] of pool.cards) {
+          const rawValue = cardValue(cardId);
+          const value = Number.isFinite(rawValue) ? Math.max(0, rawValue) : 0;
+          values.push({ value, copies });
+          if (value > 0) thresholds.add(value);
+        }
+        valuedPools.push({ pool, draws, values });
+      }
+      let expected = 0;
+      let previous = 0;
+      for (const threshold of [...thresholds].sort((a, b) => a - b)) {
+        let allBelow = 1;
+        for (const { pool, draws, values } of valuedPools) {
+          let below = 0;
+          for (const card2 of values) {
+            if (card2.value < threshold) below += card2.copies;
+          }
+          allBelow *= combinations(below, draws) / combinations(pool.size, draws);
+        }
+        expected += (threshold - previous) * (1 - allBelow);
+        previous = threshold;
+      }
+      byOpponent.set(opponentId, expected);
+      return expected;
+    }
+  };
+}
+function probabilityMiss(population, copies, draws) {
+  return combinations(population - copies, draws) / combinations(population, draws);
+}
+function combinations(population, count2) {
+  if (count2 < 0 || count2 > population) return 0;
+  let result = 1;
+  const factors = Math.min(count2, population - count2);
+  for (let i = 1; i <= factors; i++) result = result * (population - i + 1) / i;
+  return result;
+}
+
+// bot/src/bot/progress-card-threats.ts
+var threatsByState = /* @__PURE__ */ new WeakMap();
+function progressCardThreatsFor(state, viewerId, playerId) {
+  const byViewer = getOrCreate(threatsByState, state, () => /* @__PURE__ */ new Map());
+  const byPlayer = getOrCreate(byViewer, viewerId, () => /* @__PURE__ */ new Map());
+  return getOrCreate(byPlayer, playerId, () => computeThreats(state, viewerId, playerId));
+}
+function computeThreats(state, viewerId, playerId) {
+  const beliefs = progressBeliefsFor(state, viewerId);
+  const merchant = beliefs.probabilityHasCard(playerId, "tradeMerchant");
+  const merchantGainProbability = merchant > 0 && state.merchantOwnerPlayerId !== playerId && hasMerchantPlacement(state, playerId) ? merchant : 0;
+  const causeway = beliefs.probabilityHasCard(playerId, "scienceRoadBuilding");
+  const roadSupply = state.players[playerId]?.roadsInSupply ?? 0;
+  const causewayClaimProbability = causeway > 0 && roadSupply > 0 && minimumLegalRoadsToClaimLongestRoad(state, playerId, Math.min(2, roadSupply)).kind === "found" ? causeway : 0;
+  const diplomacy = beliefs.probabilityHasCard(playerId, "politicsDiplomacy");
+  let diplomacyClaimProbability = 0;
+  let diplomacyTitleLossProbability = 0;
+  const holder = state.longestRoadHolderPlayerId;
+  if (diplomacy > 0 && holder !== playerId) {
+    for (const [edgeId, after] of holdersAfterOpenRoadRemoval(state)) {
+      if (state.board.edges[edgeId]?.roadOwnerPlayerId === playerId) continue;
+      if (after === holder) continue;
+      if (holder !== null) diplomacyTitleLossProbability = diplomacy;
+      if (after === playerId) diplomacyClaimProbability = diplomacy;
+    }
+  }
+  return {
+    merchantGainProbability,
+    causewayClaimProbability,
+    diplomacyClaimProbability,
+    diplomacyTitleLossProbability
+  };
+}
+function hasMerchantPlacement(state, playerId) {
+  for (const intersection2 of Object.values(state.board.intersections)) {
+    if (intersection2.building?.ownerPlayerId !== playerId) continue;
+    for (const hexId of intersection2.adjacentHexIds) {
+      if (state.board.hexes[hexId] !== void 0) return true;
+    }
+  }
+  return false;
+}
+var removalHoldersByState = /* @__PURE__ */ new WeakMap();
+function holdersAfterOpenRoadRemoval(state) {
+  return getOrCreate(removalHoldersByState, state, () => {
+    const result = /* @__PURE__ */ new Map();
+    const holder = state.longestRoadHolderPlayerId;
+    const view = recordBoardView(state.board);
+    const lengths = new Map(Object.keys(state.players).map((id) => [id, roadLengthFor(state, id)]));
+    for (const edge of Object.values(state.board.edges)) {
+      const owner = edge.roadOwnerPlayerId;
+      if (owner === null || holder !== null && owner !== holder || !isOpenRoad(view, edge.id)) {
+        continue;
+      }
+      const changedLength = projectedLongestRoadWithEdgeOverride(state.board, edge, null, owner);
+      let maximum = changedLength;
+      let soleContender = owner;
+      for (const [id, length] of lengths) {
+        if (id === owner) continue;
+        if (length > maximum) {
+          maximum = length;
+          soleContender = id;
+        } else if (length === maximum) {
+          soleContender = null;
+        }
+      }
+      const holderLength = holder === owner ? changedLength : lengths.get(holder ?? "") ?? 0;
+      result.set(
+        edge.id,
+        maximum < LONGEST_ROAD_MIN ? null : holder !== null && holderLength === maximum ? holder : soleContender
+      );
+    }
+    return result;
+  });
+}
+function diplomacyRoadDefenseBonus(ctx, edgeId) {
+  const { state, actingPlayerId, tuning } = ctx;
+  if (tuning.longestRoadDefenseBonus <= 0 || state.longestRoadHolderPlayerId !== actingPlayerId) {
+    return 0;
+  }
+  const edge = state.board.edges[edgeId];
+  if (edge === void 0 || edge.roadOwnerPlayerId !== null) return 0;
+  const beliefs = progressBeliefsFor(state, actingPlayerId);
+  const probability = beliefs.probabilityAnyOpponentHasCard("politicsDiplomacy");
+  if (probability <= 0 || !canStripTitle(state)) return 0;
+  const byEdge = getOrCreate(defendedRoadsByState, state, () => /* @__PURE__ */ new Map());
+  const protects = getOrCreate(
+    byEdge,
+    edgeId,
+    () => !canStripTitle({ ...state, board: withEdgeOwnerOverride(state.board, edge, actingPlayerId) })
+  );
+  if (!protects) return 0;
+  const multiplier = ctx.selfVp >= state.victoryPointsTarget - THREE_FROM_WIN ? tuning.longestRoadDefenseNearWinMultiplier : 1;
+  return Math.round(probability * tuning.longestRoadDefenseBonus * multiplier);
+}
+var defendedRoadsByState = /* @__PURE__ */ new WeakMap();
+function canStripTitle(state) {
+  for (const holderAfter of holdersAfterOpenRoadRemoval(state).values()) {
+    if (holderAfter !== state.longestRoadHolderPlayerId) return true;
+  }
+  return false;
+}
+
 // bot/src/bot/leader-danger.ts
 var CITY_COST2 = actionCost(ActionType.BuildCity);
 var SETTLEMENT_COST3 = actionCost(ActionType.BuildSettlement);
@@ -25496,6 +25768,23 @@ function leaderWinLiveness(ctx, floors) {
   for (const path of leaderConcreteWinPaths(ctx, profile)) {
     best = Math.max(best, model.probabilityCanAfford(profile.id, path.cost));
     if (best >= 1) break;
+  }
+  if (best < 1) {
+    const threats = progressCardThreatsFor(ctx.state, ctx.actingPlayerId, profile.id);
+    const remainingVp = ctx.state.victoryPointsTarget - profile.visibleVp;
+    const winningCards = [];
+    if (remainingVp <= 1 && threats.merchantGainProbability > 0) winningCards.push("tradeMerchant");
+    if (remainingVp <= 2) {
+      if (threats.causewayClaimProbability > 0) winningCards.push("scienceRoadBuilding");
+      if (threats.diplomacyClaimProbability > 0) winningCards.push("politicsDiplomacy");
+    }
+    best = Math.max(
+      best,
+      progressBeliefsFor(ctx.state, ctx.actingPlayerId).probabilityHasAnyCard(
+        profile.id,
+        winningCards
+      )
+    );
   }
   return clamp(best, floor, 1);
 }
@@ -25978,9 +26267,9 @@ function matchingTrack(s) {
 }
 
 // bot/src/bot/setup-valuation/board-avg-pips.ts
-var cache = /* @__PURE__ */ new WeakMap();
+var cache2 = /* @__PURE__ */ new WeakMap();
 function boardAvgPipsPerHex(pipsByHex) {
-  return getOrCreate(cache, pipsByHex, () => {
+  return getOrCreate(cache2, pipsByHex, () => {
     let total = 0;
     let count2 = 0;
     for (const v of Object.values(pipsByHex)) {
@@ -26282,12 +26571,12 @@ function scoreSetupIntersection(ctx, intersectionId) {
   if (ctx.state.phase !== Phase.Action) {
     return Math.round(dotProduct(extractFeatures(ctx, intersectionId), weights));
   }
-  const cache2 = scoreCacheFor(ctx, weights);
+  const cache3 = scoreCacheFor(ctx, weights);
   const cacheKey = `${ctx.strategy}|${intersectionId}`;
-  const cached2 = cache2?.get(cacheKey);
+  const cached2 = cache3?.get(cacheKey);
   if (cached2 !== void 0) return cached2;
   const score2 = Math.round(dotProduct(extractFeatures(ctx, intersectionId), weights));
-  cache2?.set(cacheKey, score2);
+  cache3?.set(cacheKey, score2);
   return score2;
 }
 
@@ -26309,12 +26598,12 @@ function scoreCacheFor2(ctx) {
   return getOrCreate(bySettlementBase, ctx.settlementBase, () => /* @__PURE__ */ new Map());
 }
 function scoreSettlementAction(ctx, intersectionId, includeExpansionPressure = true) {
-  const cache2 = scoreCacheFor2(ctx);
+  const cache3 = scoreCacheFor2(ctx);
   const cacheKey = `${ctx.actingPlayerId}|${intersectionId}|${includeExpansionPressure ? 1 : 0}`;
-  const cached2 = cache2?.get(cacheKey);
+  const cached2 = cache3?.get(cacheKey);
   if (cached2 !== void 0) return cached2;
   const score2 = computeSettlementScore(ctx, intersectionId, includeExpansionPressure);
-  cache2?.set(cacheKey, score2);
+  cache3?.set(cacheKey, score2);
   return score2;
 }
 function computeSettlementScore(ctx, intersectionId, includeExpansionPressure) {
@@ -26457,6 +26746,7 @@ function maritimeTradeRate(action) {
 }
 function currentMaritimeRateFor(state, boardIndex, playerId, offerType, options = {}) {
   const ownedHarborTypes = [];
+  if (options.additionalHarbor !== void 0) ownedHarborTypes.push(options.additionalHarbor);
   for (const entry of boardIndex.buildingsByPlayer[playerId] ?? []) {
     const harbor = harborForIntersection(state.board.harbors, entry.intersectionId);
     if (harbor !== void 0) ownedHarborTypes.push(harbor.type);
@@ -26493,6 +26783,112 @@ function simulateTradeUtility(state, playerId, ownResources, ownCommodities, rec
 }
 function tradeUtilityGain(ctx, self2, receive, give, preTrade) {
   return simulateTradeUtility(ctx.state, ctx.playerId, self2.resources, self2.commodities, receive, give) - preTrade;
+}
+
+// bot/src/opponents/hand-belief-math.ts
+var BANK_CIRCULATION_INFLUENCE = 0.5;
+function scaleWeights(weights, types, factors) {
+  const out = {};
+  for (const type of types) {
+    const weight = weights[type] ?? 0;
+    if (weight <= 0) continue;
+    const scaled = weight * (factors[type] ?? 1);
+    if (scaled > 0) out[type] = scaled;
+  }
+  return out;
+}
+function bucketCirculationFactors(types, bank, ownHand, stock) {
+  const out = {};
+  const heldByType = {};
+  let total = 0;
+  for (const type of types) {
+    const held = Math.max(0, stock - (bank[type] ?? 0) - (ownHand[type] ?? 0));
+    heldByType[type] = held;
+    total += held;
+  }
+  if (total <= 0) {
+    for (const type of types) out[type] = 0;
+    return out;
+  }
+  const n = types.length;
+  for (const type of types) {
+    const held = heldByType[type] ?? 0;
+    if (held === 0) {
+      out[type] = 0;
+      continue;
+    }
+    const share = held / total;
+    out[type] = Math.max(0, 1 + BANK_CIRCULATION_INFLUENCE * (share * n - 1));
+  }
+  return out;
+}
+function distributeBucket(weights, types, count2) {
+  if (count2 <= 0 || types.length === 0) {
+    return {};
+  }
+  const positive = {};
+  let positiveSum = 0;
+  for (const type of types) {
+    const weight = weights[type] ?? 0;
+    if (weight > 0) {
+      positive[type] = weight;
+      positiveSum += weight;
+    }
+  }
+  if (positiveSum <= 0) {
+    const share = count2 / types.length;
+    const uniform = {};
+    for (const type of types) {
+      uniform[type] = share;
+    }
+    return uniform;
+  }
+  const scale = count2 / positiveSum;
+  for (const type of Object.keys(positive)) {
+    const w = positive[type];
+    if (w !== void 0) {
+      positive[type] = w * scale;
+    }
+  }
+  return positive;
+}
+function normalizeComposition(composition, handSize, types = MATERIAL_TYPES) {
+  return distributeBucket(composition, types, handSize);
+}
+function sigmoid(x) {
+  return 1 / (1 + Math.exp(-x));
+}
+function binomialTailProbability(trials, successProbability, minimumSuccesses) {
+  if (minimumSuccesses <= 0) {
+    return 1;
+  }
+  if (trials < minimumSuccesses) {
+    return 0;
+  }
+  if (successProbability <= 0) {
+    return 0;
+  }
+  if (successProbability >= 1) {
+    return 1;
+  }
+  if (Number.isNaN(successProbability)) return Number.NaN;
+  const failureProbability = 1 - successProbability;
+  const mode = Math.min(trials, Math.floor((trials + 1) * successProbability));
+  let total = 1;
+  let tail = mode >= minimumSuccesses ? 1 : 0;
+  let current = 1;
+  for (let k = mode; k > 0; k--) {
+    current *= k / (trials - k + 1) * (failureProbability / successProbability);
+    total += current;
+    if (k - 1 >= minimumSuccesses) tail += current;
+  }
+  current = 1;
+  for (let k = mode; k < trials; k++) {
+    current *= (trials - k) / (k + 1) * (successProbability / failureProbability);
+    total += current;
+    if (k + 1 >= minimumSuccesses) tail += current;
+  }
+  return tail / total;
 }
 
 // bot/src/bot/acquisition-plan.ts
@@ -26819,10 +27215,19 @@ function scoreCommercialHarborOffer(ctx, action) {
     return 0;
   }
   const target = state.players[targetPlayerId];
-  if (target === void 0 || commodityCount(target) <= 0) return -0.5;
+  if (target === void 0 || !mayHoldCommodity(state, target)) return -0.5;
   if (commercialHarborTargetDeclined(state, targetPlayerId)) return -0.5;
   const giveUtility = resourceUtility(state, actingPlayerId, giveResourceType);
-  return averageCommodityUtility(state, actingPlayerId) - giveUtility;
+  const swing = averageCommodityUtility(state, actingPlayerId) - giveUtility;
+  return swing * probabilityHoldsCommodity(ctx.opponentModel, targetPlayerId, target);
+}
+function probabilityHoldsCommodity(model, targetId, target) {
+  const handTotal = totalHandSize(target);
+  if (handTotal <= 0) return 0;
+  const hand = model.estimatedHand(targetId);
+  let commodities = 0;
+  for (const type of COMMODITY_TYPES) commodities += hand[type] ?? 0;
+  return binomialTailProbability(handTotal, clamp(commodities / handTotal, 0, 1), 1);
 }
 function commercialHarborTargetDeclined(state, targetPlayerId) {
   return playerVp(state, targetPlayerId) >= state.victoryPointsTarget - TWO_FROM_WIN;
@@ -27445,16 +27850,6 @@ function postDeclineRetryRejected(ctx, decline, projection, score2) {
   return buildRequiredAfter > 0 && decline.sameWantDeclines >= buildRequiredAfter;
 }
 
-// packages/core/src/services/roll-resolution.ts
-var DISCARD_BASE_THRESHOLD = 7;
-var CITY_WALL_DISCARD_BONUS = 2;
-function discardThresholdFor(cityWalls) {
-  return DISCARD_BASE_THRESHOLD + CITY_WALL_DISCARD_BONUS * cityWalls;
-}
-function discardCountForHand(handSize) {
-  return Math.floor(handSize / 2);
-}
-
 // bot/src/bot/robber-hex-scorer.ts
 var CITY_KIT_COST = cityCostFor(false);
 var SETTLEMENT_KIT_COST = actionCost(ActionType.BuildSettlement);
@@ -27886,40 +28281,19 @@ function buildDeterminizationConstraints(input2) {
     };
   }
   const opponentIds = aggregates.opponentTotals.map((o) => o.playerId);
-  const resourceRowTotals = emptyStringRecord();
-  const commodityRowTotals = emptyStringRecord();
-  for (const row of aggregates.opponentTotals) {
-    resourceRowTotals[row.playerId] = row.resourceCount;
-    commodityRowTotals[row.playerId] = row.commodityCount;
-  }
-  const provenFloors = collectStandingWantFloors(input2.state, opponentIds);
-  const resources = buildBucketConstraints(
-    "resource",
-    RESOURCE_TYPES,
-    aggregates.opponentResourceAggregates,
-    resourceRowTotals,
+  const rowTotals = emptyStringRecord();
+  for (const row of aggregates.opponentTotals) rowTotals[row.playerId] = row.materialCount;
+  const materials = buildBucketConstraints(
+    MATERIAL_TYPES,
+    { ...aggregates.opponentResourceAggregates, ...aggregates.opponentCommodityAggregates },
+    rowTotals,
     opponentIds,
-    provenFloors
+    collectStandingWantFloors(input2.state, opponentIds)
   );
-  if (!resources.ok) return { feasible: false, code: resources.code, detail: resources.detail };
-  const commodities = buildBucketConstraints(
-    "commodity",
-    COMMODITY_TYPES,
-    aggregates.opponentCommodityAggregates,
-    commodityRowTotals,
-    opponentIds,
-    provenFloors
-  );
-  if (!commodities.ok)
-    return { feasible: false, code: commodities.code, detail: commodities.detail };
+  if (!materials.ok) return { feasible: false, code: materials.code, detail: materials.detail };
   return {
     feasible: true,
-    constraints: {
-      opponentIds,
-      resources: resources.value,
-      commodities: commodities.value,
-      aggregates
-    }
+    constraints: { opponentIds, materials: materials.value, aggregates }
   };
 }
 function collectStandingWantFloors(state, opponentIds) {
@@ -27933,7 +28307,7 @@ function collectStandingWantFloors(state, opponentIds) {
   }
   return floors;
 }
-function buildBucketConstraints(label, types, columnAggregates, rowTotals, opponentIds, provenFloors) {
+function buildBucketConstraints(types, columnAggregates, rowTotals, opponentIds, provenFloors) {
   const columnSums = {};
   let columnTotal = 0;
   for (const t of types) {
@@ -27947,7 +28321,7 @@ function buildBucketConstraints(label, types, columnAggregates, rowTotals, oppon
     return {
       ok: false,
       code: "marginMismatch",
-      detail: `${label} row totals sum to ${rowTotal} but column sums to ${columnTotal}`
+      detail: `material row totals sum to ${rowTotal} but column sums to ${columnTotal}`
     };
   }
   const floors = emptyStringRecord();
@@ -27970,7 +28344,7 @@ function buildBucketConstraints(label, types, columnAggregates, rowTotals, oppon
       return {
         ok: false,
         code: "standingWantUnbacked",
-        detail: `${id} standing want reserves ${rowFloorSum} ${label} cards but the wire says they hold ${total}`
+        detail: `${id} standing want reserves ${rowFloorSum} cards but the wire says they hold ${total}`
       };
     }
     floors[id] = row;
@@ -28126,29 +28500,39 @@ function sampleFreeTable(free, rng) {
     () => new Array(colCount).fill(0)
   );
   const remaining = freeRow.slice();
+  const cards = [];
   for (let c = 0; c < colCount; c++) {
-    let units = freeCol[c] ?? 0;
-    while (units > 0) {
-      let total = 0;
-      for (let r = 0; r < rowCount; r++) {
-        if ((remaining[r] ?? 0) > 0) total += Math.max(expected[r]?.[c] ?? 0, WEIGHT_EPSILON);
+    for (let unit = 0; unit < (freeCol[c] ?? 0); unit++) cards.push(c);
+  }
+  for (let i = cards.length - 1; i > 0; i--) {
+    const j = Math.floor(rng.next() * (i + 1));
+    const card2 = cards[i] ?? 0;
+    cards[i] = cards[j] ?? 0;
+    cards[j] = card2;
+  }
+  for (const c of cards) {
+    let total = 0;
+    for (let r = 0; r < rowCount; r++) {
+      const slots = remaining[r] ?? 0;
+      if (slots > 0) {
+        total += slots * Math.max(expected[r]?.[c] ?? 0, WEIGHT_EPSILON) / (freeRow[r] ?? 1);
       }
-      if (total <= 0) throw new Error(`sampling infeasible at column ${c}`);
-      let pick2 = rng.next() * total;
-      let chosen = -1;
-      for (let r = 0; r < rowCount; r++) {
-        if ((remaining[r] ?? 0) <= 0) continue;
-        pick2 -= Math.max(expected[r]?.[c] ?? 0, WEIGHT_EPSILON);
-        chosen = r;
-        if (pick2 < 0) break;
-      }
-      if (chosen < 0) throw new Error(`sampling failed to choose a row at column ${c}`);
-      const row = cells[chosen];
-      if (row === void 0) throw new Error(`sampling: missing row ${chosen}`);
-      row[c] = (row[c] ?? 0) + 1;
-      remaining[chosen] = (remaining[chosen] ?? 0) - 1;
-      units--;
     }
+    if (total <= 0) throw new Error(`sampling infeasible at column ${c}`);
+    let pick2 = rng.next() * total;
+    let chosen = -1;
+    for (let r = 0; r < rowCount; r++) {
+      const slots = remaining[r] ?? 0;
+      if (slots <= 0) continue;
+      pick2 -= slots * Math.max(expected[r]?.[c] ?? 0, WEIGHT_EPSILON) / (freeRow[r] ?? 1);
+      chosen = r;
+      if (pick2 < 0) break;
+    }
+    if (chosen < 0) throw new Error(`sampling failed to choose a row at column ${c}`);
+    const row = cells[chosen];
+    if (row === void 0) throw new Error(`sampling: missing row ${chosen}`);
+    row[c] = (row[c] ?? 0) + 1;
+    remaining[chosen] = (remaining[chosen] ?? 0) - 1;
   }
   return cells;
 }
@@ -28172,50 +28556,57 @@ function bucketSpec(bucket, opponentIds, priors) {
     priors: priorTable
   };
 }
+function emptyHand() {
+  return { resources: {}, commodities: {} };
+}
+function addToHand(hand, type, count2) {
+  if (count2 <= 0) return;
+  if (isResourceType(type)) hand.resources[type] = count2;
+  else if (isCommodityType(type)) hand.commodities[type] = count2;
+}
+function fittedHands(constraints, priors) {
+  const { types } = constraints.materials;
+  const free = prepareFreeTable(bucketSpec(constraints.materials, constraints.opponentIds, priors));
+  const out = emptyStringRecord();
+  constraints.opponentIds.forEach((id, row) => {
+    const hand = {};
+    for (let col = 0; col < types.length; col++) {
+      const type = types[col];
+      if (type === void 0) continue;
+      const count2 = (free.expected[row]?.[col] ?? 0) + (free.floors[row]?.[col] ?? 0);
+      if (count2 > 0) hand[type] = count2;
+    }
+    out[id] = hand;
+  });
+  return out;
+}
 function sampleHands(constraints, priors, k, seedParts) {
   if (!Number.isInteger(k) || k <= 0) return [];
-  const resourceSpec = bucketSpec(constraints.resources, constraints.opponentIds, priors);
-  const commoditySpec = bucketSpec(constraints.commodities, constraints.opponentIds, priors);
-  const resourceFree = prepareFreeTable(resourceSpec);
-  const commodityFree = prepareFreeTable(commoditySpec);
+  const { types } = constraints.materials;
+  const free = prepareFreeTable(bucketSpec(constraints.materials, constraints.opponentIds, priors));
   const out = [];
   for (let sampleIndex = 1; sampleIndex <= k; sampleIndex++) {
     const rng = createSeededRng(handSampleSeed(seedParts, sampleIndex));
-    const resourceCells = sampleFreeTable(resourceFree, rng);
-    const commodityCells = sampleFreeTable(commodityFree, rng);
+    const cells = sampleFreeTable(free, rng);
     const hands = emptyStringRecord();
     const { opponentIds } = constraints;
     for (let row = 0; row < opponentIds.length; row++) {
-      hands[opponentIds[row] ?? ""] = {
-        resources: bucketFromCells(
-          constraints.resources.types,
-          resourceFree,
-          resourceCells,
-          row
-        ),
-        commodities: bucketFromCells(
-          constraints.commodities.types,
-          commodityFree,
-          commodityCells,
-          row
-        )
-      };
+      hands[opponentIds[row] ?? ""] = handFromCells(types, free, cells, row);
     }
     out.push(hands);
   }
   return out;
 }
-function bucketFromCells(types, free, cells, row) {
-  const out = {};
+function handFromCells(types, free, cells, row) {
+  const hand = emptyHand();
   const cellRow = cells[row];
   const floorRow = free.floors[row];
   for (let col = 0; col < types.length; col++) {
     const type = types[col];
     if (type === void 0) continue;
-    const count2 = (cellRow?.[col] ?? 0) + (floorRow?.[col] ?? 0);
-    if (count2 > 0) out[type] = count2;
+    addToHand(hand, type, (cellRow?.[col] ?? 0) + (floorRow?.[col] ?? 0));
   }
-  return out;
+  return hand;
 }
 
 // bot/src/payload-narrow.ts
@@ -28685,115 +29076,6 @@ function observedSameWantAppetiteBaseline(config2, indexes, opponentId, want) {
   return (alpha0 + accepts) / (priorStrength + accepts + declines);
 }
 
-// bot/src/opponents/hand-belief-math.ts
-var BANK_CIRCULATION_INFLUENCE = 0.5;
-function scaleWeights(weights, types, factors) {
-  const out = {};
-  for (const type of types) {
-    const weight = weights[type] ?? 0;
-    if (weight <= 0) continue;
-    const scaled = weight * (factors[type] ?? 1);
-    if (scaled > 0) out[type] = scaled;
-  }
-  return out;
-}
-function bucketCirculationFactors(types, bank, ownHand, stock) {
-  const out = {};
-  const heldByType = {};
-  let total = 0;
-  for (const type of types) {
-    const held = Math.max(0, stock - (bank[type] ?? 0) - (ownHand[type] ?? 0));
-    heldByType[type] = held;
-    total += held;
-  }
-  if (total <= 0) {
-    for (const type of types) out[type] = 1;
-    return out;
-  }
-  const n = types.length;
-  for (const type of types) {
-    const held = heldByType[type] ?? 0;
-    if (held === 0) {
-      out[type] = 0;
-      continue;
-    }
-    const share = held / total;
-    out[type] = Math.max(0, 1 + BANK_CIRCULATION_INFLUENCE * (share * n - 1));
-  }
-  return out;
-}
-function distributeBucket(weights, types, count2) {
-  if (count2 <= 0 || types.length === 0) {
-    return {};
-  }
-  const positive = {};
-  let positiveSum = 0;
-  for (const type of types) {
-    const weight = weights[type] ?? 0;
-    if (weight > 0) {
-      positive[type] = weight;
-      positiveSum += weight;
-    }
-  }
-  if (positiveSum <= 0) {
-    const share = count2 / types.length;
-    const uniform = {};
-    for (const type of types) {
-      uniform[type] = share;
-    }
-    return uniform;
-  }
-  const scale = count2 / positiveSum;
-  for (const type of Object.keys(positive)) {
-    const w = positive[type];
-    if (w !== void 0) {
-      positive[type] = w * scale;
-    }
-  }
-  return positive;
-}
-function normalizeBucketedComposition(composition, resourceCount2, commodityCount2) {
-  return {
-    ...distributeBucket(composition, RESOURCE_TYPES, resourceCount2),
-    ...distributeBucket(composition, COMMODITY_TYPES, commodityCount2)
-  };
-}
-function sigmoid(x) {
-  return 1 / (1 + Math.exp(-x));
-}
-function binomialTailProbability(trials, successProbability, minimumSuccesses) {
-  if (minimumSuccesses <= 0) {
-    return 1;
-  }
-  if (trials < minimumSuccesses) {
-    return 0;
-  }
-  if (successProbability <= 0) {
-    return 0;
-  }
-  if (successProbability >= 1) {
-    return 1;
-  }
-  if (Number.isNaN(successProbability)) return Number.NaN;
-  const failureProbability = 1 - successProbability;
-  const mode = Math.min(trials, Math.floor((trials + 1) * successProbability));
-  let total = 1;
-  let tail = mode >= minimumSuccesses ? 1 : 0;
-  let current = 1;
-  for (let k = mode; k > 0; k--) {
-    current *= k / (trials - k + 1) * (failureProbability / successProbability);
-    total += current;
-    if (k - 1 >= minimumSuccesses) tail += current;
-  }
-  current = 1;
-  for (let k = mode; k < trials; k++) {
-    current *= (trials - k) / (k + 1) * (successProbability / failureProbability);
-    total += current;
-    if (k + 1 >= minimumSuccesses) tail += current;
-  }
-  return tail / total;
-}
-
 // bot/src/opponents/opponent-model.ts
 var RECENT_SPEND_BIAS_PER_CARD = 1.25;
 var RECENT_SPEND_MAX_SHARE = 0.7;
@@ -28827,6 +29109,7 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
   const trackGains = knownGainsBiasPerCard > 0;
   const handCache = /* @__PURE__ */ new Map();
   const priorHandCache = /* @__PURE__ */ new Map();
+  const heuristicHandCache = /* @__PURE__ */ new Map();
   const probabilityCache = /* @__PURE__ */ new Map();
   const affordabilityCache = /* @__PURE__ */ new Map();
   const tradeEvaluationCache = /* @__PURE__ */ new Map();
@@ -28836,6 +29119,9 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
   let opponentsCache = null;
   let recentEventIndexes = null;
   let jointHandsCache;
+  let constraintsCache;
+  let fittedHandsCache;
+  let opponentAggregatesCache = null;
   let circulationFactors = null;
   function getProductionEstimator() {
     if (estimator === null) {
@@ -28895,34 +29181,82 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
       priorHandCache.set(opponentId, empty);
       return empty;
     }
-    const built = buildEstimatedHand(player);
+    const built = fittedPriorHands()?.[opponentId] ?? heuristicHand(player);
     priorHandCache.set(opponentId, built);
     return built;
   }
-  function buildEstimatedHand(player) {
+  function fittedPriorHands() {
+    if (fittedHandsCache !== void 0) return fittedHandsCache;
+    const constraints = determinizationConstraints();
+    if (constraints === null) {
+      fittedHandsCache = null;
+      return fittedHandsCache;
+    }
+    const priors = emptyStringRecord();
+    for (const opponentId of constraints.opponentIds) {
+      const player = state.players[opponentId];
+      priors[opponentId] = player === void 0 ? {} : heuristicHand(player);
+    }
+    try {
+      fittedHandsCache = fittedHands(constraints, priors);
+    } catch {
+      fittedHandsCache = null;
+    }
+    return fittedHandsCache;
+  }
+  function determinizationConstraints() {
+    if (constraintsCache !== void 0) return constraintsCache;
+    const result = buildDeterminizationConstraints({ state, playerId });
+    constraintsCache = result.feasible ? result.constraints : null;
+    return constraintsCache;
+  }
+  function heuristicHand(player) {
+    const cached2 = heuristicHandCache.get(player.id);
+    if (cached2 !== void 0) return cached2;
+    const built = buildHeuristicHand(player);
+    heuristicHandCache.set(player.id, built);
+    return built;
+  }
+  function buildHeuristicHand(player) {
     const handSize = totalHandSize(player);
     if (handSize <= 0) {
       return {};
     }
-    const totalResources = resourceCount(player);
-    const totalCommodities = commodityCount(player);
     const production = getProductionEstimator().expectedProductionPerTurn(state, player.id);
     const factors = getCirculationFactors();
-    let composition = {
-      ...distributeBucket(
-        scaleWeights(production, RESOURCE_TYPES, factors.resources),
-        RESOURCE_TYPES,
-        totalResources
-      ),
-      ...distributeBucket(
-        scaleWeights(production, COMMODITY_TYPES, factors.commodities),
-        COMMODITY_TYPES,
-        totalCommodities
-      )
-    };
+    const held = MATERIAL_TYPES.filter((type) => (opponentAggregates()[type] ?? 0) > 0);
+    const types = held.length > 0 ? held : MATERIAL_TYPES;
+    let composition = distributeBucket(
+      {
+        ...scaleWeights(production, RESOURCE_TYPES, factors.resources),
+        ...scaleWeights(production, COMMODITY_TYPES, factors.commodities)
+      },
+      types,
+      handSize
+    );
     composition = applyRecentSpendBias(player.id, composition);
     composition = applyRecentGainBias(player.id, composition);
-    return normalizeBucketedComposition(composition, totalResources, totalCommodities);
+    return normalizeComposition(composition, handSize, types);
+  }
+  function opponentAggregates() {
+    if (opponentAggregatesCache !== null) return opponentAggregatesCache;
+    const self2 = state.players[playerId];
+    const own2 = self2 !== void 0 && isSelf(self2) ? { ...self2.resources, ...self2.commodities } : {};
+    const out = {};
+    for (const type of RESOURCE_TYPES) {
+      out[type] = Math.max(
+        0,
+        RESOURCE_BANK_STOCK - (state.bankResources[type] ?? 0) - (own2[type] ?? 0)
+      );
+    }
+    for (const type of COMMODITY_TYPES) {
+      out[type] = Math.max(
+        0,
+        COMMODITY_BANK_STOCK - (state.bankCommodities[type] ?? 0) - (own2[type] ?? 0)
+      );
+    }
+    opponentAggregatesCache = out;
+    return out;
   }
   function jointHands() {
     if (jointHandsCache !== void 0) return jointHandsCache;
@@ -28930,17 +29264,17 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
       jointHandsCache = null;
       return jointHandsCache;
     }
-    const result = buildDeterminizationConstraints({ state, playerId });
-    if (!result.feasible) {
+    const constraints = determinizationConstraints();
+    if (constraints === null) {
       jointHandsCache = null;
       return jointHandsCache;
     }
     const priors = emptyStringRecord();
-    for (const opponentId of result.constraints.opponentIds) {
+    for (const opponentId of constraints.opponentIds) {
       priors[opponentId] = priorEstimatedHand(opponentId);
     }
     try {
-      jointHandsCache = sampleHands(result.constraints, priors, jointHandSampleCount, {
+      jointHandsCache = sampleHands(constraints, priors, jointHandSampleCount, {
         version: state.version,
         turnNumber: state.turnNumber,
         playerId
@@ -28952,7 +29286,7 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
   }
   function meanSampledHand(samples, opponentId) {
     const mean = {};
-    for (const type of [...RESOURCE_TYPES, ...COMMODITY_TYPES]) {
+    for (const type of MATERIAL_TYPES) {
       let total = 0;
       for (const sample of samples) {
         const hand = sample[opponentId];
@@ -29039,13 +29373,11 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
     if (player === void 0) {
       return PROBABILITY_FLOOR;
     }
-    const bucketTotal = isResourceType(type) ? resourceCount(player) : commodityCount(player);
-    if (bucketTotal < count2) {
+    const handTotal = totalHandSize(player);
+    if (handTotal < count2) {
       return PROBABILITY_FLOOR;
     }
-    const circulation = getCirculationFactors();
-    const circulationFactor = isResourceType(type) ? circulation.resources[type] : circulation.commodities[type];
-    if (circulationFactor === 0) {
+    if (count2 > (opponentAggregates()[type] ?? 0)) {
       return 0;
     }
     const samples = jointHands();
@@ -29063,8 +29395,8 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
     if (expected <= 0) {
       return PROBABILITY_FLOOR;
     }
-    const share = clamp(expected / bucketTotal, 0, 1);
-    const probability = binomialTailProbability(bucketTotal, share, count2);
+    const share = clamp(expected / handTotal, 0, 1);
+    const probability = binomialTailProbability(handTotal, share, count2);
     return clamp(probability, PROBABILITY_FLOOR, PROBABILITY_CAP);
   }
   function probabilityCanAfford(opponentId, cost) {
@@ -29085,13 +29417,10 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
     const entries = Object.entries(cost).filter(
       (entry) => entry[1] !== void 0 && entry[1] > 0
     );
-    let resourceNeeded = 0;
-    let commodityNeeded = 0;
-    for (const [type, needed] of entries) {
-      if (isResourceType(type)) resourceNeeded += needed;
-      else commodityNeeded += needed;
-    }
-    if (resourceNeeded > resourceCount(player) || commodityNeeded > commodityCount(player)) {
+    let totalNeeded = 0;
+    for (const [, needed] of entries) totalNeeded += needed;
+    const aggregates = opponentAggregates();
+    if (totalNeeded > totalHandSize(player) || entries.some(([type, needed]) => needed > (aggregates[type] ?? 0))) {
       affordabilityCache.set(key, 0);
       return 0;
     }
@@ -29647,14 +29976,14 @@ function scoreMerchantFleetValue({ state, actingPlayerId, boardIndex }) {
 }
 function scoreCommercialHarborValue({ state, actingPlayerId }) {
   const player = state.players[actingPlayerId];
-  const selfResources = player !== void 0 ? resourceCount(player) : 0;
+  const selfResources = player !== void 0 && isSelf(player) ? resourceCount(player) : 0;
   if (selfResources === 0) return 2;
   let eligibleOpponents = 0;
   for (const [pid, p] of Object.entries(state.players)) {
     if (pid === actingPlayerId) continue;
-    if (commodityCount(p) > 0) eligibleOpponents += 1;
+    if (mayHoldCommodity(state, p)) eligibleOpponents += 1;
   }
-  const swaps = Math.min(eligibleOpponents, selfResources);
+  const swaps = Math.min(eligibleOpponents, selfResources, opponentCommodityTotal(state));
   return swaps >= 1 ? 18 + Math.min(8, swaps * 4) : 4;
 }
 function scoreGuildDuesValue({ state, actingPlayerId }) {
@@ -29841,20 +30170,23 @@ function scoreDiplomacyValue(ctx) {
   }
   return Math.max(2, Math.round(bestScore));
 }
-function espionageTargetScore(ctx, targetPlayerId, target, leaderId) {
+function espionageTargetScore(ctx, targetPlayerId, target, leaderId, cardValue) {
   const cardCount = progressHandSize(target);
   if (cardCount === 0) return 0;
-  let score2 = cardCount * 8 + Math.floor(threatScoreFor(ctx, targetPlayerId) / 8);
-  if (targetPlayerId === leaderId) score2 += 10;
-  return score2;
+  const bestCardValue = progressBeliefsFor(ctx.state, ctx.actingPlayerId).expectedBestCardValue(
+    targetPlayerId,
+    cardValue
+  );
+  const denial = Math.floor(threatScoreFor(ctx, targetPlayerId) / 8) + (targetPlayerId === leaderId ? 10 : 0);
+  return bestCardValue + Math.min(bestCardValue / 2, denial);
 }
-function scoreEspionageValue(ctx) {
+function scoreEspionageValue(ctx, cardValuesForTarget) {
   const { state, actingPlayerId } = ctx;
   const leaderId = leaderOpponentIdFor(ctx);
   let bestScore = 0;
   for (const [pid, player] of Object.entries(state.players)) {
     if (pid === actingPlayerId) continue;
-    const score2 = espionageTargetScore(ctx, pid, player, leaderId);
+    const score2 = espionageTargetScore(ctx, pid, player, leaderId, cardValuesForTarget(pid));
     if (score2 > bestScore) bestScore = score2;
   }
   return bestScore > 0 ? 8 + bestScore : 2;
@@ -29901,6 +30233,7 @@ function scoreTreasonValue({ actingPlayerId, boardIndex }) {
 // bot/src/bot/progress-card-value.ts
 var cardValueCacheByState = /* @__PURE__ */ new WeakMap();
 var rawCardValueCacheByState = /* @__PURE__ */ new WeakMap();
+var espionageCardValuesByState = /* @__PURE__ */ new WeakMap();
 function scoreProgressCardValue(args) {
   const { state, actingPlayerId, cardId } = args;
   return memoizePerRequest(cardValueCacheByState, state, `${actingPlayerId}|${cardId}`, () => {
@@ -29961,7 +30294,7 @@ function commercialHarborPlayScore(ctx) {
   }
   const alreadyOpen = new Set(player.commercialHarborRemainingPlayerIds);
   for (const [pid, opponent] of Object.entries(state.players)) {
-    if (pid === actingPlayerId || commodityCount(opponent) <= 0) continue;
+    if (pid === actingPlayerId || !mayHoldCommodity(state, opponent)) continue;
     if (alreadyOpen.has(pid) || commercialHarborTargetDeclined(state, pid)) continue;
     return null;
   }
@@ -29988,12 +30321,39 @@ var PROGRESS_CARD_VALUE_SCORERS = {
   politicsSabotage: scoreSabotageValue,
   politicsBetrothal: scoreWeddingValue,
   politicsDiplomacy: scoreDiplomacyValue,
-  politicsEspionage: scoreEspionageValue,
+  politicsEspionage: (ctx) => scoreEspionageValue(ctx, (targetId) => espionageCardValues(ctx, targetId)),
   politicsIntrigue: scoreIntrigueValue,
   politicsTaxation: scoreTaxationValue,
   politicsTreason: scoreTreasonValue,
   politicsCharter: () => 100
 };
+function espionageCardValues(ctx, targetId) {
+  const byTuning = getOrCreate(espionageCardValuesByState, ctx.state, () => /* @__PURE__ */ new WeakMap());
+  const byPlayer = getOrCreate(
+    byTuning,
+    ctx.tuning,
+    () => /* @__PURE__ */ new Map()
+  );
+  return getOrCreate(byPlayer, `${ctx.actingPlayerId}|${targetId}`, () => {
+    const nonEspionageValue = (cardId) => cardId === "politicsEspionage" ? 0 : Math.max(0, memoizedRawProgressCardValue(ctx, cardId));
+    let followupValue;
+    return (cardId) => {
+      if (cardId !== "politicsEspionage") return nonEspionageValue(cardId);
+      if (followupValue === void 0) {
+        followupValue = 0;
+        const beliefs = progressBeliefsFor(ctx.state, ctx.actingPlayerId);
+        for (const pid of Object.keys(ctx.state.players)) {
+          if (pid === ctx.actingPlayerId || pid === targetId) continue;
+          followupValue = Math.max(
+            followupValue,
+            beliefs.expectedBestCardValue(pid, nonEspionageValue)
+          );
+        }
+      }
+      return followupValue;
+    };
+  });
+}
 function memoizedRawProgressCardValue(ctx, cardId) {
   const byTuning = getOrCreate(rawCardValueCacheByState, ctx.state, () => /* @__PURE__ */ new WeakMap());
   const byCard = getOrCreate(byTuning, ctx.tuning, () => /* @__PURE__ */ new Map());
@@ -30366,7 +30726,13 @@ function scoreEspionagePayload(ctx, targetPlayerId) {
   const target = ctx.state.players[targetPlayerId];
   if (target === void 0) return null;
   const leaderId = leaderOpponentIdFor(ctx);
-  const score2 = espionageTargetScore(ctx, targetPlayerId, target, leaderId);
+  const score2 = espionageTargetScore(
+    ctx,
+    targetPlayerId,
+    target,
+    leaderId,
+    espionageCardValues(ctx, targetPlayerId)
+  );
   return score2 === 0 ? 2 : 8 + score2;
 }
 var INTRIGUE_ROAD_GAIN_WEIGHT = 6;
@@ -30998,7 +31364,14 @@ function computeExposure(ctx) {
   let best = null;
   for (const [opponentId, opponent] of Object.entries(state.players)) {
     if (opponentId === actingPlayerId) continue;
-    const roadBudget = Math.min(maxGap, opponent.roadsInSupply);
+    const causewayProbability = progressBeliefsFor(state, actingPlayerId).probabilityHasCard(
+      opponentId,
+      "scienceRoadBuilding"
+    );
+    const roadBudget = Math.min(
+      Math.max(maxGap, causewayProbability > 0 ? 2 : 0),
+      opponent.roadsInSupply
+    );
     if (roadBudget <= 0) continue;
     const search = minimumLegalRoadsToClaimLongestRoad(state, opponentId, roadBudget);
     let roadsNeeded;
@@ -31010,14 +31383,21 @@ function computeExposure(ctx) {
     } else {
       continue;
     }
-    const affordProbability = ctx.opponentModel.probabilityCanAfford(
-      opponentId,
-      roadsCost(roadsNeeded)
-    );
+    const affordProbability = search.kind === "found" ? roadFundingProbability(ctx, opponentId, roadsNeeded) : ctx.opponentModel.probabilityCanAfford(opponentId, roadsCost(roadsNeeded));
     const candidate = { threatenedBy: opponentId, roadsNeeded, affordProbability };
     if (best === null || isMoreDangerous(candidate, best, affordFloor)) best = candidate;
   }
   return best;
+}
+function roadFundingProbability(ctx, opponentId, roads) {
+  const paid = ctx.opponentModel.probabilityCanAfford(opponentId, roadsCost(roads));
+  const causeway = progressBeliefsFor(ctx.state, ctx.actingPlayerId).probabilityHasCard(
+    opponentId,
+    "scienceRoadBuilding"
+  );
+  if (causeway <= 0 || paid >= 1) return paid;
+  const discounted = roads <= 2 ? 1 : ctx.opponentModel.probabilityCanAfford(opponentId, roadsCost(roads - 2));
+  return paid + causeway * Math.max(0, discounted - paid);
 }
 function roadsCost(roads) {
   const cost = {};
@@ -31030,7 +31410,6 @@ function roadsCost(roads) {
 
 // bot/src/bot/longest-road-bridge-defense.ts
 var bonuses = /* @__PURE__ */ new WeakMap();
-var ONE_ROAD_COST = roadsCost(1);
 function longestRoadBridgeDefense(ctx, edgeId) {
   if (ctx.tuning.longestRoadDefenseBonus <= 0 || ctx.state.longestRoadHolderPlayerId !== ctx.actingPlayerId || ctx.selfVp < ctx.state.victoryPointsTarget - THREE_FROM_WIN)
     return 0;
@@ -31062,8 +31441,7 @@ function connectionBonus(ctx, edgeId) {
   let rivals = 0;
   for (const [opponentId, opponent] of Object.entries(state.players)) {
     if (opponentId === actingPlayerId || opponent.roadsInSupply <= 0) continue;
-    if (ctx.opponentModel.probabilityCanAfford(opponentId, ONE_ROAD_COST) < tuning.longestRoadDefenseAffordFloor)
-      continue;
+    if (roadFundingProbability(ctx, opponentId, 1) < tuning.longestRoadDefenseAffordFloor) continue;
     rivals++;
     const search = minimumLegalRoadsToClaimLongestRoad(
       after,
@@ -31359,7 +31737,7 @@ function scoreRoadAction(ctx, edgeId) {
     bothEndpointsBuilt = false;
   }
   if (bothEndpointsBuilt) score2 -= 15;
-  const defenseBonus = longestRoadDefenseBonus(ctx, edgeId, dedupScratch) + longestRoadHoldDefenseBonus(ctx, roadLengthGain) + longestRoadBridgeDefense(ctx, edgeId);
+  const defenseBonus = longestRoadDefenseBonus(ctx, edgeId, dedupScratch) + longestRoadHoldDefenseBonus(ctx, roadLengthGain) + longestRoadBridgeDefense(ctx, edgeId) + diplomacyRoadDefenseBonus(ctx, edgeId);
   score2 += defenseBonus;
   const titleInReach = state.longestRoadHolderPlayerId === actingPlayerId || longestRoadClaimTarget - projectedRoadLength <= LR_OBJECTIVE_MAX_GAP;
   const usefulLengthGain = roadLengthGain > 0 && titleInReach;
@@ -32079,10 +32457,10 @@ function setupPlacementLookahead(ctx) {
   if (action.type !== ActionType.PlaceSetupBuilding || state.phase !== Phase.Setup1) {
     return 0;
   }
-  const cache2 = resultCacheFor(ctx);
-  if (cache2 === null) return setupPlacementLookaheadWith(ctx, scoreSetupIntersection);
+  const cache3 = resultCacheFor(ctx);
+  if (cache3 === null) return setupPlacementLookaheadWith(ctx, scoreSetupIntersection);
   const key = `${ctx.actingPlayerId}|${ctx.strategy}|${action.intersectionId}`;
-  return getOrCreate(cache2, key, () => setupPlacementLookaheadWith(ctx, scoreSetupIntersection));
+  return getOrCreate(cache3, key, () => setupPlacementLookaheadWith(ctx, scoreSetupIntersection));
 }
 function snakeDraftOrder(seatIndex, numPlayers) {
   const order = [];
@@ -33132,9 +33510,9 @@ function ranksAbove(a, b, direction = "max") {
 
 // bot/src/bot/utility-cache.ts
 function makeUtilityLookup(state, playerId) {
-  const cache2 = /* @__PURE__ */ new Map();
+  const cache3 = /* @__PURE__ */ new Map();
   return function utilityFor(type) {
-    return getOrCreate(cache2, type, () => resourceUtility(state, playerId, type));
+    return getOrCreate(cache3, type, () => resourceUtility(state, playerId, type));
   };
 }
 
@@ -33656,9 +34034,9 @@ var weddingGiveCards = (ctx, decision2) => {
 function makeRecipientDenialLookup(ctx, recipientId) {
   if (recipientId === null) return () => 0;
   const denialCtx = leaderThreatCtx(ctx, recipientId);
-  const cache2 = /* @__PURE__ */ new Map();
+  const cache3 = /* @__PURE__ */ new Map();
   return function denialFor(type) {
-    return getOrCreate(cache2, type, () => leaderMaterialDenialWeight(denialCtx, type));
+    return getOrCreate(cache3, type, () => leaderMaterialDenialWeight(denialCtx, type));
   };
 }
 
@@ -35549,7 +35927,7 @@ function dedupeByActionShape(actions, excludedKey) {
 
 // bot/src/bot/lookahead/turn-lookahead.ts
 var NO_PRIOR_ACTIONS2 = [];
-var ONE_ROAD_COST2 = roadsCost(1);
+var ONE_ROAD_COST = roadsCost(1);
 function isBuildChainStarter(action, ctx) {
   switch (action.type) {
     case ActionType.BuildRoad:
@@ -35612,13 +35990,13 @@ function priorImprovementChangesCost(state, playerId, followup, priorActions) {
   return false;
 }
 function buildLookaheadCostCache(state, actingPlayerId, pool) {
-  const cache2 = /* @__PURE__ */ new Map();
+  const cache3 = /* @__PURE__ */ new Map();
   for (const a of pool) {
     if (a.type === ActionType.PlayProgressCard) continue;
-    if (cache2.has(a.id)) continue;
-    cache2.set(a.id, actionDeltasFor(state, actingPlayerId, a));
+    if (cache3.has(a.id)) continue;
+    cache3.set(a.id, actionDeltasFor(state, actingPlayerId, a));
   }
-  return cache2;
+  return cache3;
 }
 function computeTurnLookaheadBonus(ctx, candidate, followupPool, scoreCandidate, discount, costCache, secondPly, knownFollowupScores) {
   const player = selfPlayer(ctx.state, ctx.actingPlayerId);
@@ -35642,7 +36020,7 @@ function computeTurnLookaheadBonus(ctx, candidate, followupPool, scoreCandidate,
   let bestFollowupScore = 0;
   let fundedSettlementScore = 0;
   let fundedBridgeDefenseScore = 0;
-  const creditFundedBridge = discount > 0 && candidate.type === ActionType.MaritimeTrade && (candidate.want.type === "brick" || candidate.want.type === "lumber") && !canAffordHypothetical(player, ONE_ROAD_COST2);
+  const creditFundedBridge = discount > 0 && candidate.type === ActionType.MaritimeTrade && (candidate.want.type === "brick" || candidate.want.type === "lumber") && !canAffordHypothetical(player, ONE_ROAD_COST);
   const creditFundedSettlement = discount > 0 && candidate.type === ActionType.BuildRoad && player.victoryPoints >= ctx.state.victoryPointsTarget - THREE_FROM_WIN && ctx.state.berserkerTrackMax - ctx.state.berserkerTrackPosition > ctx.boardIndex.numPlayers;
   const chainStarters = [];
   const supplyScratch = { roads: 0, settlements: 0, cities: 0 };
@@ -36581,6 +36959,101 @@ function findBankedMetropolisWinPlan(ctx, pool) {
   }
   return null;
 }
+function findHarborMetropolisWinPlan(ctx, pool) {
+  const self2 = selfPlayer(ctx.state, ctx.playerId);
+  if (!ctx.tuning.sameTurnEndgamePlannerEnabled || !ctx.tuning.humanEndgameMultiTradeWinEnabled || self2 === null || self2.settlementsInSupply <= 0 || ctx.state.phase !== "action" || ctx.state.pendingDecision !== null || ctx.state.currentPlayerId !== ctx.playerId || self2.victoryPoints + 3 < ctx.state.victoryPointsTarget)
+    return null;
+  const tracks = COMMODITY_TRACKS.filter(
+    (track) => nextImprovementTransfersMetropolis(ctx.state, ctx.boardIndex, ctx.playerId, track)
+  );
+  if (tracks.length === 0) return null;
+  const hand = { resources: self2.resources, commodities: self2.commodities };
+  const bank = { resources: ctx.state.bankResources, commodities: ctx.state.bankCommodities };
+  const rates = new Map(
+    MATERIAL_TYPES.map(
+      (type) => [type, currentMaritimeRateFor(ctx.state, ctx.boardIndex, ctx.playerId, type)]
+    )
+  );
+  for (const build of harborBuilds(ctx, pool)) {
+    const settlement = build[build.length - 1];
+    if (settlement?.type !== ActionType.BuildSettlement) continue;
+    const harbor = harborForIntersection(ctx.state.board.harbors, settlement.intersectionId);
+    if (harbor === void 0) continue;
+    const harborRates = new Map(
+      MATERIAL_TYPES.map(
+        (type) => [
+          type,
+          currentMaritimeRateFor(ctx.state, ctx.boardIndex, ctx.playerId, type, {
+            additionalHarbor: harbor.type
+          })
+        ]
+      )
+    );
+    if (!MATERIAL_TYPES.some((type) => (harborRates.get(type) ?? 4) < (rates.get(type) ?? 4)))
+      continue;
+    const spent = costOnly(SETTLEMENT_DELTA);
+    if (build.length === 2) {
+      for (const type of MATERIAL_TYPES) spent[type] = (spent[type] ?? 0) - (ROAD_DELTA[type] ?? 0);
+    }
+    if (!canAffordHypothetical(hand, spent)) continue;
+    let projected = applyResourceDelta(hand, SETTLEMENT_DELTA);
+    if (build.length === 2) projected = applyResourceDelta(projected, ROAD_DELTA);
+    const stock = applyResourceDelta(bank, spent);
+    for (const track of tracks) {
+      const commodity = trackCommodity(track);
+      const cost = improvementCost(self2.cranePlayed, trackLevelFor(track, self2));
+      const deficit = cost - count(projected, commodity);
+      if (deficit <= 0) continue;
+      const funding = fundImprovement(
+        projected,
+        stock,
+        harborRates,
+        commodity,
+        cost,
+        projectedFirstTrades(projected, stock, harborRates, commodity, deficit)
+      );
+      if (funding !== null)
+        return [
+          ...build,
+          ...funding,
+          {
+            id: syntheticId("harbor-metropolis", track),
+            type: ActionType.ImproveCity,
+            track
+          }
+        ];
+    }
+  }
+  return null;
+}
+function* harborBuilds(ctx, pool) {
+  for (const action of pool) {
+    if (action.type === ActionType.BuildSettlement) yield [action];
+  }
+  if ((selfPlayer(ctx.state, ctx.playerId)?.roadsInSupply ?? 0) <= 0) return;
+  for (const road of pool) {
+    if (road.type !== ActionType.BuildRoad) continue;
+    const edge = ctx.state.board.edges[road.edgeId];
+    if (edge === void 0) continue;
+    for (const intersectionId of [edge.intersectionA, edge.intersectionB]) {
+      if (harborForIntersection(ctx.state.board.harbors, intersectionId) === void 0 || !isLegalSettlementSiteAfterRoad(
+        ctx.state,
+        ctx.boardIndex.boardView,
+        intersectionId,
+        road.edgeId
+      ))
+        continue;
+      yield [
+        road,
+        {
+          id: syntheticId("harbor-settlement", intersectionId),
+          type: ActionType.BuildSettlement,
+          intersectionId
+        }
+      ];
+    }
+  }
+}
 function count(hand, type) {
   return hand.resources[type] ?? hand.commodities[type] ?? 0;
 }
@@ -37285,7 +37758,7 @@ function chooseMainScoring(ctx, hooks) {
     }
     const causeway = chooseCausewayWin(ctx, actionPool);
     if (causeway !== null) return causeway;
-    const metropolis = findBankedMetropolisWinPlan(ctx, actionPool);
+    const metropolis = findBankedMetropolisWinPlan(ctx, actionPool) ?? findHarborMetropolisWinPlan(ctx, actionPool);
     const first = metropolis?.[0];
     if (first !== void 0) {
       return {
@@ -38577,7 +39050,7 @@ function championPickAction(request) {
   const context = buildBotContext(request, tuning);
   const result = chooseActionWithDiagnostics(context);
   return {
-    protocolVersion: 2,
+    protocolVersion: 3,
     kind: "action",
     actionId: result.chosen.id,
     decisionTrace: {

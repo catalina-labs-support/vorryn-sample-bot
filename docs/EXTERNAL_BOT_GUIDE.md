@@ -80,7 +80,10 @@ the schema instead of copying those shapes by hand.
 
 A request carries a viewer-redacted `ClientGameState`, the acting
 `playerId`, and non-empty `validActions[]`. Hidden information
-(opponent hands, deck contents) appears as counts only.
+(opponent hands, deck contents) appears as counts only — as at the
+physical table, each opponent shows one `materialCount` (resource and
+commodity cards share a back) and `progressHandByDeck` (progress cards
+show their deck's color).
 
 Each `BotActionCandidate` has an opaque, non-empty server-assigned `id` that is
 unique within that request, plus the action payload. The `id` is the only thing
@@ -156,12 +159,14 @@ If you want strictly deterministic behavior, key your decision on
 
 ## Versioning
 
-- **`protocolVersion: 2`** is the current and only stable version.
-  Version 1 is no longer accepted.
+- **`protocolVersion: 3`** is the current and only stable version.
+  Versions 1 and 2 are no longer accepted; the
+  [v2 → v3 migration note](./BOT_PROTOCOL.md#migrating-from-v2-to-v3)
+  covers the one change.
 - The server rejects requests whose `protocolVersion` differs from
   what its bot supports with HTTP **422**.
 - **Additive changes** (new optional fields on `BotRequest`, new
-  action variants) ship as **minor v2.x** — bots that ignore unknown
+  action variants) ship as **minor v3.x** — bots that ignore unknown
   fields keep working. Generate code from the schema and **don't**
   error on unknown enum members.
 - **Breaking changes** ship as a further version bump. A new schema
@@ -304,7 +309,9 @@ Railway, Heroku, your own VPS. Three constraints:
 ## FAQ
 
 **Can I see other players' hands?** No. `ClientGameState` is redacted
-per viewer: opponents appear with counts only, never card identities.
+per viewer: opponents appear with counts only — one material count and a
+per-deck progress count, what the physical table shows — never card
+identities.
 
 **Can my bot remember state between calls?** Yes, but you don't have
 to. Every request carries the full visible game state plus the legal

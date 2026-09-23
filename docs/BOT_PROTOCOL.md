@@ -1,4 +1,4 @@
-# Vorryn Bot Protocol — v2
+# Vorryn Bot Protocol — v3
 
 Wire contract between the Vorryn web server and a bot service. The
 canonical machine-readable schema is [`bot-protocol.schema.json`](./bot-protocol.schema.json) — feed it to NSwag, OpenAPI Generator, or any JSON Schema codegen tool to produce typed DTOs in your language of choice.
@@ -72,7 +72,7 @@ underlying state changed. Don't index by position across turns.
 
 ```ts
 {
-  protocolVersion: 2,
+  protocolVersion: 3,
   gameId: string,
   playerId: string,                  // the player the bot is acting as
   state: ClientGameState,            // viewer-redacted game state
@@ -99,7 +99,7 @@ underlying state changed. Don't index by position across turns.
 
 ```ts
 {
-  protocolVersion: 2,
+  protocolVersion: 3,
   kind: "action",
   actionId: string,                  // must equal one validActions[i].id
   decisionTrace?: BotDecisionTrace,  // optional — persisted for analysis
@@ -117,7 +117,7 @@ External bots may intentionally delegate an unsupported decision:
 
 ```ts
 {
-  protocolVersion: 2,
+  protocolVersion: 3,
   kind: "abstain",
   reason?: string                    // optional, max 200 chars
 }
@@ -148,16 +148,35 @@ what you do not understand.
 
 ## Versioning
 
-- **`protocolVersion: 2`** is the current and only stable version.
-  Version 1 is no longer accepted.
+- **`protocolVersion: 3`** is the current and only stable version.
+  Versions 1 and 2 are no longer accepted — see
+  [Migrating from v2 to v3](#migrating-from-v2-to-v3).
 - Web rejects requests whose `protocolVersion` differs from what its
   bot supports with **HTTP 422**.
 - Additive changes (new optional fields, new action variants) ship as
-  **v2.x within `protocolVersion: 2`** — bots that ignore unknown
+  **v3.x within `protocolVersion: 3`** — bots that ignore unknown
   fields keep working. Codegen against the schema and **do not** error
   on unknown enum members.
 - Breaking changes ship as a further version bump. Web will publish
   a new schema file and a migration note before flipping the default.
+
+### Migrating from v2 to v3
+
+v3 changes one thing: each **opponent** entry in `state.players` now shows
+only what a player at the physical table can see.
+
+| v2 field                             | v3 field                                                                                                                                                 |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `resourceCount` and `commodityCount` | `materialCount` — their sum. Resource and commodity cards share a card back, so how one opponent's hand splits between them is hidden.                   |
+| `progressHandCount`                  | `progressHandByDeck: { science, trade, politics }` — progress cards show their deck's colored back. The three counts sum to the old `progressHandCount`. |
+
+Everything else is unchanged, including your own `SelfPlayerState`. A bot
+that only picks an `id` out of `validActions` needs nothing but the new
+version literal, `protocolVersion: 3`, in its responses. A bot that reads
+opponent hand sizes uses `materialCount` where it summed the two old counts,
+and sums `progressHandByDeck` where it read `progressHandCount`. A bot still
+answering `protocolVersion: 2` is rejected with 422, and its seat falls back
+to the built-in bot for every turn.
 
 ### Domestic trade actions
 
@@ -192,7 +211,7 @@ proposer gives the same cards under both and A hands the proposer
 strictly more. Bids with different give sides are not comparable, and
 the server does not rank them for you.
 
-**Bot API v2 domestic trade has one current vocabulary.** Responders use `domesticTradeBid { offer, want }` or `domesticTradePass`; the proposer closes with `domesticTradeAward { bidResponderId, offer, want }` or cancels. The award's `offer`/`want` echo the terms of the bid being executed — bids are revisable while the auction is open, so the engine rejects an award whose echoed terms no longer match the standing bid (`InvalidTarget`), closing the see-bid/revise-bid/award race. **An acceptance is not its own action**: it is a bid at the proposal's own terms, and `isAtTermsBid(bid, offer, want)` (`services/trade.ts`) is the ONE classifier that recovers the at-terms-vs-modified distinction — don't re-derive it inline. Everything stays proposer-perspective (`offer` = what the proposer gives, `want` = what they receive) on the proposal and on every bid. While the auction remains open, a responder may replace a pass with a bid, replace a bid with a pass, or revise bid terms; only an identical re-bid or repeated pass is rejected as a no-op. The persisted and wire payload is strict and complete: `{ auctionId, offer, want, bids, passedPlayerIds, targetPlayerId? }`; removed fields and incomplete/invalid trade terms fail at the boundary. Raw JSONB readers (`rules/trade-responders.ts`, `current-actor-sql.ts`) use only `bids[].responderId` and `passedPlayerIds`.
+**Bot API domestic trade has one current vocabulary.** Responders use `domesticTradeBid { offer, want }` or `domesticTradePass`; the proposer closes with `domesticTradeAward { bidResponderId, offer, want }` or cancels. The award's `offer`/`want` echo the terms of the bid being executed — bids are revisable while the auction is open, so the engine rejects an award whose echoed terms no longer match the standing bid (`InvalidTarget`), closing the see-bid/revise-bid/award race. **An acceptance is not its own action**: it is a bid at the proposal's own terms, and `isAtTermsBid(bid, offer, want)` (`services/trade.ts`) is the ONE classifier that recovers the at-terms-vs-modified distinction — don't re-derive it inline. Everything stays proposer-perspective (`offer` = what the proposer gives, `want` = what they receive) on the proposal and on every bid. While the auction remains open, a responder may replace a pass with a bid, replace a bid with a pass, or revise bid terms; only an identical re-bid or repeated pass is rejected as a no-op. The persisted and wire payload is strict and complete: `{ auctionId, offer, want, bids, passedPlayerIds, targetPlayerId? }`; removed fields and incomplete/invalid trade terms fail at the boundary. Raw JSONB readers (`rules/trade-responders.ts`, `current-actor-sql.ts`) use only `bids[].responderId` and `passedPlayerIds`.
 
 **The proposer is not the only party who closes an auction.** An auction with any human responder also carries a server-enforced 60s deadline (`HUMAN_TRADE_PENDING_MS`); on expiry `trade-pending-sweep.ts` awards an at-terms standing bid, else expires it. When several responders stand at terms, the winner is drawn uniformly from them, keyed by the game seed and the auction id, so arrival order (and answer speed) never decides it. Bot-only auctions keep the 3-minute `STALE_TRADE_PENDING_MS` window and **never** auto-award — that split is load-bearing, because awarding on the bot path would change bot-vs-bot outcomes and drag the humanface gate onto the critical path. The deadline is enforced at both action commit paths: `/games/[id]/action` rejects post-deadline bid/pass/award/cancel actions with `trade_auction_closed` (422), and the bot runner rejects the same late writes for human-facing auctions under its version lock. A deadline is preserved within one auction but reset when a sequenced request closes one auction and opens another, so neither a bidder nor a prior auction can distort the clock.
 
@@ -322,7 +341,7 @@ turn, or trade. The bot picks one.
 
 ```json
 {
-  "protocolVersion": 2,
+  "protocolVersion": 3,
   "gameId": "9d9b7a6e-...",
   "playerId": "p-alice",
   "state": {
@@ -408,7 +427,7 @@ turn, or trade. The bot picks one.
 
 ```json
 {
-  "protocolVersion": 2,
+  "protocolVersion": 3,
   "kind": "action",
   "actionId": "a-002",
   "decisionTrace": {
@@ -434,7 +453,7 @@ chooses which cards to discard.
 
 ```json
 {
-  "protocolVersion": 2,
+  "protocolVersion": 3,
   "gameId": "9d9b7a6e-...",
   "playerId": "p-alice",
   "state": {
@@ -468,7 +487,7 @@ across rolling deploys and rollbacks.
 #### Response
 
 ```json
-{ "protocolVersion": 2, "kind": "action", "actionId": "d-001" }
+{ "protocolVersion": 3, "kind": "action", "actionId": "d-001" }
 ```
 
 When `pendingDecision` is non-null, every entry in `validActions[]`

@@ -87,11 +87,23 @@ export function loadHttpCorpus() {
     for (const [playerId, player] of Object.entries(players)) {
       if (playerId === request.playerId) continue;
       opponents += 1;
-      for (const secret of ['resources', 'commodities', 'progressHand']) {
+      // The physical table shows one material pile (resources and commodities
+      // share a card back) and progress cards by deck — never the split.
+      for (const secret of [
+        'resources',
+        'commodities',
+        'progressHand',
+        'resourceCount',
+        'commodityCount',
+      ]) {
         assert.equal(Object.hasOwn(player, secret), false, `${family}: opponent ${secret}`);
       }
-      assert.equal(typeof player['resourceCount'], 'number');
-      assert.equal(typeof player['commodityCount'], 'number');
+      assert.equal(typeof player['materialCount'], 'number');
+      const byDeck = z
+        .object({ science: z.number(), trade: z.number(), politics: z.number() })
+        .strict()
+        .parse(player['progressHandByDeck']);
+      assert.ok(Object.values(byDeck).every((count) => Number.isInteger(count) && count >= 0));
     }
     assert.equal(opponents, 2);
     const pending = z
@@ -116,7 +128,7 @@ export type HttpCorpusCase = ReturnType<typeof loadHttpCorpus>[number];
 export function assertHttpCorpusResponse(item: HttpCorpusCase, raw: unknown): void {
   const response = z
     .object({
-      protocolVersion: z.literal(2),
+      protocolVersion: z.literal(3),
       kind: z.literal('action'),
       actionId: z.string().min(1),
       decisionTrace: z.object({

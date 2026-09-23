@@ -196,9 +196,9 @@ const fairRequest = BotRequestSchema.parse({
   state: {
     ...fixture.state,
     players: {
-      host: { seatIndex: 0, victoryPoints: 4, resourceCount: 3, commodityCount: 0 },
+      host: { seatIndex: 0, victoryPoints: 4, materialCount: 3 },
       actor: { seatIndex: 1, victoryPoints: 4, resources: { ore: 3 }, commodities: {} },
-      next: { seatIndex: 2, victoryPoints: 4, resourceCount: 3, commodityCount: 0 },
+      next: { seatIndex: 2, victoryPoints: 4, materialCount: 3 },
     },
     opponentMaterialTypes: ['grain'],
   },

@@ -43,7 +43,7 @@ const RecentEventSchema = z
 
 export const BotRequestSchema = z
   .object({
-    protocolVersion: z.literal(2),
+    protocolVersion: z.literal(3),
     gameId: z.string(),
     playerId: z.string(),
     state: z.object({}).loose(),
@@ -60,7 +60,7 @@ export type BotRequest = z.infer<typeof BotRequestSchema>;
 export type BotActionCandidate = BotRequest['validActions'][number];
 
 export type BotResponse = {
-  protocolVersion: 2;
+  protocolVersion: 3;
   kind: 'action';
   actionId: string;
   decisionTrace?: Record<string, unknown>;

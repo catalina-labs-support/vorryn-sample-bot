@@ -1,8 +1,9 @@
 # Captured request provenance
 
 `self-play.ndjson.gz` contains 250 redacted requests from 13 completed games,
-regenerated on 2026-09-22 using the current engine and existing capture instrument.
-The engine/policy revision was `4331c3a3f291341771927a9cab0b45da745019a6`; the exporter
+regenerated on 2026-09-22 using the current engine and existing capture instrument,
+after opponents' hands became `materialCount` + `progressHandByDeck` (the physical
+table's view) under `protocolVersion: 3`. The engine/policy base revision was `29e6a93f1`; the exporter
 also includes this change's full request-schema check before publishing a row.
 No policy settings or recorded event numbers were edited to repair the artifact.
 
@@ -13,8 +14,8 @@ pnpm exec tsx scripts/export-request-corpus.ts --games 14 --every 3 --max 250 --
 ```
 
 The compressed artifact's SHA-256 is
-`5ff951f3b45025f9029fdff380660b0800a9b5d66f89f3c7d695be8f119714cf`.
-It contains 8,884 recent-event entries; every request passes the current complete
+`56c9fdfdf0f7e596ccedae32a886b6f2092e55659d8f2f44094b13882c77ee59`.
+It contains 8,993 recent-event entries; every request passes the current complete
 wire schema, every recorded decision belongs to its supplied candidates, and each
 game has an official winner. The main repository tests enforce the 250-row,
 13-game populations and full wire-schema compatibility. The earlier artifact had
@@ -24,7 +25,10 @@ game has an official winner. The main repository tests enforce the 250-row,
 unchanged historical captures from the **earlier** compressed artifact at revision
 `4331c3a3f291341771927a9cab0b45da745019a6`, SHA-256
 `783007622f2b1792eddb7b3ba795dcc484e2cced890307919a105c1856e0f447`.
-All four individually pass the current complete schema. Each case records that
+All four individually pass the current complete schema. Their opponent entries were
+migrated in place to `materialCount` + `progressHandByDeck`: the per-deck counts
+were chosen as the first split the unseen-pool arithmetic accepts, since the
+captures predate per-deck counts. Each case records that
 revision, digest, game and sequence so refreshing the larger corpus does not
 silently change its provenance:
 

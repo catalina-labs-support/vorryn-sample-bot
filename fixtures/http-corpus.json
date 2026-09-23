@@ -9,7 +9,7 @@
       "sha256": "783007622f2b1792eddb7b3ba795dcc484e2cced890307919a105c1856e0f447"
     },
     "request": {
-      "protocolVersion": 2,
+      "protocolVersion": 3,
       "gameId": "tournament-1",
       "playerId": "p1",
       "state": {
@@ -85,9 +85,12 @@
             "politicsLevel": 0,
             "metropolisCount": 0,
             "standingWant": null,
-            "resourceCount": 4,
-            "commodityCount": 0,
-            "progressHandCount": 1
+            "materialCount": 4,
+            "progressHandByDeck": {
+              "science": 1,
+              "trade": 0,
+              "politics": 0
+            }
           },
           "p3": {
             "id": "p3",
@@ -110,9 +113,12 @@
             "politicsLevel": 1,
             "metropolisCount": 0,
             "standingWant": null,
-            "resourceCount": 1,
-            "commodityCount": 0,
-            "progressHandCount": 0
+            "materialCount": 1,
+            "progressHandByDeck": {
+              "science": 0,
+              "trade": 0,
+              "politics": 0
+            }
           }
         },
         "board": {
@@ -3628,7 +3634,7 @@
       "sha256": "783007622f2b1792eddb7b3ba795dcc484e2cced890307919a105c1856e0f447"
     },
     "request": {
-      "protocolVersion": 2,
+      "protocolVersion": 3,
       "gameId": "tournament-11",
       "playerId": "p3",
       "state": {
@@ -3662,9 +3668,12 @@
             "politicsLevel": 0,
             "metropolisCount": 0,
             "standingWant": null,
-            "resourceCount": 6,
-            "commodityCount": 0,
-            "progressHandCount": 0
+            "materialCount": 6,
+            "progressHandByDeck": {
+              "science": 0,
+              "trade": 0,
+              "politics": 0
+            }
           },
           "p2": {
             "id": "p2",
@@ -3687,9 +3696,12 @@
             "politicsLevel": 1,
             "metropolisCount": 0,
             "standingWant": null,
-            "resourceCount": 2,
-            "commodityCount": 1,
-            "progressHandCount": 1
+            "materialCount": 3,
+            "progressHandByDeck": {
+              "science": 0,
+              "trade": 0,
+              "politics": 1
+            }
           },
           "p3": {
             "id": "p3",
@@ -6284,7 +6296,7 @@
       "sha256": "783007622f2b1792eddb7b3ba795dcc484e2cced890307919a105c1856e0f447"
     },
     "request": {
-      "protocolVersion": 2,
+      "protocolVersion": 3,
       "gameId": "tournament-2",
       "playerId": "p1",
       "state": {
@@ -6367,9 +6379,12 @@
             "politicsLevel": 0,
             "metropolisCount": 0,
             "standingWant": null,
-            "resourceCount": 5,
-            "commodityCount": 0,
-            "progressHandCount": 0
+            "materialCount": 5,
+            "progressHandByDeck": {
+              "science": 0,
+              "trade": 0,
+              "politics": 0
+            }
           },
           "p3": {
             "id": "p3",
@@ -6392,9 +6407,12 @@
             "politicsLevel": 2,
             "metropolisCount": 0,
             "standingWant": null,
-            "resourceCount": 6,
-            "commodityCount": 0,
-            "progressHandCount": 1
+            "materialCount": 6,
+            "progressHandByDeck": {
+              "science": 0,
+              "trade": 0,
+              "politics": 1
+            }
           }
         },
         "board": {
@@ -8926,7 +8944,7 @@
       "sha256": "783007622f2b1792eddb7b3ba795dcc484e2cced890307919a105c1856e0f447"
     },
     "request": {
-      "protocolVersion": 2,
+      "protocolVersion": 3,
       "gameId": "tournament-7",
       "playerId": "p1",
       "state": {
@@ -9004,9 +9022,12 @@
             "politicsLevel": 1,
             "metropolisCount": 0,
             "standingWant": null,
-            "resourceCount": 5,
-            "commodityCount": 2,
-            "progressHandCount": 0
+            "materialCount": 7,
+            "progressHandByDeck": {
+              "science": 0,
+              "trade": 0,
+              "politics": 0
+            }
           },
           "p3": {
             "id": "p3",
@@ -9029,9 +9050,12 @@
             "politicsLevel": 0,
             "metropolisCount": 0,
             "standingWant": null,
-            "resourceCount": 6,
-            "commodityCount": 1,
-            "progressHandCount": 0
+            "materialCount": 7,
+            "progressHandByDeck": {
+              "science": 0,
+              "trade": 0,
+              "politics": 0
+            }
           }
         },
         "board": {

@@ -17,7 +17,7 @@ export function pickAction(req: BotRequest): BotResponse {
   if (best === undefined) throw new Error('BotRequest.validActions must be non-empty');
 
   return {
-    protocolVersion: 2,
+    protocolVersion: 3,
     kind: 'action',
     actionId: best.action.id,
     decisionTrace: {
