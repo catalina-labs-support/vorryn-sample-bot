@@ -26724,6 +26724,8 @@ function handPressure(ctx) {
   if (action.type === ActionType.BuildCityWall) {
     return Math.round(magnitude * CITY_WALL_RAISE_MULTIPLIER);
   }
+  if (action.type === ActionType.BuildRoad && selfPlayer(ctx.state, ctx.actingPlayerId)?.freeRoadsRemaining === 0 && settlementHoard(ctx) < 0)
+    return -magnitude;
   if (SPENDING_ACTIONS.has(action.type)) {
     return magnitude;
   }
@@ -31951,6 +31953,7 @@ function scoreKnightActivationExpectedLoss(ctx, knightId) {
   const { state, actingPlayerId, boardIndex, tuning } = ctx;
   const knight = boardIndex.knightsById[knightId];
   if (knight === void 0) return 0;
+  if (defersCityRecoveryActivation(ctx, knight)) return -500;
   const strength = knightStrength(knight.level);
   const summary = boardIndex.berserkerSummary;
   const value = memoizePerRequest(
@@ -32026,11 +32029,32 @@ function scoreKnightRecruitment(ctx, intersectionId) {
   }
   return score2;
 }
+function defersCityRecoveryActivation(ctx, knight) {
+  if (!ctx.underbuiltRecoveryActive || (ctx.boardIndex.cityCountByPlayer[ctx.actingPlayerId] ?? 0) !== 0 || ctx.immediateWinThreat || ctx.criticalOpponentThreat || ctx.acquisitionPlan.topTargetKind !== "city")
+    return false;
+  const cost = ctx.acquisitionPlan.topTargetCost;
+  const player = selfPlayer(ctx.state, ctx.actingPlayerId);
+  if (cost === null || player === null) return false;
+  const grainNeeded = cost.find((entry) => entry.type === ResourceType.Grain)?.needed ?? 0;
+  if (heldOfMaterial(player, ResourceType.Grain) > grainNeeded) return false;
+  if (cost.every((entry) => heldOfMaterial(player, entry.type) >= entry.needed)) return false;
+  const location = ctx.state.board.intersections[knight.locationIntersectionId];
+  if (location !== void 0 && isAdjacentToRobber(location, ctx.boardIndex.robberHexId))
+    return false;
+  return activationExpectedValue({
+    summary: ctx.boardIndex.berserkerSummary,
+    playerId: ctx.actingPlayerId,
+    strength: knightStrength(knight.level),
+    state: ctx.state,
+    tuning: ctx.tuning
+  }).rewardComponent <= 0;
+}
 function scoreKnightActivation(ctx, knightId) {
   const { state, actingPlayerId, boardIndex } = ctx;
   const berserkerSummary = boardIndex.berserkerSummary;
   const knight = boardIndex.knightsById[knightId];
   if (knight === void 0) return 0;
+  if (defersCityRecoveryActivation(ctx, knight)) return -500;
   let score2 = (knightStrength(knight.level) - 1) * 8;
   const locationIntersection = state.board.intersections[knight.locationIntersectionId];
   if (locationIntersection !== void 0 && isAdjacentToRobber(locationIntersection, boardIndex.robberHexId)) {
