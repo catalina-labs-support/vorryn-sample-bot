@@ -34417,6 +34417,7 @@ function canGiveAll(player, give) {
 }
 
 // bot/src/bot/proposer-build-unlock.ts
+var STAKE_PROBABILITY_FLOOR = 0.2;
 var TRACKS = [
   ["scienceLevel", CommodityType.Paper],
   ["tradeLevel", CommodityType.Cloth],
@@ -34463,6 +34464,74 @@ function tradeCompletesProposerBuild(state, proposerId, proposerGives, proposerR
   }
   return false;
 }
+function completableBuildCosts(state, sites, playerId, crane) {
+  const player = state.players[playerId];
+  if (player === void 0) return [];
+  const { settlements, cities } = ownedBuildings(state, playerId);
+  const costs = [];
+  if (player.settlementsInSupply > 0 && (sites.buildableSettlementSiteIdsByPlayer[playerId]?.size ?? 0) > 0) {
+    costs.push(actionCost(ActionType.BuildSettlement));
+  }
+  if (settlements > 0 && player.citiesInSupply > 0) costs.push(actionCost(ActionType.BuildCity));
+  if (cities > 0) {
+    for (const [track, commodity] of TRACKS) {
+      const level = player[track];
+      if (level >= MAX_IMPROVEMENT_LEVEL) continue;
+      const cost = {};
+      cost[commodity] = improvementCost(crane, level);
+      costs.push(cost);
+    }
+  }
+  return costs;
+}
+function countOf(lines, type) {
+  let total = 0;
+  for (const line of lines) if (line.type === type) total += line.count;
+  return total;
+}
+function covers(hand, cost) {
+  for (const type of Object.keys(cost)) {
+    if ((hand[type] ?? 0) < (cost[type] ?? 0)) return false;
+  }
+  return true;
+}
+function proposerBuildUnlockProbability(state, sites, proposerId, proposerGives, proposerReceives, opponentModel) {
+  const stake = {};
+  for (const line of proposerGives) stake[line.type] = (stake[line.type] ?? 0) + line.count;
+  let stakeProbability = null;
+  let best = 0;
+  for (const cost of completableBuildCosts(state, sites, proposerId, false)) {
+    const types = Object.keys(cost);
+    if (!types.some((type) => (cost[type] ?? 0) > 0 && countOf(proposerReceives, type) > 0)) {
+      continue;
+    }
+    const before = { ...stake };
+    const after = { ...stake };
+    for (const type of types) {
+      const need = cost[type] ?? 0;
+      const staked = stake[type] ?? 0;
+      before[type] = Math.max(need, staked);
+      after[type] = staked + Math.max(0, need - countOf(proposerReceives, type));
+    }
+    stakeProbability ??= Math.max(
+      STAKE_PROBABILITY_FLOOR,
+      opponentModel.probabilityCanAfford(proposerId, stake)
+    );
+    const gain = (opponentModel.probabilityCanAfford(proposerId, after) - opponentModel.probabilityCanAfford(proposerId, before)) / stakeProbability;
+    best = Math.max(best, Math.min(1, gain));
+  }
+  return best;
+}
+function tradeCompletesOwnBuild(state, sites, selfId, selfGives, selfReceives) {
+  const self2 = state.players[selfId];
+  if (self2 === void 0 || !isSelf(self2)) return false;
+  const hand = { ...self2.resources, ...self2.commodities };
+  const after = projectProposerHand(hand, selfGives, selfReceives);
+  for (const cost of completableBuildCosts(state, sites, selfId, self2.cranePlayed)) {
+    if (!covers(hand, cost) && covers(after, cost)) return true;
+  }
+  return false;
+}
 
 // bot/src/pending/domestic-trade-response.ts
 var TRACE_KEY = {
@@ -34485,7 +34554,8 @@ var TRACE_KEY = {
   counterProjectionBonus: "tradeResponseCounterProjectionBonus",
   counterTermChanges: "tradeResponseCounterTermChanges",
   priorCounters: "tradeResponsePriorCounters",
-  leaderPriced: "tradeResponseLeaderPriced"
+  leaderPriced: "tradeResponseLeaderPriced",
+  proposerUnlockProbability: "tradeResponseProposerUnlockProbability"
 };
 function isNearWinProposer(state, tuning, proposerVp) {
   const margin = tuning.opponentTradeFairnessNearWinMargin;
@@ -34630,8 +34700,25 @@ function vpTransitionVetoFor(ctx, proposerId, target, offer, want) {
 function scienceDenialApplies(ctx, proposerId, given) {
   return ctx.tuning.scienceLevel3DenialEnabled && proposerId !== null && proposerId !== ctx.playerId && tradeCompletesOpponentScienceLevel3(ctx.state, proposerId, given, ctx.opponentModel);
 }
-function proposerBuildDenialApplies(ctx, proposerId, received, given, advancesBuildPath) {
-  return ctx.tuning.proposerBuildUnlockDenialEnabled && !advancesBuildPath && proposerId !== null && proposerId !== ctx.playerId && tradeCompletesProposerBuild(ctx.state, proposerId, received, given, ctx.opponentModel);
+function proposerBuildDenial(ctx, proposerId, received, given, advancesBuildPath) {
+  if (!ctx.tuning.proposerBuildUnlockDenialEnabled || proposerId === null || proposerId === ctx.playerId) {
+    return null;
+  }
+  const exempt = ctx.tuning.proposerBuildUnlockOwnCompletionExemption ? tradeCompletesOwnBuild(ctx.state, ctx.boardIndex, ctx.playerId, given, received) : advancesBuildPath;
+  if (exempt) return null;
+  const threshold = ctx.tuning.proposerBuildUnlockMinProbability;
+  if (threshold <= 0) {
+    return tradeCompletesProposerBuild(ctx.state, proposerId, received, given, ctx.opponentModel) ? { unlockProbability: null } : null;
+  }
+  const unlockProbability = proposerBuildUnlockProbability(
+    ctx.state,
+    ctx.boardIndex,
+    proposerId,
+    received,
+    given,
+    ctx.opponentModel
+  );
+  return unlockProbability >= threshold ? { unlockProbability } : null;
 }
 function cardBalanceVetoFor(ctx, self2, offer, want, desperate, advancesBuildPath, declineCount) {
   if (desperate || advancesBuildPath) return null;
@@ -34679,7 +34766,7 @@ function bestCounterChoice(ctx, decision2, self2, preTrade) {
     const projection = evaluateTradeProjection(ctx, receive, give);
     if (projection.bonus < 0) continue;
     const advancesBuildPath = projection.bonus >= ctx.tuning.tradeBuildPathBonusThreshold;
-    if (proposerBuildDenialApplies(ctx, proposerId, receive, give, advancesBuildPath)) continue;
+    if (proposerBuildDenial(ctx, proposerId, receive, give, advancesBuildPath) !== null) continue;
     if (neededTypeGivenAway(ctx, self2, receive, give, advancesBuildPath) !== null) continue;
     if (fairnessVetoFor(ctx, proposerId, receive, give, advancesBuildPath) !== null) continue;
     const utilityGain = tradeUtilityGain(ctx, self2, receive, give, preTrade);
@@ -34779,8 +34866,13 @@ var domesticTradeResponse = (ctx, decision2) => {
       leaderPriced: fairnessVeto.leaderPriced
     });
   }
-  if (proposerBuildDenialApplies(ctx, proposerId, offer, want, advancesBuildPath)) {
-    return declineWith(ctx, { gate: "proposer-build-unlock", advancesBuildPath });
+  const buildDenial = proposerBuildDenial(ctx, proposerId, offer, want, advancesBuildPath);
+  if (buildDenial !== null) {
+    return declineWith(ctx, {
+      gate: "proposer-build-unlock",
+      advancesBuildPath,
+      ...buildDenial.unlockProbability === null ? {} : { proposerUnlockProbability: buildDenial.unlockProbability }
+    });
   }
   const desperate = self2.victoryPoints >= target - ONE_FROM_WIN;
   const declineCount = ctx.state.domesticTradeDeclinesThisTurn.filter(
@@ -38454,6 +38546,8 @@ var DEFAULT_TUNING = Object.freeze({
   scienceLevel3DriveWeight: 8,
   scienceLevel3DenialEnabled: true,
   proposerBuildUnlockDenialEnabled: false,
+  proposerBuildUnlockMinProbability: 0,
+  proposerBuildUnlockOwnCompletionExemption: false,
   roadCutWeight: 18,
   winSiteDenialWeight: 22,
   opponentWantTellWeight: 0,
@@ -38793,9 +38887,16 @@ var HUMANS = Object.freeze({
   // the opportunistic profile lost about 1.1pp (p≈0.003) on both judges. See
   // docs/bot-evals/2026-09-18-responder-own-build-gate.md.
   // Never hand an opponent the cards that complete their build unless the same
-  // trade advances one of ours (prod 2026-09-18: proposers built on their next
+  // trade completes one of ours (prod 2026-09-18: proposers built on their next
   // turn 68% of the time after the bot took their trade, baseline 51.5%).
   proposerBuildUnlockDenialEnabled: true,
+  // Detect the unlock by its probability, not the rounded point estimate, and
+  // exempt only a trade that completes one of our own builds. Replaying the 961
+  // bot answers to human asks in the 2026-09-16..23 production week: the point
+  // test caught 51 of 370 true unlocks; at 0.15 the probability catches 75% at
+  // 87% precision (site-aware truth). docs/bot-evals/2026-09-23-one-card-ask-veto.md.
+  proposerBuildUnlockMinProbability: 0.15,
+  proposerBuildUnlockOwnCompletionExemption: true,
   surplusDumpAcceptEnabled: true,
   // Counter-offers (Stage 2): counter when meaningfully better than both
   // accept and decline — low enough to actually fire on real tables,
