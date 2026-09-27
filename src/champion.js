@@ -21137,6 +21137,9 @@ var BOT_PUBLIC_EVENT_TYPES = /* @__PURE__ */ new Set([
   GameEventType.GameCompleted
 ]);
 
+// packages/core/src/wire/bot-recent-events.ts
+var BOT_RECENT_EVENTS_WINDOW = 200;
+
 // packages/core/src/game-constants.ts
 var RESOURCE_BANK_STOCK = 19;
 var COMMODITY_BANK_STOCK = 12;
@@ -21677,6 +21680,153 @@ function deriveHiddenAggregates(client) {
   };
 }
 
+// packages/core/src/analysis/timeline-types.ts
+var TIMELINE_VERSION = 1;
+var RECORDER_FORMAT = 1;
+var TIMELINE_LIMITS = {
+  seats: 8,
+  samples: 400,
+  markers: 2e3,
+  envelopeBytes: 262144
+};
+var LEDGER_CAUSES = [
+  "production",
+  "domesticTrade",
+  "maritimeTrade",
+  "steal",
+  "progressCard",
+  "improvementBonus",
+  "buildSpend",
+  "knightSpend",
+  "sevenDiscard",
+  "unattributed"
+];
+
+// packages/core/src/analysis/timeline-schemas.ts
+var seatId = external_exports.string().min(1).max(100);
+var seatIdList = external_exports.array(seatId).min(1).max(TIMELINE_LIMITS.seats);
+var vector = external_exports.array(nonNegInt()).max(TIMELINE_LIMITS.seats);
+var MaterialCountsSchema = external_exports.object({
+  [ResourceType.Lumber]: nonNegInt(),
+  [ResourceType.Brick]: nonNegInt(),
+  [ResourceType.Wool]: nonNegInt(),
+  [ResourceType.Grain]: nonNegInt(),
+  [ResourceType.Ore]: nonNegInt(),
+  [CommodityType.Coin]: nonNegInt(),
+  [CommodityType.Paper]: nonNegInt(),
+  [CommodityType.Cloth]: nonNegInt()
+}).strict();
+var CauseLedgerSchema = external_exports.object(
+  Object.fromEntries(LEDGER_CAUSES.map((cause) => [cause, MaterialCountsSchema]))
+).strict();
+var PieceCountsSchema = external_exports.object({
+  roads: nonNegInt(),
+  settlements: nonNegInt(),
+  cities: nonNegInt(),
+  cityWalls: nonNegInt(),
+  scienceLevel: nonNegInt(),
+  tradeLevel: nonNegInt(),
+  politicsLevel: nonNegInt()
+}).strict();
+var TurnSampleSchema = external_exports.object({
+  ordinal: nonNegInt(),
+  turn: nonNegInt(),
+  kind: external_exports.enum(["setupEnd", "turnEnd", "gameEnd"]),
+  seat: seatId.nullable(),
+  vp: vector,
+  handSize: vector,
+  handLimit: vector,
+  cumulativeIncome: vector,
+  activeKnightStrength: vector,
+  berserkerPosition: nonNegInt(),
+  berserkerStrength: nonNegInt()
+}).strict();
+var markerBase = { turn: nonNegInt(), step: nonNegInt() };
+var TimelineMarkerSchema = external_exports.discriminatedUnion("kind", [
+  external_exports.object({ kind: external_exports.literal("leadChange"), ...markerBase, leaderSeat: seatId }).strict(),
+  external_exports.object({
+    kind: external_exports.literal("berserkerAttack"),
+    ...markerBase,
+    strength: nonNegInt(),
+    defense: nonNegInt(),
+    outcome: external_exports.enum(["held", "fell"]),
+    citiesLostBy: external_exports.array(seatId).max(TIMELINE_LIMITS.seats)
+  }).strict(),
+  external_exports.object({
+    kind: external_exports.literal("build"),
+    ...markerBase,
+    seat: seatId,
+    build: external_exports.enum(["road", "settlement", "city", "cityWall", "improvement", "metropolis"]),
+    setup: external_exports.boolean(),
+    free: external_exports.boolean()
+  }).strict(),
+  external_exports.object({ kind: external_exports.literal("win"), ...markerBase, seat: seatId }).strict()
+]);
+var SeatPublicTotalsSchema = external_exports.object({
+  productionByType: MaterialCountsSchema,
+  robberBlockedRolls: nonNegInt(),
+  sevenDiscards: nonNegInt(),
+  stealsSuffered: nonNegInt(),
+  stealsMade: nonNegInt(),
+  domesticTrades: nonNegInt(),
+  maritimeTrades: nonNegInt()
+}).strict();
+var SeatPrivateLedgerSchema = external_exports.object({
+  inflow: CauseLedgerSchema,
+  outflow: CauseLedgerSchema,
+  startingHand: MaterialCountsSchema,
+  finalHand: MaterialCountsSchema
+}).strict();
+var SeatRecordSchema = external_exports.object({ public: SeatPublicTotalsSchema, private: SeatPrivateLedgerSchema }).strict();
+var seatRecord = (value) => prototypeSafeRecordSchema(value);
+var samples = external_exports.array(TurnSampleSchema).max(TIMELINE_LIMITS.samples);
+var markers = external_exports.array(TimelineMarkerSchema).max(TIMELINE_LIMITS.markers);
+var diagnostics = external_exports.object({ unattributedSteps: nonNegInt() }).strict();
+var TimelineUnavailableReasonSchema = external_exports.enum([
+  "limitExceeded",
+  "missingEffects",
+  "finalMismatch",
+  "setupIncomplete",
+  "invalidTimeline",
+  "notRecorded",
+  "replayMismatch"
+]);
+var GameTimelineSchema = external_exports.object({
+  version: external_exports.literal(TIMELINE_VERSION),
+  seatIds: seatIdList,
+  turns: samples,
+  markers,
+  seats: seatRecord(SeatRecordSchema),
+  diagnostics
+}).strict();
+var TimelineRecorderStateSchema = external_exports.object({
+  format: external_exports.literal(RECORDER_FORMAT),
+  gameId: external_exports.string().min(1).max(200),
+  stateVersion: nonNegInt(),
+  seatIds: seatIdList,
+  status: external_exports.enum(["recording", "finished", "unavailable"]),
+  unavailableReason: TimelineUnavailableReasonSchema.nullable(),
+  setupComplete: external_exports.boolean(),
+  step: nonNegInt(),
+  samples,
+  markers,
+  seats: seatRecord(SeatRecordSchema),
+  lastHands: seatRecord(MaterialCountsSchema),
+  lastPieces: seatRecord(PieceCountsSchema),
+  lastVp: vector,
+  lastWinner: seatId.nullable(),
+  unattributedSteps: nonNegInt()
+}).strict();
+var ProjectedTimelineSchema = external_exports.object({
+  version: external_exports.literal(TIMELINE_VERSION),
+  seatIds: seatIdList,
+  turns: samples,
+  markers,
+  publicTotals: seatRecord(SeatPublicTotalsSchema),
+  viewerLedger: external_exports.object({ seatId, ledger: SeatPrivateLedgerSchema }).strict().nullable(),
+  diagnostics
+}).strict();
+
 // packages/core/src/rules/board-view.ts
 function edgeOther(edge, endpoint) {
   if (edge.intersectionA === endpoint) return edge.intersectionB;
@@ -22095,18 +22245,7 @@ function discardCountForHand(handSize) {
   return Math.floor(handSize / 2);
 }
 
-// packages/core/src/dice/lcg.ts
-var CRC32_TABLE = (() => {
-  const t = new Uint32Array(256);
-  for (let i = 0; i < 256; i++) {
-    let c = i;
-    for (let k = 0; k < 8; k++) {
-      c = (c & 1) !== 0 ? 3988292384 ^ c >>> 1 : c >>> 1;
-    }
-    t[i] = c >>> 0;
-  }
-  return t;
-})();
+// packages/core/src/dice/seeded-rng.ts
 var UTF8_ENCODER = new TextEncoder();
 
 // bot/src/util/get-or-create.ts
@@ -26004,10 +26143,20 @@ function rawCriticalAdjustment(ctx) {
   return defensiveKnightWorkPenalty(ctx, CRITICAL_KNIGHT_WORK_TIER);
 }
 
+// bot/src/bot/score-context.ts
+function selfRoadLength(ctx) {
+  return ctx.roadLengthByPlayer[ctx.actingPlayerId] ?? 0;
+}
+
 // bot/src/bot/score-rules/settlement-hoard.ts
+var TITLE_WIN_ROAD_HORIZON = 3;
+var TITLE_SEARCH_BUDGET = { maxSearchedRoadSets: 1e3 };
+var winningTitleRoutes = /* @__PURE__ */ new WeakMap();
+var titleDelayByEdge = /* @__PURE__ */ new WeakMap();
 function settlementHoard(ctx) {
   if (ctx.action.type !== ActionType.BuildRoad) return 0;
   if (!isHoardingForSettlement(ctx.state.players[ctx.actingPlayerId])) return 0;
+  if (roadDelaysWinningTitleClaim(ctx, ctx.action.edgeId)) return 0;
   const reach = ctx.boardIndex.roadConnectedIntersections[ctx.actingPlayerId];
   if (reach === void 0) return 0;
   const penalty = ctx.tuning.settlementHoardRoadPenalty;
@@ -26016,6 +26165,52 @@ function settlementHoard(ctx) {
   if (roadOpensSettlementSite(ctx, ctx.action.edgeId, reach)) return 0;
   if (ctx.isTrapped && roadAdvancesTowardSettlementSite(ctx, ctx.action.edgeId, reach)) return 0;
   return -penalty;
+}
+function roadDelaysWinningTitleClaim(ctx, edgeId) {
+  const { state, actingPlayerId } = ctx;
+  return memoizePerRequest(
+    titleDelayByEdge,
+    state,
+    `${actingPlayerId}:${edgeId}:${selfRoadLength(ctx)}`,
+    () => computeRoadDelaysWinningTitleClaim(ctx, edgeId)
+  );
+}
+function computeRoadDelaysWinningTitleClaim(ctx, edgeId) {
+  const { state, actingPlayerId } = ctx;
+  if (state.longestRoadHolderPlayerId !== actingPlayerId) return false;
+  const routes = memoizePerRequest(winningTitleRoutes, state, actingPlayerId, () => {
+    const found = [];
+    for (const [opponentId, player] of Object.entries(state.players)) {
+      if (opponentId === actingPlayerId || player.victoryPoints + TWO_FROM_WIN < state.victoryPointsTarget)
+        continue;
+      const horizon = Math.min(TITLE_WIN_ROAD_HORIZON, player.roadsInSupply);
+      if (horizon <= 0) continue;
+      const search = minimumLegalRoadsToClaimLongestRoad(
+        state,
+        opponentId,
+        horizon,
+        TITLE_SEARCH_BUDGET
+      );
+      if (search.kind === "found") found.push({ opponentId, roadsNeeded: search.roadsNeeded });
+    }
+    return found;
+  });
+  if (routes.length === 0) return false;
+  const edge = state.board.edges[edgeId];
+  if (edge === void 0 || edge.roadOwnerPlayerId !== null) return false;
+  if (projectedLongestRoadWithEdgeOverride(state.board, edge, actingPlayerId, actingPlayerId) <= selfRoadLength(ctx))
+    return false;
+  const defended = { ...state, board: withEdgeOwnerOverride(state.board, edge, actingPlayerId) };
+  for (const route of routes) {
+    const after = minimumLegalRoadsToClaimLongestRoad(
+      defended,
+      route.opponentId,
+      route.roadsNeeded,
+      TITLE_SEARCH_BUDGET
+    );
+    if (after.kind === "none") return true;
+  }
+  return false;
 }
 function roadOpensSettlementSite(ctx, edgeId, reach) {
   const edge = ctx.state.board.edges[edgeId];
@@ -26868,6 +27063,30 @@ function handPressure(ctx) {
   return 0;
 }
 
+// bot/src/bot/trade-forced-win.ts
+function tradeUnlocksForcedSelfWin(ctx, self2, receive, give) {
+  if (self2.victoryPoints + 2 < ctx.state.victoryPointsTarget) return false;
+  const hand = { ...self2.resources, ...self2.commodities };
+  for (const item of give) hand[item.type] = (hand[item.type] ?? 0) - item.count;
+  for (const item of receive) hand[item.type] = (hand[item.type] ?? 0) + item.count;
+  for (const track of COMMODITY_TRACKS) {
+    if (!nextImprovementTransfersMetropolis(ctx.state, ctx.boardIndex, ctx.playerId, track)) {
+      continue;
+    }
+    const commodity = trackCommodity(track);
+    const cost = improvementCost(self2.cranePlayed, trackLevelFor(track, self2));
+    if ((hand[commodity] ?? 0) >= cost) return true;
+  }
+  const affordableRoads = Math.min(
+    Math.floor(hand[ResourceType.Brick] ?? 0),
+    Math.floor(hand[ResourceType.Lumber] ?? 0),
+    self2.roadsInSupply
+  );
+  if (affordableRoads <= 0) return false;
+  const roadSearch = minimumLegalRoadsToClaimLongestRoad(ctx.state, ctx.playerId, 1);
+  return roadSearch.kind === "found" && roadSearch.roadsNeeded === 1;
+}
+
 // bot/src/trade/trade-utility.ts
 function simulateTradeUtility(state, playerId, ownResources, ownCommodities, receive, give) {
   const resources = {};
@@ -27594,7 +27813,7 @@ function computeDomesticTradeProposalVerdict(ctx, action) {
   if (isSuppressedAudienceAlternate(ctx, action)) return HARD_REJECTED_DOMESTIC_TRADE;
   const tradeCtx = buildProposeTradeCtx(ctx);
   const projection = evaluateProposerTradeProjection(tradeCtx, action.want, action.offer);
-  if (proposalWouldBeConfirmCanceled(ctx, action, projection)) {
+  if (proposalWouldBeConfirmCanceled(ctx, action, projection, tradeCtx)) {
     return HARD_REJECTED_DOMESTIC_TRADE;
   }
   const utilityDelta = selfUtilityDelta(action, tradeCtx);
@@ -27644,7 +27863,7 @@ function isSeverelyPenalizedDomesticTradeScore(score2) {
   return score2 <= DOMESTIC_TRADE_HARD_REJECT_SCORE + 1e3;
 }
 var proposalConfirmUtilityByState = /* @__PURE__ */ new WeakMap();
-function proposalWouldBeConfirmCanceled(ctx, action, projection) {
+function proposalWouldBeConfirmCanceled(ctx, action, projection, tradeCtx) {
   const self2 = selfPlayer(ctx.state, ctx.actingPlayerId);
   if (self2 === null) return false;
   const target = ctx.state.victoryPointsTarget;
@@ -27652,8 +27871,15 @@ function proposalWouldBeConfirmCanceled(ctx, action, projection) {
   if (!botOneFromWin && action.targetPlayerId !== void 0 && effectiveOpponentVp(ctx.state, action.targetPlayerId, ctx.tuning) >= target - TWO_FROM_WIN) {
     return true;
   }
+  const scalingCanMatter = ctx.tuning.tradeCompletionVpLeverage !== 0 && self2.victoryPoints > target - FIVE_FROM_WIN;
+  const scalingPreservesGate = ctx.tuning.tradeProjectionPositiveBonusCap >= 24 && ctx.tuning.tradeProjectionNegativeBonusFloor >= -24 && ctx.tuning.tradeCompletionVpLeverage >= 0;
+  const confirmProjection = scalingCanMatter && !scalingPreservesGate ? evaluateProposerTradeProjection(
+    { ...tradeCtx, winProximityScaling: false },
+    action.want,
+    action.offer
+  ) : projection;
   const tighten = ctx.tuning.confirmTightenEnabled;
-  const projectionCancels = tighten ? projection.bestDelta <= 0 : projection.bonus < 0;
+  const projectionCancels = tighten ? confirmProjection.bestDelta <= 0 || confirmProjection.bonus < 0 : confirmProjection.bonus < 0;
   if (!projectionCancels) return false;
   const utilityGain = simulateTradeUtility(
     ctx.state,
@@ -27668,7 +27894,8 @@ function proposalWouldBeConfirmCanceled(ctx, action, projection) {
     ctx.actingPlayerId,
     () => evaluatePlayerStateUtility(ctx.state, ctx.actingPlayerId)
   );
-  return tighten ? utilityGain < ctx.tuning.confirmUtilityFloor : utilityGain < 0;
+  const utilityCancels = tighten ? utilityGain < ctx.tuning.confirmUtilityFloor : utilityGain < 0;
+  return utilityCancels && !tradeUnlocksForcedSelfWin(tradeCtx, self2, action.want, action.offer);
 }
 function generosityBonus(ctx, offerCount, wantCount, projection) {
   const perCard = Math.max(0, ctx.tuning.tradeGenerosityPerExtraCardBonus);
@@ -28229,12 +28456,12 @@ var RECENT_DICE_WINDOW = 20;
 function createProductionEstimator(diceHistogram = {}, recentEvents = [], boardIndex) {
   let expectedEntry = null;
   let effectiveWeights = null;
-  const diagnostics = { warnedThisRun: false };
+  const diagnostics2 = { warnedThisRun: false };
   function getEffectiveWeights() {
     if (effectiveWeights !== null) {
       return effectiveWeights;
     }
-    effectiveWeights = computeEffectiveWeights(diceHistogram, recentEvents, diagnostics);
+    effectiveWeights = computeEffectiveWeights(diceHistogram, recentEvents, diagnostics2);
     return effectiveWeights;
   }
   function productionWeight(numberToken) {
@@ -28279,19 +28506,19 @@ function createProductionEstimator(diceHistogram = {}, recentEvents = [], boardI
   }
   return { expectedProductionPerTurn, productionWeight };
 }
-function readDiceRolledSum(event, diagnostics) {
+function readDiceRolledSum(event, diagnostics2) {
   const sum = event.payload.sum;
   if (sum === 7) return null;
   if (typeof sum === "number" && sum in PIPS_BY_NUMBER) return sum;
-  if (!diagnostics.warnedThisRun) {
-    diagnostics.warnedThisRun = true;
+  if (!diagnostics2.warnedThisRun) {
+    diagnostics2.warnedThisRun = true;
     console.warn(
       `[production-estimator] diceRolled.payload.sum unparseable; expected number in PIPS_BY_NUMBER, got ${typeof sum}=${JSON.stringify(sum)}`
     );
   }
   return null;
 }
-function buildObservedHistogram(diceHistogram, recentEvents, diagnostics) {
+function buildObservedHistogram(diceHistogram, recentEvents, diagnostics2) {
   const combined = {};
   let productiveRolls = 0;
   let windowCount = 0;
@@ -28300,7 +28527,7 @@ function buildObservedHistogram(diceHistogram, recentEvents, diagnostics) {
     if (event === void 0 || event.type !== GameEventType.DiceRolled) {
       continue;
     }
-    const sum = readDiceRolledSum(event, diagnostics);
+    const sum = readDiceRolledSum(event, diagnostics2);
     if (sum === null) {
       continue;
     }
@@ -28319,7 +28546,7 @@ function buildObservedHistogram(diceHistogram, recentEvents, diagnostics) {
   }
   return { histogram: combined, productiveRolls };
 }
-function computeEffectiveWeights(diceHistogram, recentEvents, diagnostics) {
+function computeEffectiveWeights(diceHistogram, recentEvents, diagnostics2) {
   const weights = {};
   for (const [number4, weight] of Object.entries(PIPS_BY_NUMBER)) {
     weights[Number(number4)] = weight;
@@ -28327,7 +28554,7 @@ function computeEffectiveWeights(diceHistogram, recentEvents, diagnostics) {
   const { histogram: observed, productiveRolls } = buildObservedHistogram(
     diceHistogram,
     recentEvents,
-    diagnostics
+    diagnostics2
   );
   if (productiveRolls <= HISTOGRAM_CONFIDENCE_START) {
     return Object.freeze(weights);
@@ -29264,9 +29491,9 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
       return cached2;
     }
     if (jointMeanEstimatedHand) {
-      const samples = jointHands();
-      if (samples !== null && samples.length > 0) {
-        const mean = meanSampledHand(samples, opponentId);
+      const samples2 = jointHands();
+      if (samples2 !== null && samples2.length > 0) {
+        const mean = meanSampledHand(samples2, opponentId);
         handCache.set(opponentId, mean);
         return mean;
       }
@@ -29387,15 +29614,15 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
     }
     return jointHandsCache;
   }
-  function meanSampledHand(samples, opponentId) {
+  function meanSampledHand(samples2, opponentId) {
     const mean = {};
     for (const type of MATERIAL_TYPES) {
       let total = 0;
-      for (const sample of samples) {
+      for (const sample of samples2) {
         const hand = sample[opponentId];
         if (hand !== void 0) total += sampledHolding(hand, type);
       }
-      if (total > 0) mean[type] = total / samples.length;
+      if (total > 0) mean[type] = total / samples2.length;
     }
     return mean;
   }
@@ -29483,14 +29710,14 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
     if (count2 > (opponentAggregates()[type] ?? 0)) {
       return 0;
     }
-    const samples = jointHands();
-    if (samples !== null && samples.length > 0) {
+    const samples2 = jointHands();
+    if (samples2 !== null && samples2.length > 0) {
       let successes = 0;
-      for (const sample of samples) {
+      for (const sample of samples2) {
         const hand2 = sample[opponentId];
         if (hand2 !== void 0 && sampledHolding(hand2, type) >= count2) successes++;
       }
-      const probability2 = (successes + 1) / (samples.length + 2);
+      const probability2 = (successes + 1) / (samples2.length + 2);
       return clamp(probability2, PROBABILITY_FLOOR, PROBABILITY_CAP);
     }
     const hand = estimatedHand(opponentId);
@@ -29527,16 +29754,16 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
       affordabilityCache.set(key, 0);
       return 0;
     }
-    const samples = jointHands();
-    if (samples !== null && samples.length > 0) {
+    const samples2 = jointHands();
+    if (samples2 !== null && samples2.length > 0) {
       let successes = 0;
-      for (const sample of samples) {
+      for (const sample of samples2) {
         const hand = sample[opponentId];
         if (hand !== void 0 && entries.every(([type, needed]) => sampledHolding(hand, type) >= needed)) {
           successes++;
         }
       }
-      const joint2 = (successes + 1) / (samples.length + 2);
+      const joint2 = (successes + 1) / (samples2.length + 2);
       affordabilityCache.set(key, joint2);
       return joint2;
     }
@@ -29549,16 +29776,16 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
   }
   function expectedCappedHolding(opponentId, type, cap) {
     if (cap <= 0) return 0;
-    const samples = jointHands();
-    if (samples === null || samples.length === 0) {
+    const samples2 = jointHands();
+    if (samples2 === null || samples2.length === 0) {
       return clamp(estimatedHand(opponentId)[type] ?? 0, 0, cap);
     }
     let total = 0;
-    for (const sample of samples) {
+    for (const sample of samples2) {
       const hand = sample[opponentId];
       if (hand !== void 0) total += Math.min(cap, sampledHolding(hand, type));
     }
-    return total / samples.length;
+    return total / samples2.length;
   }
   function opponentVpPlan(opponentId) {
     if (opponentVpPlanCache.has(opponentId)) {
@@ -29583,7 +29810,7 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
     utilities[type] = utility;
     return utility;
   }
-  function opponentTradePlanContext(opponentId, samples, sampleCount) {
+  function opponentTradePlanContext(opponentId, samples2, sampleCount) {
     if (opponentTradePlanContextCache.has(opponentId)) {
       return opponentTradePlanContextCache.get(opponentId) ?? null;
     }
@@ -29598,7 +29825,7 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
     const production = getProductionEstimator().expectedProductionPerTurn(state, opponentId);
     const beforeTurnsBySample = new Array(sampleCount);
     for (let sampleIndex = 0; sampleIndex < sampleCount; sampleIndex++) {
-      const sample = samples[sampleIndex];
+      const sample = samples2[sampleIndex];
       if (sample === void 0) {
         beforeTurnsBySample[sampleIndex] = 0;
         continue;
@@ -29627,20 +29854,20 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
         expectedPlanTurnsSaved: 0
       };
     };
-    const samples = jointHands();
-    if (samples === null || samples.length === 0) {
+    const samples2 = jointHands();
+    if (samples2 === null || samples2.length === 0) {
       const result2 = fallback();
       tradeEvaluationCache.set(key, result2);
       return result2;
     }
     const transfers = prepareTradeTransfers(receive, give, opponentId, opponentMaterialUtility);
-    const sampleCount = Math.min(samples.length, TRADE_EVALUATION_SAMPLE_CAP);
-    const planContext = opponentTradePlanContext(opponentId, samples, sampleCount);
+    const sampleCount = Math.min(samples2.length, TRADE_EVALUATION_SAMPLE_CAP);
+    const planContext = opponentTradePlanContext(opponentId, samples2, sampleCount);
     let payableSamples = 0;
     let utilityTotal = 0;
     let turnsSavedTotal = 0;
     for (let sampleIndex = 0; sampleIndex < sampleCount; sampleIndex++) {
-      const sample = samples[sampleIndex];
+      const sample = samples2[sampleIndex];
       if (sample === void 0) continue;
       const hand = sample[opponentId];
       if (hand === void 0) continue;
@@ -29756,7 +29983,7 @@ var InvalidBotProjectionError = class extends Error {
     this.name = "InvalidBotProjectionError";
   }
 };
-var RECENT_EVENTS_HARD_CAP = 200;
+var RECENT_EVENTS_HARD_CAP = BOT_RECENT_EVENTS_WINDOW;
 function buildBotContext(request, tuning) {
   const actingPlayer = request.state.players[request.playerId];
   const selfPlayerIds = Object.entries(request.state.players).filter(([, player]) => isSelf(player)).map(([playerId]) => playerId);
@@ -30367,6 +30594,12 @@ function scoreProgressCardAction(args) {
 }
 function rawProgressCardPlayOnlyScore(ctx, cardId) {
   switch (cardId) {
+    // The bank may refill later, so preserve these cards' hold/discard values.
+    // Only a known-empty matching stock makes the current play worthless.
+    case "scienceMining":
+      return ctx.state.bankResources[ResourceType.Ore] === 0 ? NO_BENEFIT_PLAY_SCORE : null;
+    case "scienceIrrigation":
+      return ctx.state.bankResources[ResourceType.Grain] === 0 ? NO_BENEFIT_PLAY_SCORE : null;
     case "scienceTempering":
       return temperingPlayScore(ctx);
     case "tradeCommercialHarbor":
@@ -30952,11 +31185,6 @@ function applyHoldValueDampener({ state, actingPlayerId }, score2) {
   const handSize = player !== void 0 ? progressHandSize(player) : 0;
   if (handSize >= 4) return score2;
   return score2 - 8;
-}
-
-// bot/src/bot/score-context.ts
-function selfRoadLength(ctx) {
-  return ctx.roadLengthByPlayer[ctx.actingPlayerId] ?? 0;
 }
 
 // bot/src/bot/decision-memory.ts
@@ -34314,7 +34542,7 @@ function responderIsUnsafe(ctx, responderId, botOneFromWin) {
   return !botOneFromWin && effectiveOpponentVp(ctx.state, responderId, ctx.tuning) >= ctx.state.victoryPointsTarget - TWO_FROM_WIN;
 }
 function passesAwardValueGate(ctx, projection, utilityGain) {
-  return ctx.tuning.confirmTightenEnabled ? projection.bestDelta > 0 || utilityGain >= ctx.tuning.confirmUtilityFloor : projection.bonus >= 0 || utilityGain >= 0;
+  return ctx.tuning.confirmTightenEnabled ? projection.bestDelta > 0 && projection.bonus >= 0 || utilityGain >= ctx.tuning.confirmUtilityFloor : projection.bonus >= 0 || utilityGain >= 0;
 }
 function bestModifiedBidChoices(ctx, split, self2, proposal, preTrade) {
   const { modified: modifiedCandidates, bidByResponder } = split;
@@ -34434,6 +34662,7 @@ var domesticTradeAward = (ctx, decision2) => {
     };
   }
   const atTermsOutcome = resolveAtTermsAward(ctx, decision2, atTermsCandidates, cancel, preTrade);
+  if (atTermsOutcome.forcedWin) return atTermsOutcome.result;
   const marginChoice = modifiedChoices.best !== null && modifiedChoices.best.decisionValue > atTermsOutcome.decisionValue + ctx.tuning.counterTakeMargin ? modifiedChoices.best : null;
   const dominanceChoice = atTermsOutcome.viableAward ? modifiedChoices.dominant : null;
   const bestModifiedBid = marginChoice ?? dominanceChoice;
@@ -34453,7 +34682,7 @@ var domesticTradeAward = (ctx, decision2) => {
   return atTermsOutcome.result;
 };
 function notViable(result) {
-  return { result, decisionValue: 0, viableAward: false };
+  return { result, decisionValue: 0, viableAward: false, forcedWin: false };
 }
 function resolveAtTermsAward(ctx, decision2, atTermsCandidates, cancel, preTrade) {
   const firstAtTermsAward = atTermsCandidates[0] ?? null;
@@ -34462,7 +34691,7 @@ function resolveAtTermsAward(ctx, decision2, atTermsCandidates, cancel, preTrade
   }
   const self2 = selfPlayer(ctx.state, ctx.playerId);
   if (self2 === null) {
-    return { result: firstAtTermsAward, decisionValue: 0, viableAward: true };
+    return { result: firstAtTermsAward, decisionValue: 0, viableAward: true, forcedWin: false };
   }
   const offer = decision2.payload.offer;
   const want = decision2.payload.want;
@@ -34513,30 +34742,9 @@ function resolveAtTermsAward(ctx, decision2, atTermsCandidates, cancel, preTrade
   return {
     result: safeAtTermsAward,
     decisionValue: utilityGain - opponentTempoPenalty,
-    viableAward: true
+    viableAward: true,
+    forcedWin
   };
-}
-function tradeUnlocksForcedSelfWin(ctx, self2, receive, give) {
-  if (self2.victoryPoints + 2 < ctx.state.victoryPointsTarget) return false;
-  const hand = { ...self2.resources, ...self2.commodities };
-  for (const item of give) hand[item.type] = (hand[item.type] ?? 0) - item.count;
-  for (const item of receive) hand[item.type] = (hand[item.type] ?? 0) + item.count;
-  for (const track of COMMODITY_TRACKS) {
-    if (!nextImprovementTransfersMetropolis(ctx.state, ctx.boardIndex, ctx.playerId, track)) {
-      continue;
-    }
-    const commodity = trackCommodity(track);
-    const cost = improvementCost(self2.cranePlayed, trackLevelFor(track, self2));
-    if ((hand[commodity] ?? 0) >= cost) return true;
-  }
-  const affordableRoads = Math.min(
-    Math.floor(hand[ResourceType.Brick] ?? 0),
-    Math.floor(hand[ResourceType.Lumber] ?? 0),
-    self2.roadsInSupply
-  );
-  if (affordableRoads <= 0) return false;
-  const roadSearch = minimumLegalRoadsToClaimLongestRoad(ctx.state, ctx.playerId, 1);
-  return roadSearch.kind === "found" && roadSearch.roadsNeeded === 1;
 }
 function tradePartnerTempoPenalty(ctx, partnerId, partnerReceive, partnerGive) {
   if (ctx.tuning.opponentTradeTempoPenaltyPerTurn <= 0) return 0;
@@ -37427,15 +37635,15 @@ function chosenTradeProposalTrace(ranked, chosen) {
   if (chosen.type !== ActionType.DomesticTradePropose) return {};
   const chosenEntry = ranked.find((entry) => entry.action.id === chosen.id);
   if (chosenEntry === void 0) return {};
-  const diagnostics = domesticTradeProposalAcceptanceDiagnostics(chosenEntry.ctx, chosen);
+  const diagnostics2 = domesticTradeProposalAcceptanceDiagnostics(chosenEntry.ctx, chosen);
   const round4 = (value) => Math.round(value * 1e4) / 1e4;
   return {
     tradeProposalAcceptanceModel: "best-responder-v1",
-    tradeProposalPredictedAcceptance: round4(diagnostics.pAccept),
-    tradeProposalPredictedAnyAcceptance: round4(diagnostics.independentAnyPAccept),
-    tradeProposalResponderCount: diagnostics.evaluatedResponderCount,
-    tradeProposalBestOpponentPlanTurnsSaved: round4(diagnostics.bestOpponentPlanTurnsSaved),
-    tradeProposalVpTransitionRisk: diagnostics.vpTransitionRisk,
+    tradeProposalPredictedAcceptance: round4(diagnostics2.pAccept),
+    tradeProposalPredictedAnyAcceptance: round4(diagnostics2.independentAnyPAccept),
+    tradeProposalResponderCount: diagnostics2.evaluatedResponderCount,
+    tradeProposalBestOpponentPlanTurnsSaved: round4(diagnostics2.bestOpponentPlanTurnsSaved),
+    tradeProposalVpTransitionRisk: diagnostics2.vpTransitionRisk,
     // Constant since `ScoreContext.opponentModel` became required: every scored
     // proposal has a model. Kept so the trace bytes stay identical for the
     // decision-preservation oracle; drop it with the next trace-shape change.
@@ -37490,6 +37698,51 @@ function buildTradeOfferFloor(ctx, opponentIds) {
   });
 }
 
+// bot/src/bot/rejected-counter-replay.ts
+function rejectedCounterReplay(ctx) {
+  const none = () => false;
+  const prior = ctx.state.lastDomesticTradeOutcome;
+  if (prior?.ending !== "cancelled" || prior.proposerId !== ctx.playerId) return none;
+  const events = ctx.request.recentEvents;
+  let cursor = events.length - 1;
+  while (cursor >= 0 && events[cursor]?.type !== GameEventType.ActionApplied) cursor--;
+  const last = events[cursor];
+  if (last?.type !== GameEventType.ActionApplied || last.actingPlayerId !== ctx.playerId || last.turnAfter !== ctx.state.turnNumber || last.payload.action.type !== ActionType.DomesticTradeCancel || last.payload.stateVersionAfter !== void 0 && last.payload.stateVersionAfter !== ctx.state.version)
+    return none;
+  const seen = /* @__PURE__ */ new Set();
+  const rejected = /* @__PURE__ */ new Map();
+  for (cursor--; cursor >= 0; cursor--) {
+    const event = events[cursor];
+    if (event?.type !== GameEventType.ActionApplied) continue;
+    if (event.turnAfter !== ctx.state.turnNumber) return none;
+    const action = event.payload.action;
+    if (action.type === ActionType.DomesticTradePropose) {
+      if (event.actingPlayerId !== ctx.playerId || action.targetPlayerId !== prior.targetPlayerId || termsKey2(action.offer, action.want) !== termsKey2(prior.proposerGives, prior.proposerReceives))
+        return none;
+      const rejectedTerms = new Set(rejected.values());
+      return (candidate) => {
+        if (candidate.type !== ActionType.DomesticTradePropose || rejected.size === 0) return false;
+        const key = termsKey2(candidate.offer, candidate.want);
+        return candidate.targetPlayerId === void 0 ? rejectedTerms.has(key) : rejected.get(candidate.targetPlayerId) === key;
+      };
+    }
+    if (action.type !== ActionType.DomesticTradeBid && action.type !== ActionType.DomesticTradePass)
+      return none;
+    const responder = event.actingPlayerId;
+    if (responder === null || responder === ctx.playerId) return none;
+    if (action.type === ActionType.DomesticTradeBid && action.tradeDetails?.proposerId !== void 0)
+      return none;
+    if (seen.has(responder)) continue;
+    seen.add(responder);
+    if (action.type === ActionType.DomesticTradeBid && prior.responders.some((entry) => entry.playerId === responder && entry.status === "countered"))
+      rejected.set(responder, termsKey2(action.offer, action.want));
+  }
+  return none;
+}
+function termsKey2(offer, want) {
+  return `${tradeBundleKey(offer)}>${tradeBundleKey(want)}`;
+}
+
 // bot/src/bot/trade-replay-filter.ts
 function filterRedundantTradeCandidates(ctx, actionPool) {
   if (!actionPool.some((action) => action.type === ActionType.DomesticTradePropose)) {
@@ -37505,6 +37758,7 @@ function filterRedundantTradeCandidates(ctx, actionPool) {
     (playerId) => playerId !== ctx.playerId
   );
   const worsensUnacceptedOffer = buildTradeOfferFloor(ctx, opponentIds);
+  const repeatsRejectedCounter = rejectedCounterReplay(ctx);
   const filtered = [];
   let repeatTradeCandidateCount = 0;
   for (const action of actionPool) {
@@ -37515,7 +37769,7 @@ function filterRedundantTradeCandidates(ctx, actionPool) {
       action
     );
     const worsensOffer = action.type === ActionType.DomesticTradePropose && worsensUnacceptedOffer(action);
-    if (repeatsProposal || reversesCompletedTrade || worsensOffer) {
+    if (repeatsProposal || reversesCompletedTrade || worsensOffer || repeatsRejectedCounter(action)) {
       repeatTradeCandidateCount++;
       continue;
     }
@@ -37555,6 +37809,40 @@ function domesticTradeReplayKey(targetPlayerId, terms) {
 }
 function tradeTermsKey(offer, want) {
   return `${tradeBundleKey(offer)}>${tradeBundleKey(want)}`;
+}
+
+// bot/src/bot/resource-card-trade-filter.ts
+function deferTradesCoveredByResourceCard(ctx, pool) {
+  const self2 = selfPlayer(ctx.state, ctx.playerId);
+  if (self2 === null || !pool.some(
+    (a) => a.type === ActionType.DomesticTradePropose || a.type === ActionType.MaritimeTrade
+  ))
+    return pool;
+  const gains = /* @__PURE__ */ new Map();
+  for (const action of pool) {
+    if (action.type !== ActionType.PlayProgressCard) continue;
+    const card2 = self2.progressHand.find((c) => c.instanceId === action.instanceId);
+    const resource = card2?.cardId === "scienceIrrigation" ? ResourceType.Grain : card2?.cardId === "scienceMining" ? ResourceType.Ore : null;
+    if (resource === null || gains.has(resource)) continue;
+    const hexType = resource === ResourceType.Grain ? HexType.Fields : HexType.Mountains;
+    const hexes = /* @__PURE__ */ new Set();
+    for (const entry of ctx.boardIndex.buildingsByPlayer[ctx.playerId] ?? []) {
+      for (const id of ctx.state.board.intersections[entry.intersectionId]?.adjacentHexIds ?? []) {
+        if (ctx.state.board.hexes[id]?.type === hexType) hexes.add(id);
+      }
+    }
+    gains.set(resource, Math.min(2 * hexes.size, ctx.state.bankResources[resource] ?? 0));
+  }
+  if (gains.size === 0) return pool;
+  return pool.filter((action) => {
+    const want = action.type === ActionType.DomesticTradePropose ? action.want : action.type === ActionType.MaritimeTrade ? [action.want] : null;
+    if (want === null || want.length === 0) return true;
+    for (const [resource, gain] of gains) {
+      if (gain > 0 && want.every((item) => item.type === resource) && want.reduce((sum, item) => sum + item.count, 0) <= gain)
+        return false;
+    }
+    return true;
+  });
 }
 
 // bot/src/bot/complementary-offer-selector.ts
@@ -38072,7 +38360,7 @@ function chooseMainScoring(ctx, hooks) {
     base,
     prebuiltScoreContexts
   );
-  const actionPool = nearKitReservation.actionPool;
+  let actionPool = nearKitReservation.actionPool;
   if (!winningMovePoolOnly && ctx.tuning.sameTurnEndgamePlannerEnabled) {
     const plan = findSameTurnWinningPlan(ctx, actionPool, base);
     if (plan !== null) {
@@ -38121,6 +38409,7 @@ function chooseMainScoring(ctx, hooks) {
       };
     }
   }
+  if (!winningMovePoolOnly) actionPool = deferTradesCoveredByResourceCard(ctx, actionPool);
   const productionRankedWidth = 3;
   const observerRankedWidth = Math.max(3, Math.floor(hooks?.rankingObserver?.width ?? 3));
   const setupPairWidth = ctx.tuning.setupPairModelEnabled && (ctx.state.phase === Phase.Setup1 || ctx.state.phase === Phase.Setup2) ? SETUP_PAIR_SETUP1_CANDIDATES : 0;
