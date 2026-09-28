@@ -158,7 +158,14 @@ var GameEventType = {
   KnightReturnedToSupply: "knightReturnedToSupply",
   BotIterationTiming: "botIterationTiming",
   BotValidActionsConsidered: "botValidActionsConsidered",
-  UndoApplied: "undoApplied"
+  UndoApplied: "undoApplied",
+  // A human seat passed to the built-in bot mid-game (resign or force-resign
+  // while other humans play on). Bumps `state.version` by exactly 1 with no
+  // other state change; replays reproduce that bump (history-replay.ts).
+  SeatHandedOff: "seatHandedOff",
+  // A live-pace `timeout` seat taken back by its human ("I'm back"). The same
+  // one-step version bump as SeatHandedOff, replayed the same way.
+  SeatReclaimed: "seatReclaimed"
 };
 
 // packages/core/src/enums/harbor-type.ts
@@ -21701,6 +21708,24 @@ var LEDGER_CAUSES = [
   "sevenDiscard",
   "unattributed"
 ];
+var SAMPLE_KINDS = ["setupEnd", "turnEnd", "gameEnd"];
+var BUILD_KINDS = [
+  "road",
+  "settlement",
+  "city",
+  "cityWall",
+  "improvement",
+  "metropolis"
+];
+var TIMELINE_UNAVAILABLE_REASONS = [
+  "limitExceeded",
+  "missingEffects",
+  "finalMismatch",
+  "setupIncomplete",
+  "invalidTimeline",
+  "notRecorded",
+  "replayMismatch"
+];
 
 // packages/core/src/analysis/timeline-schemas.ts
 var seatId = external_exports.string().min(1).max(100);
@@ -21731,7 +21756,7 @@ var PieceCountsSchema = external_exports.object({
 var TurnSampleSchema = external_exports.object({
   ordinal: nonNegInt(),
   turn: nonNegInt(),
-  kind: external_exports.enum(["setupEnd", "turnEnd", "gameEnd"]),
+  kind: external_exports.enum(SAMPLE_KINDS),
   seat: seatId.nullable(),
   vp: vector,
   handSize: vector,
@@ -21756,7 +21781,7 @@ var TimelineMarkerSchema = external_exports.discriminatedUnion("kind", [
     kind: external_exports.literal("build"),
     ...markerBase,
     seat: seatId,
-    build: external_exports.enum(["road", "settlement", "city", "cityWall", "improvement", "metropolis"]),
+    build: external_exports.enum(BUILD_KINDS),
     setup: external_exports.boolean(),
     free: external_exports.boolean()
   }).strict(),
@@ -21778,25 +21803,16 @@ var SeatPrivateLedgerSchema = external_exports.object({
   finalHand: MaterialCountsSchema
 }).strict();
 var SeatRecordSchema = external_exports.object({ public: SeatPublicTotalsSchema, private: SeatPrivateLedgerSchema }).strict();
-var seatRecord = (value) => prototypeSafeRecordSchema(value);
 var samples = external_exports.array(TurnSampleSchema).max(TIMELINE_LIMITS.samples);
 var markers = external_exports.array(TimelineMarkerSchema).max(TIMELINE_LIMITS.markers);
 var diagnostics = external_exports.object({ unattributedSteps: nonNegInt() }).strict();
-var TimelineUnavailableReasonSchema = external_exports.enum([
-  "limitExceeded",
-  "missingEffects",
-  "finalMismatch",
-  "setupIncomplete",
-  "invalidTimeline",
-  "notRecorded",
-  "replayMismatch"
-]);
+var TimelineUnavailableReasonSchema = external_exports.enum(TIMELINE_UNAVAILABLE_REASONS);
 var GameTimelineSchema = external_exports.object({
   version: external_exports.literal(TIMELINE_VERSION),
   seatIds: seatIdList,
   turns: samples,
   markers,
-  seats: seatRecord(SeatRecordSchema),
+  seats: prototypeSafeRecordSchema(SeatRecordSchema),
   diagnostics
 }).strict();
 var TimelineRecorderStateSchema = external_exports.object({
@@ -21810,9 +21826,9 @@ var TimelineRecorderStateSchema = external_exports.object({
   step: nonNegInt(),
   samples,
   markers,
-  seats: seatRecord(SeatRecordSchema),
-  lastHands: seatRecord(MaterialCountsSchema),
-  lastPieces: seatRecord(PieceCountsSchema),
+  seats: prototypeSafeRecordSchema(SeatRecordSchema),
+  lastHands: prototypeSafeRecordSchema(MaterialCountsSchema),
+  lastPieces: prototypeSafeRecordSchema(PieceCountsSchema),
   lastVp: vector,
   lastWinner: seatId.nullable(),
   unattributedSteps: nonNegInt()
@@ -21822,7 +21838,7 @@ var ProjectedTimelineSchema = external_exports.object({
   seatIds: seatIdList,
   turns: samples,
   markers,
-  publicTotals: seatRecord(SeatPublicTotalsSchema),
+  publicTotals: prototypeSafeRecordSchema(SeatPublicTotalsSchema),
   viewerLedger: external_exports.object({ seatId, ledger: SeatPrivateLedgerSchema }).strict().nullable(),
   diagnostics
 }).strict();
@@ -27445,6 +27461,9 @@ function passesExecutionSafetyVetoes(risk) {
 function tradeBundleKey(items) {
   return [...items].sort((a, b) => a.type === b.type ? a.count - b.count : a.type.localeCompare(b.type)).map((item) => `${item.type}:${item.count}`).join("|");
 }
+function tradeTermsKey(offer, want) {
+  return `${tradeBundleKey(offer)}>${tradeBundleKey(want)}`;
+}
 
 // bot/src/bot/trade-decline-history.ts
 var DECLINE_KEYS_CACHE = /* @__PURE__ */ new WeakMap();
@@ -27866,10 +27885,11 @@ var proposalConfirmUtilityByState = /* @__PURE__ */ new WeakMap();
 function proposalWouldBeConfirmCanceled(ctx, action, projection, tradeCtx) {
   const self2 = selfPlayer(ctx.state, ctx.actingPlayerId);
   if (self2 === null) return false;
+  const forcedWin = () => tradeUnlocksForcedSelfWin(tradeCtx, self2, action.want, action.offer);
   const target = ctx.state.victoryPointsTarget;
   const botOneFromWin = self2.victoryPoints >= target - ONE_FROM_WIN;
   if (!botOneFromWin && action.targetPlayerId !== void 0 && effectiveOpponentVp(ctx.state, action.targetPlayerId, ctx.tuning) >= target - TWO_FROM_WIN) {
-    return true;
+    return !forcedWin();
   }
   const scalingCanMatter = ctx.tuning.tradeCompletionVpLeverage !== 0 && self2.victoryPoints > target - FIVE_FROM_WIN;
   const scalingPreservesGate = ctx.tuning.tradeProjectionPositiveBonusCap >= 24 && ctx.tuning.tradeProjectionNegativeBonusFloor >= -24 && ctx.tuning.tradeCompletionVpLeverage >= 0;
@@ -27895,7 +27915,7 @@ function proposalWouldBeConfirmCanceled(ctx, action, projection, tradeCtx) {
     () => evaluatePlayerStateUtility(ctx.state, ctx.actingPlayerId)
   );
   const utilityCancels = tighten ? utilityGain < ctx.tuning.confirmUtilityFloor : utilityGain < 0;
-  return utilityCancels && !tradeUnlocksForcedSelfWin(tradeCtx, self2, action.want, action.offer);
+  return utilityCancels && !forcedWin();
 }
 function generosityBonus(ctx, offerCount, wantCount, projection) {
   const perCard = Math.max(0, ctx.tuning.tradeGenerosityPerExtraCardBonus);
@@ -28618,7 +28638,7 @@ function buildDeterminizationConstraints(input2) {
     { ...aggregates.opponentResourceAggregates, ...aggregates.opponentCommodityAggregates },
     rowTotals,
     opponentIds,
-    collectStandingWantFloors(input2.state, opponentIds)
+    mergeFloors(collectStandingWantFloors(input2.state, opponentIds), input2.countedFloors)
   );
   if (!materials.ok) return { feasible: false, code: materials.code, detail: materials.detail };
   return {
@@ -28636,6 +28656,18 @@ function collectStandingWantFloors(state, opponentIds) {
     floors[id] = row;
   }
   return floors;
+}
+function mergeFloors(base, extra) {
+  if (extra === void 0) return base;
+  const merged = emptyStringRecord();
+  for (const id of /* @__PURE__ */ new Set([...Object.keys(base), ...Object.keys(extra)])) {
+    const row = { ...base[id] };
+    for (const [type, floor] of Object.entries(extra[id] ?? {})) {
+      row[type] = Math.max(row[type] ?? 0, floor);
+    }
+    merged[id] = row;
+  }
+  return merged;
 }
 function buildBucketConstraints(types, columnAggregates, rowTotals, opponentIds, provenFloors) {
   const columnSums = {};
@@ -28703,240 +28735,6 @@ function buildBucketConstraints(types, columnAggregates, rowTotals, opponentIds,
     ok: true,
     value: { types, columnSums, rowTotals, floors, cellCaps }
   };
-}
-
-// packages/core/src/dice/fnv1a.ts
-function fnv1aUtf16(value) {
-  let hash2 = 2166136261;
-  for (let index = 0; index < value.length; index++) {
-    hash2 ^= value.charCodeAt(index);
-    hash2 = Math.imul(hash2, 16777619);
-  }
-  return hash2 >>> 0;
-}
-
-// bot/src/util/seeded-rng.ts
-function createLcg(seedText) {
-  let state = fnv1aUtf16(seedText);
-  return () => {
-    state = Math.imul(state, 1664525) + 1013904223 >>> 0;
-    return state / 4294967296;
-  };
-}
-function createSeededRng(seed) {
-  const lcg = createLcg(seed);
-  return { next: lcg };
-}
-
-// bot/src/determinize/hand-sampler.ts
-var WEIGHT_EPSILON = 1e-6;
-var IPF_MAX_ITERATIONS = 200;
-var IPF_TOLERANCE = 1e-10;
-function prepareFreeTable(spec) {
-  const rowCount = spec.rowIds.length;
-  const colCount = spec.colIds.length;
-  const floors = [];
-  const freeRow = [];
-  const floorColSums = new Array(colCount).fill(0);
-  for (let r = 0; r < rowCount; r++) {
-    const rowId = spec.rowIds[r] ?? "";
-    const row = [];
-    let floorSum = 0;
-    for (let c = 0; c < colCount; c++) {
-      const colId = spec.colIds[c] ?? "";
-      const floor = spec.floors?.[rowId]?.[colId] ?? 0;
-      if (!Number.isInteger(floor) || floor < 0) {
-        throw new Error(`table floor (${rowId}, ${colId}) = ${floor} is not a nonnegative integer`);
-      }
-      row.push(floor);
-      floorSum += floor;
-      floorColSums[c] = (floorColSums[c] ?? 0) + floor;
-    }
-    floors.push(row);
-    const total = spec.rowTotals[rowId] ?? 0;
-    const free = total - floorSum;
-    if (!Number.isInteger(total) || free < 0) {
-      throw new Error(`row ${rowId}: floors sum ${floorSum} exceeds row total ${total}`);
-    }
-    freeRow.push(free);
-  }
-  const freeCol = [];
-  for (let c = 0; c < colCount; c++) {
-    const colId = spec.colIds[c] ?? "";
-    const total = spec.colTotals[colId] ?? 0;
-    const free = total - (floorColSums[c] ?? 0);
-    if (!Number.isInteger(total) || free < 0) {
-      throw new Error(
-        `column ${colId}: floors sum ${floorColSums[c] ?? 0} exceeds column total ${total}`
-      );
-    }
-    freeCol.push(free);
-  }
-  const rowSum = freeRow.reduce((a, b) => a + b, 0);
-  const colSum = freeCol.reduce((a, b) => a + b, 0);
-  if (rowSum !== colSum) {
-    throw new Error(`inconsistent margins: free rows sum to ${rowSum}, free columns to ${colSum}`);
-  }
-  const expected = [];
-  for (let r = 0; r < rowCount; r++) {
-    const rowId = spec.rowIds[r] ?? "";
-    const row = [];
-    for (let c = 0; c < colCount; c++) {
-      const colId = spec.colIds[c] ?? "";
-      if ((freeRow[r] ?? 0) <= 0 || (freeCol[c] ?? 0) <= 0) {
-        row.push(0);
-        continue;
-      }
-      const raw = (spec.priors?.[rowId]?.[colId] ?? 0) - (floors[r]?.[c] ?? 0);
-      row.push(Math.max(raw, WEIGHT_EPSILON));
-    }
-    expected.push(row);
-  }
-  runIpf(expected, freeRow, freeCol);
-  return { rowCount, colCount, freeRow, freeCol, floors, expected };
-}
-function runIpf(cells, rowTargets, colTargets) {
-  const rowCount = rowTargets.length;
-  const colCount = colTargets.length;
-  for (let iter = 0; iter < IPF_MAX_ITERATIONS; iter++) {
-    for (let r = 0; r < rowCount; r++) {
-      const row = cells[r] ?? [];
-      let sum = 0;
-      for (let c = 0; c < colCount; c++) sum += row[c] ?? 0;
-      if (sum <= 0) continue;
-      const scale = (rowTargets[r] ?? 0) / sum;
-      for (let c = 0; c < colCount; c++) row[c] = (row[c] ?? 0) * scale;
-    }
-    let maxError = 0;
-    for (let c = 0; c < colCount; c++) {
-      let sum = 0;
-      for (let r = 0; r < rowCount; r++) sum += cells[r]?.[c] ?? 0;
-      const target = colTargets[c] ?? 0;
-      maxError = Math.max(maxError, Math.abs(sum - target));
-      if (sum <= 0) continue;
-      const scale = target / sum;
-      for (let r = 0; r < rowCount; r++) {
-        const row = cells[r];
-        if (row !== void 0) row[c] = (row[c] ?? 0) * scale;
-      }
-    }
-    if (maxError < IPF_TOLERANCE) break;
-  }
-}
-function sampleFreeTable(free, rng) {
-  const { rowCount, colCount, freeRow, freeCol, expected } = free;
-  const cells = Array.from(
-    { length: rowCount },
-    () => new Array(colCount).fill(0)
-  );
-  const remaining = freeRow.slice();
-  const cards = [];
-  for (let c = 0; c < colCount; c++) {
-    for (let unit = 0; unit < (freeCol[c] ?? 0); unit++) cards.push(c);
-  }
-  for (let i = cards.length - 1; i > 0; i--) {
-    const j = Math.floor(rng.next() * (i + 1));
-    const card2 = cards[i] ?? 0;
-    cards[i] = cards[j] ?? 0;
-    cards[j] = card2;
-  }
-  for (const c of cards) {
-    let total = 0;
-    for (let r = 0; r < rowCount; r++) {
-      const slots = remaining[r] ?? 0;
-      if (slots > 0) {
-        total += slots * Math.max(expected[r]?.[c] ?? 0, WEIGHT_EPSILON) / (freeRow[r] ?? 1);
-      }
-    }
-    if (total <= 0) throw new Error(`sampling infeasible at column ${c}`);
-    let pick2 = rng.next() * total;
-    let chosen = -1;
-    for (let r = 0; r < rowCount; r++) {
-      const slots = remaining[r] ?? 0;
-      if (slots <= 0) continue;
-      pick2 -= slots * Math.max(expected[r]?.[c] ?? 0, WEIGHT_EPSILON) / (freeRow[r] ?? 1);
-      chosen = r;
-      if (pick2 < 0) break;
-    }
-    if (chosen < 0) throw new Error(`sampling failed to choose a row at column ${c}`);
-    const row = cells[chosen];
-    if (row === void 0) throw new Error(`sampling: missing row ${chosen}`);
-    row[c] = (row[c] ?? 0) + 1;
-    remaining[chosen] = (remaining[chosen] ?? 0) - 1;
-  }
-  return cells;
-}
-function handSampleSeed(parts, sampleIndex) {
-  return `det:${parts.version}:${parts.turnNumber}:${parts.playerId}:${sampleIndex}:hands`;
-}
-function bucketSpec(bucket, opponentIds, priors) {
-  const priorTable = emptyStringRecord();
-  for (const id of opponentIds) {
-    const row = {};
-    const estimated = priors[id] ?? {};
-    for (const t of bucket.types) row[t] = Math.max(estimated[t] ?? 0, 0);
-    priorTable[id] = row;
-  }
-  return {
-    rowIds: opponentIds,
-    colIds: bucket.types,
-    rowTotals: bucket.rowTotals,
-    colTotals: bucket.columnSums,
-    floors: bucket.floors,
-    priors: priorTable
-  };
-}
-function emptyHand() {
-  return { resources: {}, commodities: {} };
-}
-function addToHand(hand, type, count2) {
-  if (count2 <= 0) return;
-  if (isResourceType(type)) hand.resources[type] = count2;
-  else if (isCommodityType(type)) hand.commodities[type] = count2;
-}
-function fittedHands(constraints, priors) {
-  const { types } = constraints.materials;
-  const free = prepareFreeTable(bucketSpec(constraints.materials, constraints.opponentIds, priors));
-  const out = emptyStringRecord();
-  constraints.opponentIds.forEach((id, row) => {
-    const hand = {};
-    for (let col = 0; col < types.length; col++) {
-      const type = types[col];
-      if (type === void 0) continue;
-      const count2 = (free.expected[row]?.[col] ?? 0) + (free.floors[row]?.[col] ?? 0);
-      if (count2 > 0) hand[type] = count2;
-    }
-    out[id] = hand;
-  });
-  return out;
-}
-function sampleHands(constraints, priors, k, seedParts) {
-  if (!Number.isInteger(k) || k <= 0) return [];
-  const { types } = constraints.materials;
-  const free = prepareFreeTable(bucketSpec(constraints.materials, constraints.opponentIds, priors));
-  const out = [];
-  for (let sampleIndex = 1; sampleIndex <= k; sampleIndex++) {
-    const rng = createSeededRng(handSampleSeed(seedParts, sampleIndex));
-    const cells = sampleFreeTable(free, rng);
-    const hands = emptyStringRecord();
-    const { opponentIds } = constraints;
-    for (let row = 0; row < opponentIds.length; row++) {
-      hands[opponentIds[row] ?? ""] = handFromCells(types, free, cells, row);
-    }
-    out.push(hands);
-  }
-  return out;
-}
-function handFromCells(types, free, cells, row) {
-  const hand = emptyHand();
-  const cellRow = cells[row];
-  const floorRow = free.floors[row];
-  for (let col = 0; col < types.length; col++) {
-    const type = types[col];
-    if (type === void 0) continue;
-    addToHand(hand, type, (cellRow?.[col] ?? 0) + (floorRow?.[col] ?? 0));
-  }
-  return hand;
 }
 
 // bot/src/payload-narrow.ts
@@ -29368,6 +29166,499 @@ function improveCityCostHint(action) {
   return track === null ? {} : { [trackCommodity(track)]: 1 };
 }
 
+// bot/src/opponents/public-hand-floors.ts
+var NO_TRANSFER_HANDLERS = /* @__PURE__ */ new Set([
+  "revealGain1Vp",
+  "removeOpenRoad",
+  "activateAllOwnKnights",
+  "stealProgressCard",
+  "displaceOpponentKnightWithoutUsingOwnKnightAction",
+  "removeOpponentKnightChosenByTargetAndOptionallyPlaceOwnKnight",
+  "setProductionDice",
+  "buildFreeCityWall",
+  "swapNumberTokens",
+  "buildUpToTwoFreeRoads",
+  "freeKnightPromotions",
+  "takeMerchantControl",
+  "enableTemp2To1ForType",
+  // Gains ride on the play as `cardGain`; nobody else loses a card.
+  "gainPerAdjacentFields",
+  "gainPerAdjacentMountains",
+  // Costs ride on the play; handled as embedded builds below.
+  "buildCityReducedCost",
+  "reduceCityImprovementCost"
+]);
+var MONOPOLY_HANDLERS = /* @__PURE__ */ new Set([
+  "collectResourceFromAllPlayers",
+  "collectCommodityFromAllPlayers"
+]);
+var NO_MATERIAL_ACTIONS = /* @__PURE__ */ new Set([
+  ActionType.RollDice,
+  ActionType.EndTurn,
+  ActionType.DomesticTradePropose,
+  ActionType.DomesticTradeCancel,
+  ActionType.DomesticTradePass,
+  ActionType.SetStandingWant,
+  ActionType.ClearStandingWant,
+  ActionType.MoveKnight,
+  ActionType.DisplaceKnight,
+  ActionType.ChooseProgressDeck,
+  ActionType.ChooseStealTarget,
+  ActionType.ChoosePillageCity,
+  ActionType.ChooseMetropolisCity,
+  ActionType.DiscardProgress,
+  ActionType.PlaceSetupBuilding,
+  ActionType.PlaceSetupRoad,
+  ActionType.SkipRoadBuilding,
+  ActionType.Resign
+]);
+var ROBBER_MOVE_ACTIONS = /* @__PURE__ */ new Set([ActionType.ChooseRobberHex, ActionType.ChaseRobber]);
+var Ledger = class {
+  floors = /* @__PURE__ */ new Map();
+  gain(playerId, type, count2) {
+    if (count2 <= 0 || playerId === "") return;
+    let row = this.floors.get(playerId);
+    if (row === void 0) {
+      row = /* @__PURE__ */ new Map();
+      this.floors.set(playerId, row);
+    }
+    row.set(type, (row.get(type) ?? 0) + count2);
+  }
+  spend(playerId, type, count2) {
+    const row = this.floors.get(playerId);
+    if (row === void 0 || count2 <= 0) return;
+    const next = (row.get(type) ?? 0) - count2;
+    if (next > 0) row.set(type, next);
+    else row.delete(type);
+  }
+  /** `count` cards of unknown type may have left `playerId`. */
+  loseUnknown(playerId, count2) {
+    const row = this.floors.get(playerId);
+    if (row === void 0 || count2 <= 0) return;
+    for (const [type, held] of [...row]) {
+      if (held > count2) row.set(type, held - count2);
+      else row.delete(type);
+    }
+  }
+  clearType(playerId, type) {
+    this.floors.get(playerId)?.delete(type);
+  }
+  playerIds() {
+    return [...this.floors.keys()];
+  }
+  reset() {
+    this.floors.clear();
+  }
+  snapshot(except) {
+    const out = {};
+    for (const [id, row] of this.floors) {
+      if (id === except || row.size === 0) continue;
+      out[id] = Object.fromEntries(row);
+    }
+    return out;
+  }
+};
+function gainAll(ledger, playerId, lines) {
+  for (const line of lines) ledger.gain(playerId, line.type, line.count);
+}
+function spendAll(ledger, playerId, lines) {
+  for (const line of lines) ledger.spend(playerId, line.type, line.count);
+}
+function spendCost(ledger, playerId, cost) {
+  for (const [type, count2] of Object.entries(cost)) {
+    if (count2 !== void 0) ledger.spend(playerId, type, count2);
+  }
+}
+function bookProduction(ledger, productionRaw) {
+  const production = readObject(productionRaw);
+  if (production === null) return;
+  for (const [playerId, entryRaw] of Object.entries(production)) {
+    const received = readObject(readObject(entryRaw)?.["gains"]);
+    if (received === null) continue;
+    for (const [type, count2] of Object.entries(received)) {
+      if (!isMaterialType(type) || typeof count2 !== "number" || !Number.isInteger(count2)) continue;
+      ledger.gain(playerId, type, count2);
+    }
+  }
+}
+function computePublicHandFloors(events, state, selfId) {
+  const ledger = new Ledger();
+  const improvementCosts = inferPublicImprovementCosts(events, state);
+  const everyoneBut = (actorId) => Object.keys(state.players).filter((id) => id !== actorId);
+  for (const event of events) {
+    if (event.type !== GameEventType.ActionApplied) continue;
+    bookProduction(ledger, event.payload.production);
+    const actorId = event.actingPlayerId;
+    const action = readObject(event.payload.action);
+    const rawType = action === null ? null : readString(action["type"]);
+    if (actorId === null || actorId === "" || action === null || rawType === null) {
+      ledger.reset();
+      continue;
+    }
+    if (NO_MATERIAL_ACTIONS.has(rawType)) continue;
+    if (ROBBER_MOVE_ACTIONS.has(rawType)) {
+      for (const id of everyoneBut(actorId)) ledger.loseUnknown(id, 1);
+      continue;
+    }
+    switch (rawType) {
+      case ActionType.ChooseScienceBonusResource: {
+        const resource = readString(action["resource"]);
+        if (resource !== null && isMaterialType(resource)) ledger.gain(actorId, resource, 1);
+        else ledger.reset();
+        continue;
+      }
+      case ActionType.DiscardHalf: {
+        const count2 = action["cardCount"];
+        const cards = action["cards"];
+        const n = typeof count2 === "number" ? count2 : Array.isArray(cards) ? cards.length : Number.NaN;
+        if (Number.isInteger(n)) ledger.loseUnknown(actorId, n);
+        else ledger.reset();
+        continue;
+      }
+      case ActionType.MaritimeTrade: {
+        const offer = readTradeSelection(action["offer"]);
+        const want = readTradeSelection(action["want"]);
+        if (offer === null || want === null) {
+          ledger.reset();
+          continue;
+        }
+        ledger.spend(actorId, offer.type, offer.count);
+        ledger.gain(actorId, want.type, want.count);
+        gainAll(ledger, actorId, readTradeSelections(action["additionalWants"]) ?? []);
+        continue;
+      }
+      case ActionType.DomesticTradeAward:
+      case ActionType.DomesticTradeBid: {
+        const details = readObject(action["tradeDetails"]);
+        if (details === null) {
+          if (rawType === ActionType.DomesticTradeAward) ledger.reset();
+          continue;
+        }
+        const proposerId = readString(details["proposerId"]);
+        if (rawType === ActionType.DomesticTradeBid && (proposerId === null || proposerId === "")) {
+          continue;
+        }
+        const accepterId = readString(details["accepterId"]) ?? (rawType === ActionType.DomesticTradeBid ? actorId : null);
+        const offer = readTradeSelections(details["offer"]);
+        const want = readTradeSelections(details["want"]);
+        const proposer = proposerId ?? (rawType === ActionType.DomesticTradeAward ? actorId : null);
+        if (proposer === null || accepterId === null || offer === null || want === null) {
+          ledger.reset();
+          continue;
+        }
+        spendAll(ledger, proposer, offer);
+        spendAll(ledger, accepterId, want);
+        gainAll(ledger, proposer, want);
+        gainAll(ledger, accepterId, offer);
+        continue;
+      }
+      case ActionType.ExecuteStandingWant: {
+        const details = readStandingWantExecutionDetails(action["standingWantDetails"]);
+        if (details === null || details.posterId === "") {
+          ledger.reset();
+          continue;
+        }
+        spendAll(ledger, details.posterId, details.offer);
+        spendAll(ledger, actorId, details.want);
+        gainAll(ledger, actorId, details.offer);
+        gainAll(ledger, details.posterId, details.want);
+        continue;
+      }
+      case ActionType.ImproveCity: {
+        const track = asCommodityTrack(action["track"]);
+        const cost = improvementCosts.get(event.sequence);
+        if (track === null) ledger.reset();
+        else if (cost === void 0) ledger.clearType(actorId, trackCommodity(track));
+        else ledger.spend(actorId, trackCommodity(track), cost);
+        continue;
+      }
+      case ActionType.PlayProgressCard: {
+        const cardId = readString(action["cardId"]);
+        const handler = cardId === null ? void 0 : ALL_CARDS_BY_ID.get(cardId)?.effectHandler;
+        if (handler !== void 0 && MONOPOLY_HANDLERS.has(handler)) {
+          const monopoly = readObject(action["monopoly"]);
+          const type = readString(monopoly?.["type"]);
+          const total = monopoly?.["total"];
+          if (type === null || !isMaterialType(type)) {
+            ledger.reset();
+            continue;
+          }
+          for (const id of everyoneBut(actorId)) ledger.clearType(id, type);
+          if (typeof total === "number" && Number.isInteger(total))
+            ledger.gain(actorId, type, total);
+          continue;
+        }
+        if (handler === void 0 || !NO_TRANSFER_HANDLERS.has(handler)) {
+          ledger.reset();
+          continue;
+        }
+        const gain = readObject(action["cardGain"]);
+        const gainType = readString(gain?.["resourceType"]);
+        const amount = gain?.["amount"];
+        if (gainType !== null && isMaterialType(gainType) && typeof amount === "number") {
+          ledger.gain(actorId, gainType, amount);
+        }
+        if (action["skip"] !== true && handler === "buildCityReducedCost") {
+          spendCost(ledger, actorId, cityCostFor(true));
+        }
+        if (action["skip"] !== true && handler === "reduceCityImprovementCost") {
+          const track = asCommodityTrack(action["track"]);
+          const cost = improvementCosts.get(event.sequence);
+          if (track !== null && cost !== void 0)
+            ledger.spend(actorId, trackCommodity(track), cost);
+          else if (track !== null) ledger.clearType(actorId, trackCommodity(track));
+          else ledger.reset();
+        }
+        continue;
+      }
+      default: {
+        const typed = asActionType(rawType);
+        const cost = typed === null ? void 0 : ACTION_COSTS[typed];
+        if (cost === void 0) {
+          ledger.reset();
+          continue;
+        }
+        spendCost(ledger, actorId, cost);
+      }
+    }
+  }
+  return ledger.snapshot(selfId);
+}
+
+// packages/core/src/dice/fnv1a.ts
+function fnv1aUtf16(value) {
+  let hash2 = 2166136261;
+  for (let index = 0; index < value.length; index++) {
+    hash2 ^= value.charCodeAt(index);
+    hash2 = Math.imul(hash2, 16777619);
+  }
+  return hash2 >>> 0;
+}
+
+// bot/src/util/seeded-rng.ts
+function createLcg(seedText) {
+  let state = fnv1aUtf16(seedText);
+  return () => {
+    state = Math.imul(state, 1664525) + 1013904223 >>> 0;
+    return state / 4294967296;
+  };
+}
+function createSeededRng(seed) {
+  const lcg = createLcg(seed);
+  return { next: lcg };
+}
+
+// bot/src/determinize/hand-sampler.ts
+var WEIGHT_EPSILON = 1e-6;
+var IPF_MAX_ITERATIONS = 200;
+var IPF_TOLERANCE = 1e-10;
+function prepareFreeTable(spec) {
+  const rowCount = spec.rowIds.length;
+  const colCount = spec.colIds.length;
+  const floors = [];
+  const freeRow = [];
+  const floorColSums = new Array(colCount).fill(0);
+  for (let r = 0; r < rowCount; r++) {
+    const rowId = spec.rowIds[r] ?? "";
+    const row = [];
+    let floorSum = 0;
+    for (let c = 0; c < colCount; c++) {
+      const colId = spec.colIds[c] ?? "";
+      const floor = spec.floors?.[rowId]?.[colId] ?? 0;
+      if (!Number.isInteger(floor) || floor < 0) {
+        throw new Error(`table floor (${rowId}, ${colId}) = ${floor} is not a nonnegative integer`);
+      }
+      row.push(floor);
+      floorSum += floor;
+      floorColSums[c] = (floorColSums[c] ?? 0) + floor;
+    }
+    floors.push(row);
+    const total = spec.rowTotals[rowId] ?? 0;
+    const free = total - floorSum;
+    if (!Number.isInteger(total) || free < 0) {
+      throw new Error(`row ${rowId}: floors sum ${floorSum} exceeds row total ${total}`);
+    }
+    freeRow.push(free);
+  }
+  const freeCol = [];
+  for (let c = 0; c < colCount; c++) {
+    const colId = spec.colIds[c] ?? "";
+    const total = spec.colTotals[colId] ?? 0;
+    const free = total - (floorColSums[c] ?? 0);
+    if (!Number.isInteger(total) || free < 0) {
+      throw new Error(
+        `column ${colId}: floors sum ${floorColSums[c] ?? 0} exceeds column total ${total}`
+      );
+    }
+    freeCol.push(free);
+  }
+  const rowSum = freeRow.reduce((a, b) => a + b, 0);
+  const colSum = freeCol.reduce((a, b) => a + b, 0);
+  if (rowSum !== colSum) {
+    throw new Error(`inconsistent margins: free rows sum to ${rowSum}, free columns to ${colSum}`);
+  }
+  const expected = [];
+  for (let r = 0; r < rowCount; r++) {
+    const rowId = spec.rowIds[r] ?? "";
+    const row = [];
+    for (let c = 0; c < colCount; c++) {
+      const colId = spec.colIds[c] ?? "";
+      if ((freeRow[r] ?? 0) <= 0 || (freeCol[c] ?? 0) <= 0) {
+        row.push(0);
+        continue;
+      }
+      const raw = (spec.priors?.[rowId]?.[colId] ?? 0) - (floors[r]?.[c] ?? 0);
+      row.push(Math.max(raw, WEIGHT_EPSILON));
+    }
+    expected.push(row);
+  }
+  runIpf(expected, freeRow, freeCol);
+  return { rowCount, colCount, freeRow, freeCol, floors, expected };
+}
+function runIpf(cells, rowTargets, colTargets) {
+  const rowCount = rowTargets.length;
+  const colCount = colTargets.length;
+  for (let iter = 0; iter < IPF_MAX_ITERATIONS; iter++) {
+    for (let r = 0; r < rowCount; r++) {
+      const row = cells[r] ?? [];
+      let sum = 0;
+      for (let c = 0; c < colCount; c++) sum += row[c] ?? 0;
+      if (sum <= 0) continue;
+      const scale = (rowTargets[r] ?? 0) / sum;
+      for (let c = 0; c < colCount; c++) row[c] = (row[c] ?? 0) * scale;
+    }
+    let maxError = 0;
+    for (let c = 0; c < colCount; c++) {
+      let sum = 0;
+      for (let r = 0; r < rowCount; r++) sum += cells[r]?.[c] ?? 0;
+      const target = colTargets[c] ?? 0;
+      maxError = Math.max(maxError, Math.abs(sum - target));
+      if (sum <= 0) continue;
+      const scale = target / sum;
+      for (let r = 0; r < rowCount; r++) {
+        const row = cells[r];
+        if (row !== void 0) row[c] = (row[c] ?? 0) * scale;
+      }
+    }
+    if (maxError < IPF_TOLERANCE) break;
+  }
+}
+function sampleFreeTable(free, rng) {
+  const { rowCount, colCount, freeRow, freeCol, expected } = free;
+  const cells = Array.from(
+    { length: rowCount },
+    () => new Array(colCount).fill(0)
+  );
+  const remaining = freeRow.slice();
+  const cards = [];
+  for (let c = 0; c < colCount; c++) {
+    for (let unit = 0; unit < (freeCol[c] ?? 0); unit++) cards.push(c);
+  }
+  for (let i = cards.length - 1; i > 0; i--) {
+    const j = Math.floor(rng.next() * (i + 1));
+    const card2 = cards[i] ?? 0;
+    cards[i] = cards[j] ?? 0;
+    cards[j] = card2;
+  }
+  for (const c of cards) {
+    let total = 0;
+    for (let r = 0; r < rowCount; r++) {
+      const slots = remaining[r] ?? 0;
+      if (slots > 0) {
+        total += slots * Math.max(expected[r]?.[c] ?? 0, WEIGHT_EPSILON) / (freeRow[r] ?? 1);
+      }
+    }
+    if (total <= 0) throw new Error(`sampling infeasible at column ${c}`);
+    let pick2 = rng.next() * total;
+    let chosen = -1;
+    for (let r = 0; r < rowCount; r++) {
+      const slots = remaining[r] ?? 0;
+      if (slots <= 0) continue;
+      pick2 -= slots * Math.max(expected[r]?.[c] ?? 0, WEIGHT_EPSILON) / (freeRow[r] ?? 1);
+      chosen = r;
+      if (pick2 < 0) break;
+    }
+    if (chosen < 0) throw new Error(`sampling failed to choose a row at column ${c}`);
+    const row = cells[chosen];
+    if (row === void 0) throw new Error(`sampling: missing row ${chosen}`);
+    row[c] = (row[c] ?? 0) + 1;
+    remaining[chosen] = (remaining[chosen] ?? 0) - 1;
+  }
+  return cells;
+}
+function handSampleSeed(parts, sampleIndex) {
+  return `det:${parts.version}:${parts.turnNumber}:${parts.playerId}:${sampleIndex}:hands`;
+}
+function bucketSpec(bucket, opponentIds, priors) {
+  const priorTable = emptyStringRecord();
+  for (const id of opponentIds) {
+    const row = {};
+    const estimated = priors[id] ?? {};
+    for (const t of bucket.types) row[t] = Math.max(estimated[t] ?? 0, 0);
+    priorTable[id] = row;
+  }
+  return {
+    rowIds: opponentIds,
+    colIds: bucket.types,
+    rowTotals: bucket.rowTotals,
+    colTotals: bucket.columnSums,
+    floors: bucket.floors,
+    priors: priorTable
+  };
+}
+function emptyHand() {
+  return { resources: {}, commodities: {} };
+}
+function addToHand(hand, type, count2) {
+  if (count2 <= 0) return;
+  if (isResourceType(type)) hand.resources[type] = count2;
+  else if (isCommodityType(type)) hand.commodities[type] = count2;
+}
+function fittedHands(constraints, priors) {
+  const { types } = constraints.materials;
+  const free = prepareFreeTable(bucketSpec(constraints.materials, constraints.opponentIds, priors));
+  const out = emptyStringRecord();
+  constraints.opponentIds.forEach((id, row) => {
+    const hand = {};
+    for (let col = 0; col < types.length; col++) {
+      const type = types[col];
+      if (type === void 0) continue;
+      const count2 = (free.expected[row]?.[col] ?? 0) + (free.floors[row]?.[col] ?? 0);
+      if (count2 > 0) hand[type] = count2;
+    }
+    out[id] = hand;
+  });
+  return out;
+}
+function sampleHands(constraints, priors, k, seedParts) {
+  if (!Number.isInteger(k) || k <= 0) return [];
+  const { types } = constraints.materials;
+  const free = prepareFreeTable(bucketSpec(constraints.materials, constraints.opponentIds, priors));
+  const out = [];
+  for (let sampleIndex = 1; sampleIndex <= k; sampleIndex++) {
+    const rng = createSeededRng(handSampleSeed(seedParts, sampleIndex));
+    const cells = sampleFreeTable(free, rng);
+    const hands = emptyStringRecord();
+    const { opponentIds } = constraints;
+    for (let row = 0; row < opponentIds.length; row++) {
+      hands[opponentIds[row] ?? ""] = handFromCells(types, free, cells, row);
+    }
+    out.push(hands);
+  }
+  return out;
+}
+function handFromCells(types, free, cells, row) {
+  const hand = emptyHand();
+  const cellRow = cells[row];
+  const floorRow = free.floors[row];
+  for (let col = 0; col < types.length; col++) {
+    const type = types[col];
+    if (type === void 0) continue;
+    addToHand(hand, type, (cellRow?.[col] ?? 0) + (floorRow?.[col] ?? 0));
+  }
+  return hand;
+}
+
 // bot/src/opponents/acceptance-learning.ts
 function observedAppetiteBaseline(config2, indexes, opponentId) {
   const baseline = config2.appetiteBaseline;
@@ -29536,7 +29827,12 @@ function createOpponentModel(state, playerId, recentEvents, options = {}) {
   }
   function determinizationConstraints() {
     if (constraintsCache !== void 0) return constraintsCache;
-    const result = buildDeterminizationConstraints({ state, playerId });
+    const counted = options.publicHandFloors === true ? buildDeterminizationConstraints({
+      state,
+      playerId,
+      countedFloors: computePublicHandFloors(recentEvents, state, playerId)
+    }) : null;
+    const result = counted?.feasible === true ? counted : buildDeterminizationConstraints({ state, playerId });
     constraintsCache = result.feasible ? result.constraints : null;
     return constraintsCache;
   }
@@ -29983,7 +30279,6 @@ var InvalidBotProjectionError = class extends Error {
     this.name = "InvalidBotProjectionError";
   }
 };
-var RECENT_EVENTS_HARD_CAP = BOT_RECENT_EVENTS_WINDOW;
 function buildBotContext(request, tuning) {
   const actingPlayer = request.state.players[request.playerId];
   const selfPlayerIds = Object.entries(request.state.players).filter(([, player]) => isSelf(player)).map(([playerId]) => playerId);
@@ -29992,7 +30287,7 @@ function buildBotContext(request, tuning) {
       `buildBotContext: playerId "${request.playerId}" is not the sole self projection in game "${request.gameId}"`
     );
   }
-  const recentEvents = request.recentEvents.length > RECENT_EVENTS_HARD_CAP ? request.recentEvents.slice(-RECENT_EVENTS_HARD_CAP) : request.recentEvents;
+  const recentEvents = request.recentEvents.length > BOT_RECENT_EVENTS_WINDOW ? request.recentEvents.slice(-BOT_RECENT_EVENTS_WINDOW) : request.recentEvents;
   const normalizedRequest = recentEvents === request.recentEvents ? request : { ...request, recentEvents };
   const boardIndex = buildBoardIndex(request.state, request.playerId);
   const estimator = createProductionEstimator(request.diceHistogram, recentEvents, boardIndex);
@@ -30003,6 +30298,7 @@ function buildBotContext(request, tuning) {
     acceptancePriorStrength: tuning.opponentTradeAppetitePriorStrength,
     sameWantResponseWeight: tuning.opponentTradeSameWantResponseWeight,
     knownGainsBiasPerCard: tuning.knownGainsBiasPerCard,
+    publicHandFloors: tuning.publicHandFloorsEnabled,
     jointHandSamples: tuning.opponentJointHandSamples,
     boardIndex,
     tradeUtilityThresholdMode: tuning.opponentTradeUtilityThresholdMode,
@@ -30121,17 +30417,7 @@ function countPromotableKnights({ state, actingPlayerId, boardIndex }) {
   }).length;
 }
 function scoreAdjacentResourceCardValue({ state, actingPlayerId, boardIndex }, hexType, resourceType, threshold) {
-  const seen = /* @__PURE__ */ new Set();
-  for (const entry of boardIndex.buildingsByPlayer[actingPlayerId] ?? []) {
-    const intersection2 = state.board.intersections[entry.intersectionId];
-    if (intersection2 === void 0) continue;
-    for (const hexId of intersection2.adjacentHexIds) {
-      if (!seen.has(hexId) && state.board.hexes[hexId]?.type === hexType) {
-        seen.add(hexId);
-      }
-    }
-  }
-  const hexCount = seen.size;
+  const hexCount = adjacentHexCountOfType(state, boardIndex, actingPlayerId, hexType);
   if (hexCount === 0) return 5;
   const player = selfPlayer(state, actingPlayerId);
   const held = player?.resources[resourceType] ?? 0;
@@ -30144,6 +30430,19 @@ function scoreAdjacentResourceCardValue({ state, actingPlayerId, boardIndex }, h
   return 20 + hexCount * 8 + needed * 5 - exposed * 2;
 }
 var ADJACENT_HEX_GAIN = 2;
+function adjacentHexCountOfType(state, boardIndex, playerId, hexType) {
+  const seen = /* @__PURE__ */ new Set();
+  for (const entry of boardIndex.buildingsByPlayer[playerId] ?? []) {
+    const intersection2 = state.board.intersections[entry.intersectionId];
+    if (intersection2 === void 0) continue;
+    for (const hexId of intersection2.adjacentHexIds) {
+      if (!seen.has(hexId) && state.board.hexes[hexId]?.type === hexType) {
+        seen.add(hexId);
+      }
+    }
+  }
+  return seen.size;
+}
 function scoreInventionValue(ctx) {
   const { state, actingPlayerId, boardIndex } = ctx;
   const swap = bestInventionSwap(state, actingPlayerId, boardIndex);
@@ -34457,12 +34756,12 @@ function buildDomesticTradeReversalGuard(events, botPlayerId, lookback) {
       if (reverse === null) continue;
       completedTradeCount += 1;
       const blockedTerms = blockedTermsByPartner.get(reverse.partnerId) ?? /* @__PURE__ */ new Set();
-      blockedTerms.add(termsKey(reverse.offer, reverse.want));
+      blockedTerms.add(tradeTermsKey(reverse.offer, reverse.want));
       blockedTermsByPartner.set(reverse.partnerId, blockedTerms);
     }
   }
   return {
-    blocks: (partnerId, offer, want) => blockedTermsByPartner.get(partnerId)?.has(termsKey(offer, want)) === true
+    blocks: (partnerId, offer, want) => blockedTermsByPartner.get(partnerId)?.has(tradeTermsKey(offer, want)) === true
   };
 }
 function reverseTermsForCompletedTrade(action, botPlayerId, actingPlayerId) {
@@ -34501,9 +34800,6 @@ function reverseTermsForCompletedTrade(action, botPlayerId, actingPlayerId) {
     };
   }
   return null;
-}
-function termsKey(offer, want) {
-  return `${tradeBundleKey(offer)}>${tradeBundleKey(want)}`;
 }
 
 // bot/src/pending/trade-bid-candidates.ts
@@ -37717,12 +38013,12 @@ function rejectedCounterReplay(ctx) {
     if (event.turnAfter !== ctx.state.turnNumber) return none;
     const action = event.payload.action;
     if (action.type === ActionType.DomesticTradePropose) {
-      if (event.actingPlayerId !== ctx.playerId || action.targetPlayerId !== prior.targetPlayerId || termsKey2(action.offer, action.want) !== termsKey2(prior.proposerGives, prior.proposerReceives))
+      if (event.actingPlayerId !== ctx.playerId || action.targetPlayerId !== prior.targetPlayerId || tradeTermsKey(action.offer, action.want) !== tradeTermsKey(prior.proposerGives, prior.proposerReceives))
         return none;
       const rejectedTerms = new Set(rejected.values());
       return (candidate) => {
         if (candidate.type !== ActionType.DomesticTradePropose || rejected.size === 0) return false;
-        const key = termsKey2(candidate.offer, candidate.want);
+        const key = tradeTermsKey(candidate.offer, candidate.want);
         return candidate.targetPlayerId === void 0 ? rejectedTerms.has(key) : rejected.get(candidate.targetPlayerId) === key;
       };
     }
@@ -37735,12 +38031,9 @@ function rejectedCounterReplay(ctx) {
     if (seen.has(responder)) continue;
     seen.add(responder);
     if (action.type === ActionType.DomesticTradeBid && prior.responders.some((entry) => entry.playerId === responder && entry.status === "countered"))
-      rejected.set(responder, termsKey2(action.offer, action.want));
+      rejected.set(responder, tradeTermsKey(action.offer, action.want));
   }
   return none;
-}
-function termsKey2(offer, want) {
-  return `${tradeBundleKey(offer)}>${tradeBundleKey(want)}`;
 }
 
 // bot/src/bot/trade-replay-filter.ts
@@ -37807,9 +38100,6 @@ function repeatsSameTurnProposal(action, repeatedKeys) {
 function domesticTradeReplayKey(targetPlayerId, terms) {
   return `domestic|${targetPlayerId}|${terms}`;
 }
-function tradeTermsKey(offer, want) {
-  return `${tradeBundleKey(offer)}>${tradeBundleKey(want)}`;
-}
 
 // bot/src/bot/resource-card-trade-filter.ts
 function deferTradesCoveredByResourceCard(ctx, pool) {
@@ -37825,17 +38115,17 @@ function deferTradesCoveredByResourceCard(ctx, pool) {
     const resource = card2?.cardId === "scienceIrrigation" ? ResourceType.Grain : card2?.cardId === "scienceMining" ? ResourceType.Ore : null;
     if (resource === null || gains.has(resource)) continue;
     const hexType = resource === ResourceType.Grain ? HexType.Fields : HexType.Mountains;
-    const hexes = /* @__PURE__ */ new Set();
-    for (const entry of ctx.boardIndex.buildingsByPlayer[ctx.playerId] ?? []) {
-      for (const id of ctx.state.board.intersections[entry.intersectionId]?.adjacentHexIds ?? []) {
-        if (ctx.state.board.hexes[id]?.type === hexType) hexes.add(id);
-      }
-    }
-    gains.set(resource, Math.min(2 * hexes.size, ctx.state.bankResources[resource] ?? 0));
+    gains.set(
+      resource,
+      Math.min(
+        ADJACENT_HEX_GAIN * adjacentHexCountOfType(ctx.state, ctx.boardIndex, ctx.playerId, hexType),
+        ctx.state.bankResources[resource] ?? 0
+      )
+    );
   }
   if (gains.size === 0) return pool;
   return pool.filter((action) => {
-    const want = action.type === ActionType.DomesticTradePropose ? action.want : action.type === ActionType.MaritimeTrade ? [action.want] : null;
+    const want = action.type === ActionType.DomesticTradePropose ? action.want : action.type === ActionType.MaritimeTrade ? [action.want, ...action.additionalWants ?? []] : null;
     if (want === null || want.length === 0) return true;
     for (const [resource, gain] of gains) {
       if (gain > 0 && want.every((item) => item.type === resource) && want.reduce((sum, item) => sum + item.count, 0) <= gain)
@@ -38247,7 +38537,7 @@ function tradeProposalPolicyPool(ctx) {
     if (candidate.type !== ActionType.DomesticTradePropose) return true;
     const windowStopWouldSuppress = windowStoppedOpponentIds.size > 0 && (candidate.targetPlayerId === void 0 || windowStoppedOpponentIds.has(candidate.targetPlayerId));
     if (windowStopWouldSuppress) windowStopSuppressedCount += 1;
-    const nearWinWouldSuppress = stoppedForNearWinOpponent;
+    const nearWinWouldSuppress = stoppedForNearWinOpponent && (self2 === null || !tradeUnlocksForcedSelfWin(ctx, self2, candidate.want, candidate.offer));
     if (nearWinWouldSuppress) nearWinSuppressedCount += 1;
     if (stopAllProposals) return false;
     if (nearWinWouldSuppress) return false;
@@ -38858,6 +39148,7 @@ var DEFAULT_TUNING = Object.freeze({
   // Known-gains composition bias. 0 ⇒ gains ledger unbuilt, no-op ⇒ bot-vs-bot
   // frozen. `humans` arms it (see personalities.ts).
   knownGainsBiasPerCard: 0,
+  publicHandFloorsEnabled: false,
   // Public-only correlated hand belief. Off by default to preserve the frozen
   // bot-vs-bot baseline; the humans preset pays the small bounded cost.
   opponentJointHandSamples: 0,
@@ -39534,6 +39825,13 @@ var HUMANS = Object.freeze({
   // Replace independent per-material guesses with exact-margin joint worlds.
   // Seeded only from public state; candidate-list trade evidence is excluded.
   opponentJointHandSamples: 24,
+  // Card counting: cards an opponent provably holds, counted from public
+  // transfers over the event window, are hard floors on those worlds. Replayed
+  // on a production week, the build-unlock veto caught 84% of true unlocks (was
+  // 69%) with fewer false alarms; no harm on the independent judge (+0.18pp,
+  // 3,300 pairs) or eval:table both (+0.70pp, 1,000 seeds).
+  // docs/bot-evals/2026-09-26-public-hand-floors-prereg.md.
+  publicHandFloorsEnabled: true,
   // B6: overpay (esp. via the bank) for the resources that complete a
   // game-closing city/settlement when within 2 VP of winning.
   winningBuildResourceTradeMaritimeCompleteBonus: 55,
