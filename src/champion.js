@@ -35674,6 +35674,15 @@ var chooseRobberDestination = (ctx) => (
 // bot/src/pending/place-setup-road.ts
 var placeSetupRoad = (ctx) => pickBestScoredByType(ctx, ActionType.PlaceSetupRoad);
 
+// bot/src/bot/lookahead/synthetic-id.ts
+var SYNTHETIC_ID_PREFIX = "synthetic-";
+function syntheticId(prefix, targetId) {
+  return `${SYNTHETIC_ID_PREFIX}${prefix}-${targetId}`;
+}
+function isSyntheticFollowupId(id) {
+  return id.startsWith(SYNTHETIC_ID_PREFIX);
+}
+
 // bot/src/bot/lookahead/action-delta.ts
 var NO_PRIOR_ACTIONS = [];
 function negateCost(cost) {
@@ -35868,15 +35877,6 @@ function bankTradesIn(pool) {
 }
 function materialCount(state, type) {
   return state.resources[type] ?? state.commodities[type] ?? 0;
-}
-
-// bot/src/bot/lookahead/synthetic-id.ts
-var SYNTHETIC_ID_PREFIX = "synthetic-";
-function syntheticId(prefix, targetId) {
-  return `${SYNTHETIC_ID_PREFIX}${prefix}-${targetId}`;
-}
-function isSyntheticFollowupId(id) {
-  return id.startsWith(SYNTHETIC_ID_PREFIX);
 }
 
 // bot/src/bot/banked-road-win-plan.ts
@@ -36074,15 +36074,83 @@ function chainFinisher(ctx, board, last, freeRoads) {
 // bot/src/pending/road-building-place.ts
 var roadBuildingPlace = (ctx) => {
   const planned = findRoadBuildingLongestRoadPlacement(ctx, ctx.request.validActions);
-  if (planned === null) return pickBestScoredByType(ctx, ActionType.BuildRoad);
+  if (planned !== null) {
+    return {
+      action: planned.placement,
+      traceContext: {
+        roadBuildingLongestRoadPlan: true,
+        roadBuildingLongestRoadFinisherEdgeId: planned.finisherEdgeId
+      }
+    };
+  }
+  const pair = bestRoadPair(ctx);
+  if (pair === null) return pickBestScoredByType(ctx, ActionType.BuildRoad);
   return {
-    action: planned.placement,
+    action: pair.first,
     traceContext: {
-      roadBuildingLongestRoadPlan: true,
-      roadBuildingLongestRoadFinisherEdgeId: planned.finisherEdgeId
+      roadBuildingPairLookahead: true,
+      roadBuildingPairSecondEdgeId: pair.secondEdgeId
     }
   };
 };
+function bestRoadPair(ctx) {
+  const self2 = selfPlayer(ctx.state, ctx.playerId);
+  if (!ctx.tuning.roadBuildingPairLookaheadEnabled || self2 === null || self2.freeRoadsRemaining < 2 || self2.roadsInSupply < 2)
+    return null;
+  const base = buildPendingScoringBase(ctx);
+  let best = null;
+  for (const [poolIndex, action] of ctx.request.validActions.entries()) {
+    if (action.type !== ActionType.BuildRoad) continue;
+    const firstScore = score(buildScoreContext(ctx, action, base));
+    if (!Number.isFinite(firstScore)) continue;
+    const second = bestSecondRoad(ctx, self2, action.edgeId);
+    const entry2 = { action, score: firstScore + (second?.score ?? 0), poolIndex };
+    if (best === null || ranksAbove(entry2, best.entry)) {
+      best = { entry: entry2, secondEdgeId: second?.action.edgeId ?? null };
+    }
+  }
+  if (best === null) return null;
+  const { entry, secondEdgeId } = best;
+  return { first: entry.action, secondEdgeId };
+}
+function bestSecondRoad(ctx, self2, firstEdgeId) {
+  const firstEdge = ctx.state.board.edges[firstEdgeId];
+  if (firstEdge === void 0) return null;
+  const state = {
+    ...ctx.state,
+    board: withEdgeOwnerOverride(ctx.state.board, firstEdge, ctx.playerId),
+    players: {
+      ...ctx.state.players,
+      [ctx.playerId]: {
+        ...self2,
+        roadsInSupply: self2.roadsInSupply - 1,
+        freeRoadsRemaining: self2.freeRoadsRemaining - 1
+      }
+    }
+  };
+  const boardIndex = buildBoardIndex(state, ctx.playerId);
+  const candidates = [
+    ...boardIndex.reachableEmptyEdgeIds[ctx.playerId] ?? []
+  ].map((edgeId) => ({
+    id: syntheticId("road-building-second-road", edgeId),
+    type: ActionType.BuildRoad,
+    edgeId
+  }));
+  const next = {
+    ...ctx,
+    request: { ...ctx.request, state, validActions: candidates },
+    state,
+    boardIndex
+  };
+  const base = buildPendingScoringBase(next);
+  let best = null;
+  for (const [poolIndex, action] of candidates.entries()) {
+    const entry = { action, score: score(buildScoreContext(next, action, base)), poolIndex };
+    if (!Number.isFinite(entry.score)) continue;
+    if (best === null || ranksAbove(entry, best)) best = entry;
+  }
+  return best;
+}
 
 // bot/src/pending/discard-progress.ts
 var discardProgress = (ctx) => {
@@ -39077,6 +39145,7 @@ var DEFAULT_TUNING = Object.freeze({
   endgameCloserPrepBonus: 24,
   endgameCloserDistractionPenalty: 28,
   sameTurnEndgamePlannerEnabled: true,
+  roadBuildingPairLookaheadEnabled: true,
   humanEndgameMultiTradeWinEnabled: false,
   racePostureWeight: 0,
   nearWinLeaderClampEnabled: false,
