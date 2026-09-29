@@ -10,11 +10,13 @@ allowBuilds:
 # kept shipping until `pnpm audit --prod --audit-level high` -- the sample-bot CI
 # gate -- failed on it.
 #
-# 3.1.6 and 4.1.3 are the patched floors, and are what the root workspace already
-# resolves. Ranges are qualified per major because the two lines have different
+# 2026-09-28: raised to 3.1.8 / 4.2.1 -- two later high advisories hit the old
+# floors (GHSA-qw65-cvwx-89v3, authority injection via an unvalidated port;
+# GHSA-58mr-gqgx-xq4g, host confusion via an unclosed bracket, which names 3.1.6
+# and 4.1.3 exactly). 3.1.8 and 4.2.1 are what the root workspace resolves. Ranges are qualified per major because the two lines have different
 # consumers; an unqualified override would collapse both onto one version.
 # Same pattern the root pnpm-workspace.yaml uses for cookie/GHSA-pxg6-pf52-xh8x.
 # Remove each once fastify's own ranges floor fast-uri past these versions.
 overrides:
-  'fast-uri@>=3.0.0 <3.1.6': 3.1.6
-  'fast-uri@>=4.0.0 <4.1.3': 4.1.3
+  'fast-uri@>=3.0.0 <3.1.8': 3.1.8
+  'fast-uri@>=4.0.0 <4.2.1': 4.2.1

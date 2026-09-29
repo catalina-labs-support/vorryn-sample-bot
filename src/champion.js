@@ -23842,6 +23842,16 @@ function maxOtherActiveStrength(summary, playerId) {
   }
   return max;
 }
+function cityUpgradeWouldBePillaged(summary, playerId) {
+  if (summary.totalActiveStrength >= summary.cityCount + 1) return false;
+  const ownStrength = summary.strengthByPlayer[playerId] ?? 0;
+  for (const id in summary.pillageableCityByPlayer) {
+    if (!Object.hasOwn(summary.pillageableCityByPlayer, id)) continue;
+    if (!summary.pillageableCityByPlayer[id]) continue;
+    if ((summary.strengthByPlayer[id] ?? 0) < ownStrength) return false;
+  }
+  return true;
+}
 
 // bot/src/bot/knight-expected-loss.ts
 function activationPricedByExpectedLoss(ctx) {
@@ -24681,6 +24691,39 @@ function missingCostLines(counts, cost) {
     if ((counts[type] ?? 0) < needed) missing++;
   }
   return missing;
+}
+
+// bot/src/bot/score-rules/first-defender-kit.ts
+var RECRUIT_COST2 = actionCost(ActionType.RecruitKnight);
+var ACTIVATE_COST2 = actionCost(ActionType.ActivateKnight);
+var RECRUIT_RESOURCES = [ResourceType.Ore, ResourceType.Wool];
+var KIT_COST = {
+  ...RECRUIT_COST2,
+  grain: (RECRUIT_COST2.grain ?? 0) + (ACTIVATE_COST2.grain ?? 0)
+};
+function firstDefenderKit(ctx) {
+  if (ctx.action.type !== ActionType.RecruitKnight || ctx.tuning.firstDefenderKitBonus === 0 || ctx.state.phase !== Phase.Action || ctx.state.firstBerserkerAttackResolved || ctx.criticalOpponentThreat || ctx.immediateWinThreat || ctx.selfVp >= ctx.state.victoryPointsTarget - THREE_FROM_WIN)
+    return 0;
+  const { boardIndex, actingPlayerId } = ctx;
+  const summary = boardIndex.berserkerSummary;
+  if (summary.pillageableCityByPlayer[actingPlayerId] !== true || summary.totalActiveStrength >= summary.cityCount || (boardIndex.knightsByPlayer[actingPlayerId]?.length ?? 0) !== 0)
+    return 0;
+  let protectsCity = summary.totalActiveStrength + 1 >= summary.cityCount;
+  for (const playerId in summary.pillageableCityByPlayer) {
+    if (playerId !== actingPlayerId && summary.pillageableCityByPlayer[playerId] === true && (summary.strengthByPlayer[playerId] ?? 0) === 0) {
+      protectsCity = true;
+      break;
+    }
+  }
+  if (!protectsCity) return 0;
+  const player = selfPlayer(ctx.state, actingPlayerId);
+  if (player === null || player.scienceLevel >= 3 || !canAffordResourceCost(player.resources, KIT_COST))
+    return 0;
+  for (const resource of RECRUIT_RESOURCES) {
+    if (player.resources[resource] === RECRUIT_COST2[resource] && (ctx.settlementBase.existingPipsByResource[resource] ?? 0) <= 1)
+      return ctx.tuning.firstDefenderKitBonus;
+  }
+  return 0;
 }
 
 // bot/src/bot/score-rules/winning-build-resource-trade-bonus.ts
@@ -26457,20 +26500,7 @@ function buildCityBerserkerExposurePenalty(ctx) {
   if (!(state.berserkerTrackMax > 0)) return 0;
   const trackRemaining = state.berserkerTrackMax - state.berserkerTrackPosition;
   if (trackRemaining > 3) return 0;
-  const projectedCityCount = berserkerSummary.cityCount + 1;
-  if (berserkerSummary.totalActiveStrength >= projectedCityCount) return 0;
-  const ownStrength = berserkerSummary.strengthByPlayer[actingPlayerId] ?? 0;
-  let weakestCityOwnerStrength = ownStrength;
-  const pillageablePlayers = berserkerSummary.pillageableCityByPlayer;
-  for (const playerId in pillageablePlayers) {
-    if (!Object.hasOwn(pillageablePlayers, playerId) || !pillageablePlayers[playerId]) continue;
-    const strength = berserkerSummary.strengthByPlayer[playerId] ?? 0;
-    if (strength < weakestCityOwnerStrength) {
-      weakestCityOwnerStrength = strength;
-      break;
-    }
-  }
-  return ownStrength <= weakestCityOwnerStrength ? tuning.buildCityImminentBerserkerExposurePenalty : 0;
+  return cityUpgradeWouldBePillaged(berserkerSummary, actingPlayerId) ? tuning.buildCityImminentBerserkerExposurePenalty : 0;
 }
 function scoreCityWallAction(ctx, intersectionId) {
   const { state, actingPlayerId, boardIndex } = ctx;
@@ -34082,6 +34112,7 @@ var SCORE_RULES = [
   knightUrgencyBonus,
   exposedZeroDefenseTieBreak,
   knightResourceTradeBonus,
+  firstDefenderKit,
   winningBuildResourceTradeBonus,
   lateGameNonVpPenalty,
   endgameCloserMode,
@@ -38767,6 +38798,12 @@ function chooseMainScoring(ctx, hooks) {
       };
     }
   }
+  if (!winningMovePoolOnly && ctx.state.phase === Phase.Action && ctx.state.berserkerTrackMax > 0 && ctx.state.berserkerTrackMax - ctx.state.berserkerTrackPosition <= 1 && cityUpgradeWouldBePillaged(ctx.boardIndex.berserkerSummary, ctx.playerId)) {
+    const safe = actionPool.filter(
+      (action) => planningActionForCandidate(action, ctx.state, ctx.playerId).type !== ActionType.BuildCity
+    );
+    if (safe.length > 0) actionPool = safe;
+  }
   if (!winningMovePoolOnly) actionPool = deferTradesCoveredByResourceCard(ctx, actionPool);
   const productionRankedWidth = 3;
   const observerRankedWidth = Math.max(3, Math.floor(hooks?.rankingObserver?.width ?? 3));
@@ -39332,6 +39369,7 @@ var DEFAULT_TUNING = Object.freeze({
   recruitKnightBase: 10,
   knightDeferBeforeCitiesPenalty: 30,
   firstKnightTrackThreshold: 3,
+  firstDefenderKitBonus: 300,
   knightSaturationScale: 1,
   knightRecruitOpponentCityChokeBonus: 10,
   displaceKnightKillBonus: 0,
