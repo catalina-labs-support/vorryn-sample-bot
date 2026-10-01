@@ -151,11 +151,11 @@ export function assertHttpCorpusResponse(item: HttpCorpusCase, raw: unknown): vo
     `${item.family}: literal captured decision`
   );
   assert.equal(candidate.type, EXPECTED[item.family].chosenType);
-  // Main scoring reports its policy-filtered pool; the pending traces report
-  // all supplied choices. The captured action request has 25 scored choices.
+  // Both paths report the policy-filtered pool. The responder loses four
+  // equal-card counteroffers; its at-terms bid remains eligible.
   assert.equal(
     response.decisionTrace.candidateCount,
-    item.family === 'action' ? 25 : EXPECTED[item.family].count
+    item.family === 'action' ? 25 : item.family === 'responder' ? 10 : EXPECTED[item.family].count
   );
   assert.equal(response.decisionTrace.top3.length, item.family === 'responder' ? 5 : 3);
   assert.ok(
