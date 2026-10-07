@@ -171,6 +171,10 @@ If you want strictly deterministic behavior, key your decision on
   error on unknown enum members.
 - **Breaking changes** ship as a further version bump. A new schema
   and migration note will be published before the default flips.
+- **v3.1** added the optional `state.players[id].publicRecord`
+  (`{ games, wins }`): see [BOT_PROTOCOL.md](./BOT_PROTOCOL.md). If your
+  bot validates player objects strictly, regenerate from the current
+  schema; "Test my bot" now sends a record.
 
 **Domestic trade:** responders send `domesticTradeBid { offer, want }`
 (an acceptance is a bid at the proposal's own terms) or

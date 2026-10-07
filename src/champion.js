@@ -28516,7 +28516,7 @@ function scoreHex(state, actingPlayerId, hexId, leaderId, boardIndex, production
     } else {
       eligibleVictims.add(building.ownerPlayerId);
       add("production", (1 + productionWeight) * multiplier);
-      const threatKey = `${building.ownerPlayerId}|${tuning.nearWinLeaderClampEnabled ? 1 : 0}`;
+      const threatKey = `${building.ownerPlayerId}|${tuning.nearWinLeaderClampEnabled ? 1 : 0}|${tuning.seatRecordThreatVpPerTenPoints}`;
       const threat = memoizePerRequest(
         threatByState,
         state,
@@ -28526,7 +28526,8 @@ function scoreHex(state, actingPlayerId, hexId, leaderId, boardIndex, production
           building.ownerPlayerId,
           productionEstimator,
           boardIndex,
-          tuning.nearWinLeaderClampEnabled
+          tuning.nearWinLeaderClampEnabled,
+          tuning
         )
       );
       add("threat", Math.floor(threat / 4) * multiplier);
@@ -30962,7 +30963,8 @@ function threatScoreFor(ctx, playerId) {
     playerId,
     ctx.productionEstimator,
     ctx.boardIndex,
-    ctx.tuning.nearWinLeaderClampEnabled
+    ctx.tuning.nearWinLeaderClampEnabled,
+    ctx.tuning
   );
 }
 
@@ -36662,7 +36664,7 @@ function findTradeRoadSettlementWinningPlan(ctx, actionPool) {
     bankTradesIn(actionPool),
     player,
     ROAD_SETTLEMENT_COST,
-    1
+    ctx.tuning.humanEndgameMultiTradeWinEnabled ? MAX_TRADES : 1
   );
   const trade2 = funded?.sequence[0];
   if (trade2 === void 0) return null;
@@ -38197,6 +38199,196 @@ function projectedTrades(ctx, hand, stock, cost) {
   }));
 }
 
+// bot/src/bot/banked-two-settlement-plan.ts
+var TWO_SETTLEMENT_COST = Object.fromEntries(
+  Object.entries(actionCost(ActionType.BuildSettlement)).map(([type, count2]) => [type, 2 * count2])
+);
+function findBankedTwoSettlementWinPlan(ctx, pool) {
+  const self2 = selfPlayer(ctx.state, ctx.playerId);
+  if (!ctx.tuning.sameTurnEndgamePlannerEnabled || !ctx.tuning.humanEndgameMultiTradeWinEnabled || self2 === null || ctx.state.phase !== "action" || ctx.state.pendingDecision !== null || ctx.state.currentPlayerId !== ctx.playerId || self2.victoryPoints + 2 !== ctx.state.victoryPointsTarget || self2.settlementsInSupply < 2)
+    return null;
+  const sites = ctx.boardIndex.buildableSettlementSiteIdsByPlayer[ctx.playerId];
+  if (sites === void 0 || sites.size < 2) return null;
+  for (const first of sites) {
+    for (const second of sites) {
+      if (first === second || settlementSitesAdjacent(ctx.state, first, second)) continue;
+      const funded = fundCostWithBankTrades(ctx, bankTradesIn(pool), self2, TWO_SETTLEMENT_COST, 2);
+      if (funded === null) return null;
+      const supplied = pool.find(
+        (action) => action.type === ActionType.BuildSettlement && action.intersectionId === first
+      );
+      if (funded.sequence.length === 0 && supplied === void 0) continue;
+      return [
+        ...funded.sequence,
+        supplied ?? {
+          id: syntheticId("banked-first-settlement", first),
+          type: ActionType.BuildSettlement,
+          intersectionId: first
+        },
+        {
+          id: syntheticId("banked-second-settlement", second),
+          type: ActionType.BuildSettlement,
+          intersectionId: second
+        }
+      ];
+    }
+  }
+  return null;
+}
+
+// bot/src/bot/banked-road-building-plan.ts
+var MAX_ROAD_PROBES = 1500;
+function findBankedRoadBuildingWinPlan(ctx, pool) {
+  const self2 = selfPlayer(ctx.state, ctx.playerId);
+  if (!ctx.tuning.sameTurnEndgamePlannerEnabled || !ctx.tuning.humanEndgameMultiTradeWinEnabled || self2 === null || ctx.state.phase !== "action" || ctx.state.pendingDecision !== null || ctx.state.currentPlayerId !== ctx.playerId || self2.victoryPoints + 3 !== ctx.state.victoryPointsTarget || ctx.state.longestRoadHolderPlayerId === ctx.playerId || self2.roadsInSupply < 1)
+    return null;
+  const buildings = buildingPlans(ctx, self2);
+  if (buildings.length === 0) return null;
+  const mining = pool.find(
+    (a) => a.type === ActionType.PlayProgressCard && self2.progressHand.some((c) => c.instanceId === a.instanceId && c.cardId === "scienceMining")
+  );
+  const gain = mining === void 0 ? 0 : Math.min(
+    ADJACENT_HEX_GAIN * adjacentHexCountOfType(ctx.state, ctx.boardIndex, ctx.playerId, HexType.Mountains),
+    ctx.state.bankResources.ore ?? 0
+  );
+  const banks = bankTradesIn(pool);
+  const budget = { remaining: MAX_ROAD_PROBES };
+  for (let roads = 1; roads <= Math.min(3, self2.roadsInSupply); roads++) {
+    for (const building of buildings) {
+      const roadCost = roadsCost(roads);
+      const cost = {
+        ...building.cost,
+        brick: (building.cost.brick ?? 0) + (roadCost.brick ?? 0),
+        lumber: (building.cost.lumber ?? 0) + (roadCost.lumber ?? 0)
+      };
+      for (const useMining of [false, true]) {
+        if (useMining && (mining === void 0 || gain <= 0)) continue;
+        const hand = useMining ? applyResourceDelta(self2, { ore: gain }) : self2;
+        const fundingContext = useMining ? {
+          ...ctx,
+          state: {
+            ...ctx.state,
+            bankResources: {
+              ...ctx.state.bankResources,
+              ore: (ctx.state.bankResources.ore ?? 0) - gain
+            }
+          }
+        } : ctx;
+        const trades = banks.filter((a) => {
+          const offered = hand.resources[a.offer.type] ?? hand.commodities[a.offer.type] ?? 0;
+          const held = hand.resources[a.want.type] ?? hand.commodities[a.want.type] ?? 0;
+          return offered - a.offer.count >= (cost[a.offer.type] ?? 0) && held < (cost[a.want.type] ?? 0);
+        });
+        const funding = fundCostWithBankTrades(fundingContext, trades, hand, cost, 3);
+        if (funding === null) continue;
+        const prefix = [
+          ...useMining && mining !== void 0 ? [mining] : [],
+          ...funding.sequence
+        ];
+        const finish = roadBuildingPath(
+          ctx,
+          building,
+          roads,
+          prefix.length === 0 ? pool : null,
+          budget
+        );
+        if (finish !== null) return [...prefix, ...finish];
+        break;
+      }
+    }
+  }
+  return null;
+}
+function buildingPlans(ctx, self2) {
+  const plans = [];
+  if (self2.settlementsInSupply > 0)
+    plans.push({ cost: actionCost(ActionType.BuildSettlement), city: null });
+  const own2 = ctx.boardIndex.buildingsByPlayer[ctx.playerId] ?? [];
+  const sideways = own2.some((s) => s.building.cityPieceAsSettlement === true);
+  const site = own2.find(
+    (s) => s.building.type === BuildingType.Settlement && ctx.state.board.intersections[s.intersectionId]?.knight === null && (sideways ? s.building.cityPieceAsSettlement === true : self2.citiesInSupply > 0)
+  );
+  if (site === void 0) return plans;
+  const medicine = self2.progressHand.find((c) => c.cardId === "scienceMedicine");
+  const city = medicine === void 0 ? {
+    id: syntheticId("road-title-city", site.intersectionId),
+    type: ActionType.BuildCity,
+    intersectionId: site.intersectionId
+  } : {
+    id: syntheticId("road-title-medicine", site.intersectionId),
+    type: ActionType.PlayProgressCard,
+    instanceId: medicine.instanceId,
+    intersectionId: site.intersectionId
+  };
+  plans.push({ cost: cityCostFor(self2.medicinePlayed || medicine !== void 0), city });
+  return plans;
+}
+function roadBuildingPath(ctx, building, count2, firstPool, budget) {
+  const board = ctx.state.board;
+  const edges = Object.values(board.edges), edgeIds = Object.keys(board.edges);
+  const target = longestRoadClaimTargetFromClient(
+    board,
+    ctx.playerId,
+    Object.keys(ctx.state.players)
+  );
+  const owned = /* @__PURE__ */ new Map();
+  const view = {
+    intersection: ctx.boardIndex.boardView.intersection,
+    edge: (id) => owned.get(id) ?? ctx.boardIndex.boardView.edge(id)
+  };
+  const visited = /* @__PURE__ */ new Set();
+  const walk = (path) => {
+    if (budget.remaining <= 0) return null;
+    budget.remaining--;
+    const key = [...owned.keys()].sort().join(";");
+    if (visited.has(key)) return null;
+    visited.add(key);
+    if (path.length === count2) {
+      if (calculateLongestRoadFromView(view, edgeIds, ctx.playerId) < target) return null;
+      const last = path.at(-1);
+      if (last?.type !== ActionType.BuildRoad) return null;
+      const beforeLast = {
+        intersection: view.intersection,
+        edge: (id) => id === last.edgeId ? ctx.boardIndex.boardView.edge(id) : view.edge(id)
+      };
+      if (calculateLongestRoadFromView(beforeLast, edgeIds, ctx.playerId) >= target) return null;
+      if (building.city !== null) return [...path, building.city];
+      for (const site of Object.values(board.intersections)) {
+        if (!canPlaceBuildingAt(view, site.id) || !hasOwnRoadAdjacentToIntersection(view, ctx.playerId, site.id))
+          continue;
+        return [
+          ...path,
+          {
+            id: syntheticId("road-title-settlement", site.id),
+            type: ActionType.BuildSettlement,
+            intersectionId: site.id
+          }
+        ];
+      }
+      return null;
+    }
+    for (const edge of edges) {
+      if (owned.has(edge.id) || edge.roadOwnerPlayerId !== null || !isRoadConnected(view, ctx.playerId, edge.id))
+        continue;
+      const supplied = path.length === 0 ? firstPool?.find((a) => a.type === ActionType.BuildRoad && a.edgeId === edge.id) : void 0;
+      if (path.length === 0 && firstPool !== null && supplied === void 0) continue;
+      owned.set(edge.id, { ...edge, roadOwnerPlayerId: ctx.playerId });
+      const result = walk([
+        ...path,
+        supplied ?? {
+          id: syntheticId("road-title-road", edge.id),
+          type: ActionType.BuildRoad,
+          edgeId: edge.id
+        }
+      ]);
+      owned.delete(edge.id);
+      if (result !== null) return result;
+    }
+    return null;
+  };
+  return walk([]);
+}
+
 // bot/src/bot/merchant-banked-settlement-win-plan.ts
 var SETTLEMENT_COST7 = actionCost(ActionType.BuildSettlement);
 function findMerchantBankedSettlementWinPlan(ctx, pool) {
@@ -38391,6 +38583,12 @@ function materialCount2(hand, type) {
 
 // bot/src/bot/banked-metropolis-win-plan.ts
 function findBankedMetropolisWinPlan(ctx, pool) {
+  return findMetropolisWinPlan(ctx, pool, "irrigation");
+}
+function findMerchantBankedMetropolisWinPlan(ctx, pool) {
+  return findMetropolisWinPlan(ctx, pool, "merchant");
+}
+function findMetropolisWinPlan(ctx, pool, setup) {
   const self2 = selfPlayer(ctx.state, ctx.playerId);
   if (!ctx.tuning.sameTurnEndgamePlannerEnabled || !ctx.tuning.humanEndgameMultiTradeWinEnabled || self2 === null || ctx.state.phase !== "action" || ctx.state.pendingDecision !== null || ctx.state.currentPlayerId !== ctx.playerId || self2.victoryPoints + 2 < ctx.state.victoryPointsTarget)
     return null;
@@ -38406,14 +38604,21 @@ function findBankedMetropolisWinPlan(ctx, pool) {
   const bank = { resources: ctx.state.bankResources, commodities: ctx.state.bankCommodities };
   const hand = { resources: self2.resources, commodities: self2.commodities };
   const banks = bankTradesIn(pool);
-  const irrigation = pool.find(
+  const irrigation = setup === "irrigation" ? pool.find(
     (action) => action.type === ActionType.PlayProgressCard && self2.progressHand.some(
       (card2) => card2.instanceId === action.instanceId && card2.cardId === "scienceIrrigation"
     )
+  ) : void 0;
+  const merchantIds = new Set(
+    self2.progressHand.filter((card2) => ALL_CARDS_BY_ID.get(card2.cardId)?.effectHandler === "takeMerchantControl").map((card2) => card2.instanceId)
   );
-  for (const play of irrigation === void 0 ? [void 0] : [void 0, irrigation]) {
+  const merchants = setup === "merchant" ? pool.filter(
+    (action) => action.type === ActionType.PlayProgressCard && action.skip !== true && action.hexId !== void 0 && merchantIds.has(action.instanceId)
+  ) : [];
+  for (const play of [void 0, ...irrigation === void 0 ? [] : [irrigation], ...merchants]) {
     let projected = hand, stock = bank;
-    if (play !== void 0) {
+    let projectedRates = rates;
+    if (play !== void 0 && play === irrigation) {
       const fields = Object.entries(ctx.state.board.hexes).filter(
         ([id, hex3]) => hex3.type === HexType.Fields && (ctx.boardIndex.buildingsAdjacentToHex[id] ?? []).some(
           (entry) => entry.building.ownerPlayerId === ctx.playerId
@@ -38423,14 +38628,33 @@ function findBankedMetropolisWinPlan(ctx, pool) {
       if (gain <= 0) continue;
       projected = applyResourceDelta(hand, { grain: gain });
       stock = applyResourceDelta(bank, { grain: -gain });
+    } else if (play?.type === ActionType.PlayProgressCard && play.hexId !== void 0) {
+      const hex3 = ctx.state.board.hexes[play.hexId];
+      if (hex3 === void 0) continue;
+      const resource = hexProducesResource(hex3.type);
+      projectedRates = new Map(
+        MATERIAL_TYPES.map((type) => {
+          const rate = currentMaritimeRateFor(ctx.state, ctx.boardIndex, ctx.playerId, type, {
+            ignoreMerchant: true
+          });
+          return [type, type === resource ? Math.min(2, rate) : rate];
+        })
+      );
     }
     for (const track of tracks) {
       const commodity = trackCommodity(track);
       const cost = improvementCost(self2.cranePlayed, trackLevelFor(track, self2));
       const deficit = cost - count(projected, commodity);
       if (deficit <= 0) continue;
-      const firstTrades = play === void 0 ? banks : projectedFirstTrades(projected, stock, rates, commodity, deficit);
-      const funding = fundImprovement(projected, stock, rates, commodity, cost, firstTrades);
+      const firstTrades = play === void 0 ? banks : projectedFirstTrades(projected, stock, projectedRates, commodity, deficit);
+      const funding = fundImprovement(
+        projected,
+        stock,
+        projectedRates,
+        commodity,
+        cost,
+        firstTrades
+      );
       if (funding === null) continue;
       const finish = {
         id: syntheticId("banked-metropolis", track),
@@ -39613,7 +39837,7 @@ function chooseMainScoring(ctx, hooks) {
         }
       };
     }
-    const settlementCity = findBankedSettlementCityWinPlan(ctx, actionPool);
+    const settlementCity = findBankedSettlementCityWinPlan(ctx, actionPool) ?? findBankedTwoSettlementWinPlan(ctx, actionPool);
     const settlementStart = settlementCity?.[0];
     if (settlementStart !== void 0) {
       return {
@@ -39623,7 +39847,7 @@ function chooseMainScoring(ctx, hooks) {
           context: {
             chosenActionType: settlementStart.type,
             chosenCandidateId: settlementStart.id,
-            bankedSettlementCityWin: true,
+            ...settlementCity?.some((action) => action.type === ActionType.BuildCity) ? { bankedSettlementCityWin: true } : { bankedTwoSettlementWin: true },
             winningPlanActionsRemaining: settlementCity?.length ?? 0
           },
           top3: [
@@ -39632,7 +39856,7 @@ function chooseMainScoring(ctx, hooks) {
         }
       };
     }
-    const merchantSettlement = findMerchantBankedSettlementWinPlan(ctx, actionPool);
+    const merchantSettlement = findMerchantBankedSettlementWinPlan(ctx, actionPool) ?? findMerchantBankedMetropolisWinPlan(ctx, actionPool);
     const merchantStart = merchantSettlement?.[0];
     if (merchantStart !== void 0) {
       return {
@@ -39642,7 +39866,7 @@ function chooseMainScoring(ctx, hooks) {
           context: {
             chosenActionType: merchantStart.type,
             chosenCandidateId: merchantStart.id,
-            merchantSettlementWin: true,
+            ...merchantSettlement?.some((action) => action.type === ActionType.ImproveCity) ? { bankedMetropolisWin: true } : { merchantSettlementWin: true },
             winningPlanActionsRemaining: merchantSettlement?.length ?? 0
           },
           top3: [{ type: merchantStart.type, score: 0, extra: { candidateId: merchantStart.id } }]
@@ -39664,6 +39888,29 @@ function chooseMainScoring(ctx, hooks) {
           },
           top3: [
             { type: metropolisStart.type, score: 0, extra: { candidateId: metropolisStart.id } }
+          ]
+        }
+      };
+    }
+    const roadBuilding = findBankedRoadBuildingWinPlan(ctx, actionPool);
+    const roadBuildingStart = roadBuilding?.[0];
+    if (roadBuildingStart !== void 0) {
+      return {
+        chosen: roadBuildingStart,
+        decisionTrace: {
+          candidateCount: actionPool.length,
+          context: {
+            chosenActionType: roadBuildingStart.type,
+            chosenCandidateId: roadBuildingStart.id,
+            bankedRoadBuildingWin: true,
+            winningPlanActionsRemaining: roadBuilding?.length ?? 0
+          },
+          top3: [
+            {
+              type: roadBuildingStart.type,
+              score: 0,
+              extra: { candidateId: roadBuildingStart.id }
+            }
           ]
         }
       };

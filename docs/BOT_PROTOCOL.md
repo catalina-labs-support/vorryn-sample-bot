@@ -159,6 +159,13 @@ what you do not understand.
   on unknown enum members.
 - Breaking changes ship as a further version bump. Web will publish
   a new schema file and a migration note before flipping the default.
+- **v3.1 (2026-10-06):** each `state.players[id]` MAY carry
+  `publicRecord: { games, wins }`, that seat's lifetime record of completed
+  games (the same numbers its profile page shows), fixed when the game
+  starts and present only from 10 games. A bot generated from an older
+  strict schema (`additionalProperties: false` on player objects) must
+  regenerate or allow unknown keys; "Test my bot" sends a request with a
+  record so a strict bot fails there rather than in a real game.
 
 ### Migrating from v2 to v3
 
