@@ -275,6 +275,26 @@
                           }
                         ]
                       },
+                      "publicRecord": {
+                        "type": "object",
+                        "properties": {
+                          "games": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 1000000
+                          },
+                          "wins": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 1000000
+                          }
+                        },
+                        "required": [
+                          "games",
+                          "wins"
+                        ],
+                        "additionalProperties": false
+                      },
                       "resources": {
                         "type": "object",
                         "propertyNames": {
@@ -621,6 +641,26 @@
                             "type": "null"
                           }
                         ]
+                      },
+                      "publicRecord": {
+                        "type": "object",
+                        "properties": {
+                          "games": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 1000000
+                          },
+                          "wins": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 1000000
+                          }
+                        },
+                        "required": [
+                          "games",
+                          "wins"
+                        ],
+                        "additionalProperties": false
                       },
                       "materialCount": {
                         "type": "integer",
