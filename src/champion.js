@@ -38604,30 +38604,28 @@ function findMetropolisWinPlan(ctx, pool, setup) {
   const bank = { resources: ctx.state.bankResources, commodities: ctx.state.bankCommodities };
   const hand = { resources: self2.resources, commodities: self2.commodities };
   const banks = bankTradesIn(pool);
-  const irrigation = setup === "irrigation" ? pool.find(
-    (action) => action.type === ActionType.PlayProgressCard && self2.progressHand.some(
-      (card2) => card2.instanceId === action.instanceId && card2.cardId === "scienceIrrigation"
-    )
-  ) : void 0;
+  const gainPlays = setup === "irrigation" ? [...GAIN_CARDS.keys()].flatMap((cardId) => {
+    const play = pool.find(
+      (action) => action.type === ActionType.PlayProgressCard && self2.progressHand.some(
+        (card2) => card2.instanceId === action.instanceId && card2.cardId === cardId
+      )
+    );
+    return play === void 0 ? [] : [{ play, cardId }];
+  }) : [];
   const merchantIds = new Set(
     self2.progressHand.filter((card2) => ALL_CARDS_BY_ID.get(card2.cardId)?.effectHandler === "takeMerchantControl").map((card2) => card2.instanceId)
   );
   const merchants = setup === "merchant" ? pool.filter(
     (action) => action.type === ActionType.PlayProgressCard && action.skip !== true && action.hexId !== void 0 && merchantIds.has(action.instanceId)
   ) : [];
-  for (const play of [void 0, ...irrigation === void 0 ? [] : [irrigation], ...merchants]) {
+  for (const play of [void 0, ...gainPlays.map((entry) => entry.play), ...merchants]) {
     let projected = hand, stock = bank;
     let projectedRates = rates;
-    if (play !== void 0 && play === irrigation) {
-      const fields = Object.entries(ctx.state.board.hexes).filter(
-        ([id, hex3]) => hex3.type === HexType.Fields && (ctx.boardIndex.buildingsAdjacentToHex[id] ?? []).some(
-          (entry) => entry.building.ownerPlayerId === ctx.playerId
-        )
-      ).length;
-      const gain = Math.min(fields * 2, ctx.state.bankResources.grain ?? 0);
-      if (gain <= 0) continue;
-      projected = applyResourceDelta(hand, { grain: gain });
-      stock = applyResourceDelta(bank, { grain: -gain });
+    const gainCard = gainPlays.find((entry) => entry.play === play)?.cardId;
+    if (gainCard !== void 0) {
+      const haul = projectGain(ctx, hand, bank, gainCard);
+      if (haul === null) continue;
+      ({ projected, stock } = haul);
     } else if (play?.type === ActionType.PlayProgressCard && play.hexId !== void 0) {
       const hex3 = ctx.state.board.hexes[play.hexId];
       if (hex3 === void 0) continue;
@@ -38666,23 +38664,53 @@ function findMetropolisWinPlan(ctx, pool, setup) {
   }
   const mason = self2.progressHand.find((card2) => card2.cardId === "scienceMason");
   if (mason === void 0) return null;
-  for (const track of tracks) {
-    const commodity = trackCommodity(track);
-    const cost = improvementCost(true, trackLevelFor(track, self2));
-    if (count(hand, commodity) >= cost) continue;
-    const funding = fundImprovement(hand, bank, rates, commodity, cost, banks);
-    if (funding === null) continue;
-    return [
-      ...funding,
-      {
-        id: syntheticId("banked-mason-metropolis", track),
-        type: ActionType.PlayProgressCard,
-        instanceId: mason.instanceId,
-        track
-      }
-    ];
+  for (const gain of [void 0, ...gainPlays]) {
+    let projected = hand, stock = bank;
+    if (gain !== void 0) {
+      const haul = projectGain(ctx, hand, bank, gain.cardId);
+      if (haul === null) continue;
+      ({ projected, stock } = haul);
+    }
+    for (const track of tracks) {
+      const commodity = trackCommodity(track);
+      const cost = improvementCost(true, trackLevelFor(track, self2));
+      const deficit = cost - count(projected, commodity);
+      if (deficit <= 0) continue;
+      const firstTrades = gain === void 0 ? banks : projectedFirstTrades(projected, stock, rates, commodity, deficit);
+      const funding = fundImprovement(projected, stock, rates, commodity, cost, firstTrades);
+      if (funding === null) continue;
+      return [
+        ...gain === void 0 ? [] : [gain.play],
+        ...funding,
+        {
+          id: syntheticId("banked-mason-metropolis", track),
+          type: ActionType.PlayProgressCard,
+          instanceId: mason.instanceId,
+          track
+        }
+      ];
+    }
   }
   return null;
+}
+var GAIN_CARDS = /* @__PURE__ */ new Map([
+  ["scienceIrrigation", { hexType: HexType.Fields, resource: "grain" }],
+  ["scienceMining", { hexType: HexType.Mountains, resource: "ore" }]
+]);
+function projectGain(ctx, hand, bank, cardId) {
+  const spec = GAIN_CARDS.get(cardId);
+  if (spec === void 0) return null;
+  const hexes = Object.entries(ctx.state.board.hexes).filter(
+    ([id, hex3]) => hex3.type === spec.hexType && (ctx.boardIndex.buildingsAdjacentToHex[id] ?? []).some(
+      (entry) => entry.building.ownerPlayerId === ctx.playerId
+    )
+  ).length;
+  const gain = Math.min(hexes * 2, ctx.state.bankResources[spec.resource] ?? 0);
+  if (gain <= 0) return null;
+  return {
+    projected: applyResourceDelta(hand, { [spec.resource]: gain }),
+    stock: applyResourceDelta(bank, { [spec.resource]: -gain })
+  };
 }
 function findHarborMetropolisWinPlan(ctx, pool) {
   const self2 = selfPlayer(ctx.state, ctx.playerId);
@@ -38809,7 +38837,7 @@ function projectedFirstTrades(hand, bank, rates, commodity, deficit) {
   return out;
 }
 function fundImprovement(hand, bank, rates, commodity, cost, firstTrades) {
-  for (const maxTrades of [1, 2]) {
+  for (const maxTrades of [1, 2, 3]) {
     for (const first of firstTrades) {
       if (!payable(first, hand, bank)) continue;
       const delta = actionDelta(first);
@@ -38822,11 +38850,37 @@ function fundImprovement(hand, bank, rates, commodity, cost, firstTrades) {
         [first.offer.type]: first.offer.count,
         [first.want.type]: -first.want.count
       });
-      for (const offer of MATERIAL_TYPES) {
-        if (offer === commodity) continue;
-        const second = trade(offer, commodity, remaining, rates);
-        if (payable(second, after, stock)) return [first, second];
+      if (maxTrades === 2) {
+        for (const offer of MATERIAL_TYPES) {
+          if (offer === commodity) continue;
+          const second = trade(offer, commodity, remaining, rates);
+          if (payable(second, after, stock)) return [first, second];
+        }
+        continue;
       }
+      if (remaining !== 2) continue;
+      const split = fundFromTwoSources(after, stock, rates, commodity);
+      if (split !== null) return [first, ...split];
+    }
+  }
+  return null;
+}
+function fundFromTwoSources(hand, bank, rates, commodity) {
+  for (const [index, a] of MATERIAL_TYPES.entries()) {
+    if (a === commodity) continue;
+    const second = trade(a, commodity, 1, rates);
+    if (!payable(second, hand, bank)) continue;
+    const delta = actionDelta(second);
+    if (delta === null) continue;
+    const afterSecond = applyResourceDelta(hand, delta);
+    const stock = applyResourceDelta(bank, {
+      [second.offer.type]: second.offer.count,
+      [second.want.type]: -second.want.count
+    });
+    for (const b of MATERIAL_TYPES.slice(index + 1)) {
+      if (b === commodity) continue;
+      const third = trade(b, commodity, 1, rates);
+      if (payable(third, afterSecond, stock)) return [second, third];
     }
   }
   return null;
