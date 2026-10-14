@@ -24327,7 +24327,8 @@ var SCIENCE_ABILITY_LEVEL = 3;
 var HORIZON_TURN = 24;
 var MIN_ROLLS = 3;
 function scienceRollsLeft(state) {
-  return Math.max(MIN_ROLLS, HORIZON_TURN - state.turnNumber);
+  const rolls = (HORIZON_TURN - state.turnNumber) * Object.keys(state.players).length;
+  return Math.max(MIN_ROLLS, rolls);
 }
 function probabilityRollPaysNothing(state, boardIndex, playerId) {
   const producing = /* @__PURE__ */ new Set();
