@@ -1648,6 +1648,16 @@
                           "properties": {
                             "targetPlayerId": {
                               "type": "string"
+                            },
+                            "offeredResource": {
+                              "type": "string",
+                              "enum": [
+                                "lumber",
+                                "brick",
+                                "wool",
+                                "grain",
+                                "ore"
+                              ]
                             }
                           },
                           "additionalProperties": false

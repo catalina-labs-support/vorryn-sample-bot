@@ -1,12 +1,12 @@
-FROM node:24.15-alpine AS build
+FROM node:current-alpine AS build
 WORKDIR /app
-RUN npm install --global pnpm@12.4.2
+RUN npm install --global pnpm@12.11.2
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json ./
 RUN pnpm install --frozen-lockfile
 COPY src ./src
 RUN pnpm run build && pnpm prune --prod
 
-FROM node:24.15-alpine
+FROM node:current-alpine
 ENV NODE_ENV=production PORT=3001
 WORKDIR /app
 COPY --from=build --chown=node:node /app/package.json ./package.json

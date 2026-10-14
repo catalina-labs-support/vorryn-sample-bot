@@ -76,7 +76,7 @@ Fork the repo, replace `pickAction`, deploy. Let's field a champion.
 
 ## Setup
 
-Requires Node 22+ and pnpm.
+Requires the latest stable Node.js Current release and pnpm. Older Node lines are not supported.
 
 ```bash
 pnpm install
