@@ -1,6 +1,6 @@
 FROM node:current-alpine AS build
 WORKDIR /app
-RUN npm install --global pnpm@12.11.2
+RUN npm install --global pnpm@12.14.0
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json ./
 RUN pnpm install --frozen-lockfile
 COPY src ./src

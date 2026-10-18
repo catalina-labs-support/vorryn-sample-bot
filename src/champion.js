@@ -22494,6 +22494,55 @@ function discardThresholdFor(cityWalls) {
 function discardCountForHand(handSize) {
   return Math.floor(handSize / 2);
 }
+function previewProduction(board, bankResources, bankCommodities, sum) {
+  if (sum === 7) return emptyStringRecord();
+  const robberBlocked = /* @__PURE__ */ new Set();
+  const grants = [];
+  const demandByType = /* @__PURE__ */ new Map();
+  const noteDemand = (type, count, ownerId) => {
+    let entry = demandByType.get(type);
+    if (entry === void 0) {
+      entry = { count: 0, owners: /* @__PURE__ */ new Set() };
+      demandByType.set(type, entry);
+    }
+    entry.count += count;
+    entry.owners.add(ownerId);
+  };
+  for (const hex3 of board.hexesWithNumberToken(sum)) {
+    for (const intersection2 of board.intersectionsAdjacentTo(hex3.id)) {
+      const building = intersection2.building;
+      if (building === null) continue;
+      if (hex3.robberPresent) {
+        robberBlocked.add(building.ownerPlayerId);
+        continue;
+      }
+      const ownerId = building.ownerPlayerId;
+      for (const g of buildingYield(building.type, hex3.type)) {
+        grants.push({ ownerId, type: g.type, count: g.count });
+        noteDemand(g.type, g.count, ownerId);
+      }
+    }
+  }
+  const skipped = /* @__PURE__ */ new Set();
+  for (const [type, demand] of demandByType) {
+    const supply = isCommodityType(type) ? bankCommodities[type] ?? 0 : bankResources[type] ?? 0;
+    if (demand.count > supply && demand.owners.size > 1) skipped.add(type);
+  }
+  const remaining = { ...bankResources, ...bankCommodities };
+  const production = emptyStringRecord();
+  for (const ownerId of robberBlocked) production[ownerId] = { gains: {}, robberBlocked: true };
+  for (const grant of grants) {
+    if (skipped.has(grant.type)) continue;
+    const type = grant.type;
+    const granted = Math.min(grant.count, remaining[type] ?? 0);
+    if (granted <= 0) continue;
+    remaining[type] = (remaining[type] ?? 0) - granted;
+    const entry = production[grant.ownerId] ?? { gains: {}, robberBlocked: false };
+    entry.gains[type] = (entry.gains[type] ?? 0) + granted;
+    production[grant.ownerId] = entry;
+  }
+  return production;
+}
 
 // bot/src/bot/hand-size.ts
 function bundleCount(bundle) {
@@ -25253,10 +25302,12 @@ var VP_CAPABLE_ACTION_TYPES = /* @__PURE__ */ new Set([
 ]);
 var KNIGHT_PROJECTED_LR_CACHE = /* @__PURE__ */ new WeakMap();
 function couldImmediatelyWin(state, playerId) {
+  if (state.currentPlayerId !== playerId) return false;
   const currentVp = playerVp(state, playerId);
   return currentVp + MAX_WINNING_VP_DELTA >= state.victoryPointsTarget;
 }
 function isWinningAction(action, state, playerId, deps = {}) {
+  if (state.currentPlayerId !== playerId) return false;
   const currentVp = playerVp(state, playerId);
   const delta = winningVpDelta(action, state, playerId, deps);
   return delta > 0 && currentVp + delta >= state.victoryPointsTarget;
@@ -25278,6 +25329,9 @@ function winningVpDelta(action, state, playerId, deps = {}) {
     case ActionType.MoveKnight:
       return moveKnightWinDelta(action.knightId, action.intersectionId, state, playerId, deps);
     case ActionType.DisplaceKnight:
+      if (state.pendingDecision?.type === PendingDecisionType.ChooseKnightRetreat) {
+        return recruitKnightWinDelta(action.intersectionId, state, playerId, deps);
+      }
       return displaceKnightWinDelta(action.knightId, action.intersectionId, state, playerId, deps);
     case ActionType.ResolveOptionalCardEffect:
       return resolveOptionalCardEffectVpDelta(action, state, playerId, deps);
@@ -30917,11 +30971,18 @@ function scoreSmithingValue(ctx) {
 }
 function countPromotableKnights({ state, actingPlayerId, boardIndex }) {
   const player = state.players[actingPlayerId];
-  const canPromoteToMighty = (player?.politicsLevel ?? 0) >= 3;
-  return (boardIndex.knightsByPlayer[actingPlayerId] ?? []).filter((k) => {
-    if (k.level === KnightLevel.Basic) return (player?.knightsInSupply.strong ?? 0) > 0;
-    return k.level === KnightLevel.Strong && canPromoteToMighty && (player?.knightsInSupply.mighty ?? 0) > 0;
-  }).length;
+  if (player === void 0) return 0;
+  const used = isSelf(player) ? player.knightPromotionsUsedThisTurn : [];
+  let basic = 0;
+  let strong = 0;
+  for (const knight of boardIndex.knightsByPlayer[actingPlayerId] ?? []) {
+    if (used.includes(knight.id)) continue;
+    if (knight.level === KnightLevel.Basic) basic++;
+    if (knight.level === KnightLevel.Strong) strong++;
+  }
+  const toMighty = player.politicsLevel >= 3 ? Math.min(strong, player.knightsInSupply.mighty) : 0;
+  const toStrong = Math.min(basic, player.knightsInSupply.strong + toMighty);
+  return Math.min(2, toMighty + toStrong);
 }
 function scoreAdjacentResourceCardValue({ state, actingPlayerId, boardIndex }, hexType, resourceType, threshold) {
   const hexCount = adjacentHexCountOfType(state, boardIndex, actingPlayerId, hexType);
@@ -31079,6 +31140,52 @@ function inventionSwapDelta(state, actingPlayerId, a, b) {
     }
   }
   return { score: score2, selfDelta };
+}
+
+// bot/src/bot/augury-production.ts
+function projectAuguryProduction(ctx, sum) {
+  const { state, boardIndex } = ctx;
+  const production = previewProduction(
+    {
+      hexesWithNumberToken: (total) => Object.values(state.board.hexes).filter((hex3) => hex3.numberToken === total),
+      intersectionsAdjacentTo: (hexId) => boardIndex.buildingsAdjacentToHex[hexId] ?? []
+    },
+    state.bankResources,
+    state.bankCommodities,
+    sum
+  );
+  if (sum === 7) return production;
+  const remaining = { ...state.bankResources };
+  for (const entry of Object.values(production)) {
+    for (const resource of RESOURCE_TYPES) {
+      remaining[resource] = (remaining[resource] ?? 0) - (entry.gains[resource] ?? 0);
+    }
+  }
+  const players = Object.values(state.players).sort((a, b) => a.seatIndex - b.seatIndex);
+  const start = Math.max(
+    0,
+    players.findIndex((player) => player.id === state.currentPlayerId)
+  );
+  for (let offset = 0; offset < players.length; offset++) {
+    const player = players[(start + offset) % players.length];
+    if (player === void 0 || player.scienceLevel < 3) continue;
+    const entry = production[player.id];
+    if (entry !== void 0 && Object.values(entry.gains).some((count) => count > 0)) continue;
+    let best;
+    let bestValue = Number.NEGATIVE_INFINITY;
+    for (const resource of RESOURCE_TYPES) {
+      if ((remaining[resource] ?? 0) <= 0) continue;
+      const value = resourceUtility(state, player.id, resource);
+      if (value > bestValue) {
+        best = resource;
+        bestValue = value;
+      }
+    }
+    if (best === void 0) continue;
+    remaining[best] = (remaining[best] ?? 0) - 1;
+    production[player.id] = { gains: { [best]: 1 }, robberBlocked: entry?.robberBlocked ?? false };
+  }
+  return production;
 }
 
 // bot/src/bot/robber-hex-scorer.ts
@@ -32358,7 +32465,7 @@ function scoreAlchemyDicePayload(ctx, action) {
   const redDieValue = redDieDrawValue(ctx, action.die2);
   if (sum === 7) {
     return Math.round(
-      8 - selfDiscardPenaltyOnSeven(ctx, handSize) + opponentDiscardValueOnSeven(ctx) + auguryRobberValue(ctx) + redDieValue
+      8 - expectedRollProductionNet(ctx) * 18 - selfDiscardPenaltyOnSeven(ctx, handSize) + opponentDiscardValueOnSeven(ctx) + auguryRobberValue(ctx) + redDieValue - expectedRedDieDrawValue(ctx)
     );
   }
   const handPressure2 = Math.max(0, handSize - 6);
@@ -32421,7 +32528,10 @@ function auguryProductionNet(ctx, sum) {
     auguryProductionNetCache,
     ctx.state,
     `${ctx.actingPlayerId}|${sum}`,
-    () => productionValueForSum(ctx, sum, ctx.actingPlayerId) - opponentProductionPenaltyForSum(ctx, sum)
+    () => {
+      const production = projectAuguryProduction(ctx, sum);
+      return productionValue(ctx, production, ctx.actingPlayerId) - opponentProductionPenalty(ctx, production);
+    }
   );
 }
 var cityWallCountCacheByState = /* @__PURE__ */ new WeakMap();
@@ -32457,19 +32567,12 @@ function auguryRobberValue(ctx) {
     );
   });
 }
-function productionValueForSum(ctx, sum, playerId) {
+function productionValue(ctx, production, playerId) {
   let total = 0;
-  for (const entry of ctx.boardIndex.buildingsByPlayer[playerId] ?? []) {
-    const intersection2 = ctx.state.board.intersections[entry.intersectionId];
-    if (intersection2 === void 0) continue;
-    for (const hexId of intersection2.adjacentHexIds) {
-      const hex3 = ctx.state.board.hexes[hexId];
-      if (hex3 === void 0 || hex3.numberToken !== sum || hex3.robberPresent) continue;
-      for (const grant of buildingYield(entry.building.type, hex3.type)) {
-        for (let card2 = 0; card2 < grant.count; card2++) {
-          total += resourceUtility(ctx.state, playerId, grant.type);
-        }
-      }
+  for (const type of MATERIAL_TYPES) {
+    const count = production[playerId]?.gains[type] ?? 0;
+    for (let card2 = 0; card2 < count; card2++) {
+      total += resourceUtility(ctx.state, playerId, type);
     }
   }
   return total;
@@ -32478,19 +32581,19 @@ function opponentDenialPressure(vp, victoryPointsTarget) {
   const neutralVp = Math.max(1, victoryPointsTarget - FIVE_FROM_WIN);
   return clamp(vp / neutralVp, 0.55, 1.4);
 }
-function opponentProductionPenaltyForSum(ctx, sum) {
+function opponentProductionPenalty(ctx, production) {
   let total = 0;
   const leaderId = leaderOpponentIdFor(ctx);
   for (const pid of Object.keys(ctx.state.players)) {
     if (pid === ctx.actingPlayerId) continue;
-    const production = productionValueForSum(ctx, sum, pid);
-    if (production <= 0) continue;
+    const value = productionValue(ctx, production, pid);
+    if (value <= 0) continue;
     const vpPressure = opponentDenialPressure(
       playerVp(ctx.state, pid),
       ctx.state.victoryPointsTarget
     );
     const leaderPressure = pid === leaderId ? 1.25 : 1;
-    total += production * vpPressure * leaderPressure;
+    total += value * vpPressure * leaderPressure;
   }
   return total * 0.75;
 }
@@ -36949,6 +37052,44 @@ function findRoadTradeSettlementWinningPlan(ctx, actionPool) {
   return null;
 }
 
+// bot/src/bot/diplomacy-win-plan.ts
+function findDiplomacyWinPlan(ctx, pool) {
+  const self2 = selfPlayer(ctx.state, ctx.playerId);
+  if (self2 === null || ctx.state.pendingDecision !== null || self2.victoryPoints + 2 < ctx.state.victoryPointsTarget || ctx.state.longestRoadHolderPlayerId === ctx.playerId)
+    return null;
+  for (const play of cardPlaysMatching(
+    pool,
+    self2.progressHand,
+    (id) => id === "politicsDiplomacy"
+  )) {
+    const removed = play.edgeId === void 0 ? void 0 : ctx.state.board.edges[play.edgeId];
+    if (removed === void 0 || removed.roadOwnerPlayerId !== ctx.playerId || !isOpenRoad(ctx.boardIndex.boardView, removed.id))
+      continue;
+    const board = withEdgeOwnerOverride(ctx.state.board, removed, null);
+    const view = recordBoardView(board);
+    for (const edge of Object.values(board.edges)) {
+      if (edge.roadOwnerPlayerId !== null || !isRoadConnected(view, ctx.playerId, edge.id))
+        continue;
+      const followup = {
+        id: syntheticId("diplomacy-road", edge.id),
+        type: ActionType.BuildRoad,
+        edgeId: edge.id
+      };
+      if (winningVpDelta(followup, { ...ctx.state, board }, ctx.playerId) !== 2) continue;
+      return {
+        setupAction: play,
+        followupAction: followup,
+        setupVpDelta: 0,
+        followupVpDelta: 2,
+        setupScore: 0,
+        followupScore: 0,
+        syntheticFollowup: true
+      };
+    }
+  }
+  return null;
+}
+
 // bot/src/bot/trade-funded-city-plan.ts
 var MAX_TRADES = 3;
 function findTradeFundedCityPlan(ctx, actionPool) {
@@ -38184,7 +38325,7 @@ function planRanksAbove(candidate, incumbent) {
   return candidate.setupAction.id < incumbent.setupAction.id;
 }
 function fallbackWinningPlan(ctx, actionPool) {
-  return findRoadSettlementCityWinningPlan(ctx, actionPool) ?? findRoadTradeSettlementWinningPlan(ctx, actionPool) ?? findThreeRoadWinningPlan(ctx, actionPool) ?? findRoadBuildingLongestRoadPlan(ctx, actionPool) ?? findTradeFundedCityPlan(ctx, actionPool) ?? findTradeRoadSettlementWinningPlan(ctx, actionPool);
+  return findDiplomacyWinPlan(ctx, actionPool) ?? findRoadSettlementCityWinningPlan(ctx, actionPool) ?? findRoadTradeSettlementWinningPlan(ctx, actionPool) ?? findThreeRoadWinningPlan(ctx, actionPool) ?? findRoadBuildingLongestRoadPlan(ctx, actionPool) ?? findTradeFundedCityPlan(ctx, actionPool) ?? findTradeRoadSettlementWinningPlan(ctx, actionPool);
 }
 
 // bot/src/bot/causeway-win-plan.ts
