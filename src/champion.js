@@ -20361,111 +20361,7 @@ function prototypeSafeRecordSchema(value) {
   });
 }
 
-// packages/core/src/state/pending-decision.ts
-var PAYLOAD_CLONERS = {
-  // `required` is keyed by player id — arbitrary strings, so it is built
-  // prototype-free. structuredClone would hand back an Object.prototype copy
-  // and reintroduce `__proto__` as a live setter.
-  // The rest is structuredCloned with `required` stubbed to null, so the map is
-  // copied once, prototype-free, in its original key position, and retained
-  // extension keys stay deep copies.
-  [PendingDecisionType.DiscardResources]: (payload) => ({
-    ...structuredClone({ ...payload, required: null }),
-    required: cloneStringRecord(payload.required)
-  }),
-  [PendingDecisionType.ChooseRobberHex]: structuredClone,
-  [PendingDecisionType.ChooseStealTarget]: structuredClone,
-  [PendingDecisionType.ScienceLevel3Bonus]: structuredClone,
-  [PendingDecisionType.ChooseMetropolisCity]: structuredClone,
-  [PendingDecisionType.ChoosePillageCity]: structuredClone,
-  [PendingDecisionType.ChooseProgressDeck]: structuredClone,
-  [PendingDecisionType.DiscardProgress]: structuredClone,
-  [PendingDecisionType.ChooseKnightRetreat]: structuredClone,
-  [PendingDecisionType.ChooseRobberDestination]: structuredClone,
-  [PendingDecisionType.PlaceSetupRoad]: structuredClone,
-  [PendingDecisionType.WeddingGiveCards]: structuredClone,
-  [PendingDecisionType.CommercialHarborGive]: structuredClone,
-  [PendingDecisionType.GuildDuesChooseCards]: structuredClone,
-  [PendingDecisionType.SmithingPromote]: structuredClone,
-  [PendingDecisionType.TreasonChooseKnight]: structuredClone,
-  [PendingDecisionType.TreasonPlaceKnight]: structuredClone,
-  [PendingDecisionType.RoadBuildingPlace]: structuredClone,
-  [PendingDecisionType.DomesticTradeResponse]: structuredClone,
-  [PendingDecisionType.EspionageChooseCard]: structuredClone
-};
-
-// packages/core/src/game-constants.ts
-var RESOURCE_BANK_STOCK = 19;
-var COMMODITY_BANK_STOCK = 12;
-var VICTORY_POINTS_TO_WIN = 13;
-var SETUP_GRANTED_VICTORY_POINTS = 3;
-var MIN_VICTORY_POINTS_TARGET = SETUP_GRANTED_VICTORY_POINTS + 1;
-var MAX_VICTORY_POINTS_TARGET = VICTORY_POINTS_TO_WIN * 100;
-var ROADS_PER_PLAYER = 15;
-var SETTLEMENTS_PER_PLAYER = 5;
-var CITIES_PER_PLAYER = 4;
-var WEDDING_CARDS_PER_GIVER = 2;
-
-// packages/core/src/state/material-multiset.ts
-function termCounts(items) {
-  const counts = /* @__PURE__ */ new Map();
-  for (const item of items) {
-    if (item.count <= 0) continue;
-    counts.set(item.type, (counts.get(item.type) ?? 0) + item.count);
-  }
-  return counts;
-}
-function sameTradeMultiset(a, b) {
-  const countsA = termCounts(a);
-  const countsB = termCounts(b);
-  if (countsA.size !== countsB.size) return false;
-  for (const [type, count] of countsA) {
-    if (countsB.get(type) !== count) return false;
-  }
-  return true;
-}
-
-// packages/core/src/state/payload-accessors.ts
-function parsePositiveInt(value) {
-  if (typeof value === "number") {
-    return Number.isInteger(value) && value > 0 && value <= INT_SAFE_MAX ? value : null;
-  }
-  if (typeof value !== "string" || !/^[1-9]\d*$/.test(value)) return null;
-  const parsed = Number.parseInt(value, 10);
-  return parsed <= INT_SAFE_MAX ? parsed : null;
-}
-
-// packages/core/src/services/trade.ts
-function parseTradeLine(entry) {
-  if (entry === null || typeof entry !== "object" || Array.isArray(entry)) return null;
-  const e = entry;
-  const type = e["type"];
-  if (typeof type !== "string") return null;
-  const count = parsePositiveInt(e["count"]);
-  if (count === null) return null;
-  return { type, count };
-}
-function isMaterialLine(line) {
-  return isMaterialType(line.type);
-}
-function isAtTermsBid(bid, offer, want) {
-  return sameTradeMultiset(bid.offer, offer) && sameTradeMultiset(bid.want, want);
-}
-function strictTradeSuperset(a, b) {
-  const countsA = termCounts(a);
-  const countsB = termCounts(b);
-  let totalB = 0;
-  for (const [type, count] of countsB) {
-    totalB += count;
-    if ((countsA.get(type) ?? 0) < count) return false;
-  }
-  let totalA = 0;
-  for (const count of countsA.values()) totalA += count;
-  return totalA > totalB;
-}
-function bidDominates(a, b) {
-  return sameTradeMultiset(a.offer, b.offer) && strictTradeSuperset(a.want, b.want);
-}
+// packages/core/src/rules/trade-shape.ts
 function hasDuplicateType(items) {
   for (let i = 0; i < items.length; i++) {
     const a = items[i];
@@ -21219,548 +21115,17 @@ function progressDrawMaxRedDie(level) {
   return level <= 0 ? 0 : Math.min(6, level + 1);
 }
 
-// packages/core/src/state/player-state.ts
-var DEFAULT_KNIGHT_SUPPLY = {
-  [KnightLevel.Basic]: 2,
-  [KnightLevel.Strong]: 2,
-  [KnightLevel.Mighty]: 2
-};
-
-// packages/core/src/game-state-serializer.ts
-var ProgressCardSchema = external_exports.object({
-  instanceId: external_exports.string(),
-  cardId: external_exports.string().refine((cardId) => ALL_CARDS_BY_ID.has(cardId), { message: "unknown progress card id" })
-});
-var BuildingSchema = external_exports.object({
-  ownerPlayerId: external_exports.string(),
-  type: BuildingTypeSchema,
-  cityWallPresent: external_exports.boolean(),
-  metropolisType: CommodityTrackSchema.nullable(),
-  cityPieceAsSettlement: external_exports.boolean().optional()
-});
-var KnightSerializedSchema = external_exports.object({
-  id: external_exports.string(),
-  ownerPlayerId: external_exports.string(),
-  level: KnightLevelSchema,
-  state: KnightStateSchema,
-  locationIntersectionId: external_exports.string()
-});
-var HexSerializedSchema = external_exports.object({
-  type: HexTypeSchema,
-  numberToken: external_exports.number().int().min(2).max(12).nullable(),
-  robberPresent: external_exports.boolean(),
-  merchantPresent: external_exports.boolean()
-});
-var IntersectionSerializedSchema = external_exports.object({
-  adjacentHexIds: external_exports.array(external_exports.string()),
-  adjacentEdgeIds: external_exports.array(external_exports.string()),
-  building: BuildingSchema.nullable(),
-  knight: KnightSerializedSchema.nullable()
-});
-var EdgeSerializedSchema = external_exports.object({
-  intersectionA: external_exports.string(),
-  intersectionB: external_exports.string(),
-  roadOwnerPlayerId: external_exports.string().nullable()
-});
-var HarborSerializedSchema = external_exports.object({
-  id: external_exports.string(),
-  type: HarborTypeSchema,
-  intersectionIds: external_exports.array(external_exports.string())
-});
-var BoardSerializedSchema = external_exports.object({
-  hexes: prototypeSafeRecordSchema(HexSerializedSchema),
-  intersections: prototypeSafeRecordSchema(IntersectionSerializedSchema),
-  edges: prototypeSafeRecordSchema(EdgeSerializedSchema),
-  harbors: external_exports.array(HarborSerializedSchema)
-});
-var DiceSerializedSchema = external_exports.object({
-  die1: external_exports.number().int().min(1).max(6).nullable(),
-  die2: external_exports.number().int().min(1).max(6).nullable(),
-  sum: external_exports.number().int().min(2).max(12).nullable(),
-  redDie: external_exports.number().int().min(1).max(6).nullable(),
-  eventDieResult: external_exports.string().nullable(),
-  alchemyPreset: external_exports.boolean().optional(),
-  // Required: `rollNumber` is the dice roll ordinal and therefore an input to
-  // an RNG key. See the stealOrdinal note on SerializedGameStateSchema.
-  rollNumber: external_exports.number().int().nonnegative()
-});
-var ResumeAfterRollResolutionSchema = external_exports.object({
-  type: external_exports.literal(ResumeAfterType.RollResolution),
-  sum: external_exports.number().int()
-});
-var ResumeAfterSchema = external_exports.discriminatedUnion("type", [
-  external_exports.object({ type: external_exports.literal(ResumeAfterType.EndTurn) }),
-  ResumeAfterRollResolutionSchema,
-  external_exports.object({
-    type: external_exports.literal(ResumeAfterType.ProgressDiscardQueue),
-    remainingPlayerIds: external_exports.array(external_exports.string()),
-    rollResolution: ResumeAfterRollResolutionSchema.nullable()
-  }),
-  external_exports.object({
-    type: external_exports.literal(ResumeAfterType.ScienceBonusQueue),
-    remainingPlayerIds: external_exports.array(external_exports.string())
-  }),
-  external_exports.object({
-    type: external_exports.literal(ResumeAfterType.DefenderDrawQueue),
-    remainingPlayerIds: external_exports.array(external_exports.string()),
-    rollResolution: ResumeAfterRollResolutionSchema.nullable()
-  })
-]);
-var EmptyPayloadSchema = external_exports.object({});
-var PENDING_PAYLOAD_SCHEMA_BY_TYPE = {
-  [PendingDecisionType.DiscardResources]: external_exports.object({
-    discardId: external_exports.string().min(1),
-    required: prototypeSafeRecordSchema(nonNegInt()),
-    source: external_exports.enum(["robber", "sabotage"]).optional(),
-    chainRobber: external_exports.boolean().optional()
-  }),
-  [PendingDecisionType.ChooseRobberHex]: EmptyPayloadSchema,
-  [PendingDecisionType.ChooseStealTarget]: external_exports.object({
-    eligiblePlayerIds: external_exports.array(external_exports.string())
-  }),
-  [PendingDecisionType.ScienceLevel3Bonus]: external_exports.object({
-    eligibleResources: external_exports.array(ResourceTypeSchema),
-    resumeAfter: ResumeAfterSchema.optional()
-  }),
-  [PendingDecisionType.ChooseMetropolisCity]: external_exports.object({
-    eligibleIntersectionIds: external_exports.array(external_exports.string()),
-    track: CommodityTrackSchema,
-    previousHolderId: external_exports.string().nullable()
-  }),
-  [PendingDecisionType.ChoosePillageCity]: external_exports.object({
-    eligibleIntersectionIds: external_exports.array(external_exports.string()),
-    playerId: external_exports.string(),
-    remainingQueue: external_exports.array(
-      external_exports.object({ playerId: external_exports.string(), eligibleIntersectionIds: external_exports.array(external_exports.string()) })
-    ),
-    resumeAfter: ResumeAfterSchema.nullable()
-  }),
-  [PendingDecisionType.ChooseProgressDeck]: external_exports.object({
-    eligibleDecks: external_exports.array(CommodityTrackSchema),
-    remainingPlayerIds: external_exports.array(external_exports.string()),
-    resumeAfter: ResumeAfterSchema.nullable()
-  }),
-  [PendingDecisionType.DiscardProgress]: external_exports.object({
-    // A zero-count discard never creates a pending in the engine. Requiring a
-    // positive value also matches the public wire contract and prevents a
-    // malformed snapshot from stranding the game with no meaningful choice.
-    requiredCount: nonNegInt().min(1),
-    resumeAfter: ResumeAfterSchema.nullable()
-  }),
-  [PendingDecisionType.ChooseKnightRetreat]: external_exports.object({
-    eligibleIntersectionIds: external_exports.array(external_exports.string())
-  }),
-  [PendingDecisionType.ChooseRobberDestination]: EmptyPayloadSchema,
-  [PendingDecisionType.PlaceSetupRoad]: external_exports.object({ buildingIntersectionId: external_exports.string() }),
-  [PendingDecisionType.WeddingGiveCards]: external_exports.object({
-    requiredCount: nonNegInt(),
-    recipient: external_exports.string(),
-    remainingGivers: external_exports.array(external_exports.string())
-  }),
-  [PendingDecisionType.CommercialHarborGive]: external_exports.object({
-    targetPlayerId: external_exports.string().optional(),
-    initiator: external_exports.string(),
-    offeredResource: ResourceTypeSchema.optional()
-  }),
-  [PendingDecisionType.GuildDuesChooseCards]: external_exports.object({
-    targetPlayerId: external_exports.string().optional(),
-    available: external_exports.array(
-      external_exports.object({
-        type: MaterialTypeSchema,
-        pool: external_exports.enum(["resource", "commodity"]),
-        available: nonNegInt()
-      })
-    ),
-    maxCards: nonNegInt()
-  }),
-  [PendingDecisionType.SmithingPromote]: external_exports.object({
-    promotionsRemaining: nonNegInt().optional()
-  }),
-  [PendingDecisionType.TreasonChooseKnight]: external_exports.object({
-    eligibleKnightIds: external_exports.array(external_exports.string()),
-    actingPlayerId: external_exports.string()
-  }),
-  [PendingDecisionType.TreasonPlaceKnight]: external_exports.object({
-    maxLevel: nonNegInt().optional(),
-    status: KnightStateSchema
-  }),
-  [PendingDecisionType.RoadBuildingPlace]: external_exports.object({ maySkip: external_exports.boolean().optional() }),
-  // Storage, engine state, and the Bot API share this one strict shape.
-  [PendingDecisionType.DomesticTradeResponse]: DomesticTradeAuctionPayloadSchema,
-  [PendingDecisionType.EspionageChooseCard]: external_exports.object({
-    eligibleCards: external_exports.array(external_exports.object({ instanceId: external_exports.string(), cardId: external_exports.string() })),
-    targetPlayerId: external_exports.string()
-  })
-};
-var PendingDecisionSerializedSchema = external_exports.object({
-  type: PendingDecisionTypeSchema,
-  actingPlayerId: external_exports.string().nullable(),
-  // P8 requires every active pending to name at least one resolver. Enforce
-  // that at the storage boundary as well, before an unresolvable snapshot is
-  // admitted into the engine.
-  allowedPlayerIds: external_exports.array(external_exports.string()).min(1),
-  payload: external_exports.record(external_exports.string(), external_exports.unknown())
-}).superRefine((pd, ctx) => {
-  const payloadSchema = PENDING_PAYLOAD_SCHEMA_BY_TYPE[pd.type];
-  const result = payloadSchema.safeParse(pd.payload);
-  if (!result.success) {
-    ctx.addIssue({
-      code: "custom",
-      path: ["payload"],
-      message: `invalid ${pd.type} payload: ${result.error.issues.map((i) => `${i.path.join(".")} ${i.message}`).join("; ")}`
-    });
-  }
-});
-var TradeLineSerializedSchema = external_exports.object({
-  type: external_exports.union([ResourceTypeSchema, CommodityTypeSchema]),
-  count: external_exports.number().int().min(1)
-});
-var StandingWantSerializedSchema = external_exports.object({
-  offer: external_exports.array(TradeLineSerializedSchema).min(1),
-  want: external_exports.array(TradeLineSerializedSchema).min(1),
-  hasBeenExecutableByOpponent: external_exports.boolean()
-}).strict().superRefine((standingWant, ctx) => {
-  if (hasTradeShapeViolation(standingWant.offer, standingWant.want)) {
-    ctx.addIssue({ code: "custom", message: "Invalid standing-want trade shape" });
-  }
-});
-var PlayerSerializedSchema = external_exports.object({
-  id: external_exports.string(),
-  seatIndex: external_exports.number().int().min(0).max(3),
-  color: external_exports.string(),
-  resources: external_exports.partialRecord(ResourceTypeSchema, external_exports.number().int().nonnegative()),
-  commodities: external_exports.partialRecord(CommodityTypeSchema, external_exports.number().int().nonnegative()),
-  vpTokens: external_exports.number().int().nonnegative(),
-  progressHand: external_exports.array(ProgressCardSchema),
-  revealedVpCards: external_exports.array(ProgressCardSchema),
-  roadsInSupply: external_exports.number().int().nonnegative(),
-  settlementsInSupply: external_exports.number().int().nonnegative(),
-  citiesInSupply: external_exports.number().int().nonnegative(),
-  cityWallsInSupply: external_exports.number().int().nonnegative(),
-  knightsInSupply: external_exports.object({
-    basic: external_exports.number().int().nonnegative(),
-    strong: external_exports.number().int().nonnegative(),
-    mighty: external_exports.number().int().nonnegative()
-  }),
-  scienceLevel: external_exports.number().int().min(0).max(MAX_TRACK_LEVEL),
-  tradeLevel: external_exports.number().int().min(0).max(MAX_TRACK_LEVEL),
-  politicsLevel: external_exports.number().int().min(0).max(MAX_TRACK_LEVEL),
-  progressCardsPlayedThisTurn: external_exports.array(external_exports.string()),
-  knightActionsUsedThisTurn: external_exports.array(external_exports.string()),
-  knightPromotionsUsedThisTurn: external_exports.array(external_exports.string()),
-  knightsActivatedThisTurn: external_exports.array(external_exports.string()),
-  merchantFleetTypes: external_exports.array(MaterialTypeSchema),
-  commercialHarborRemainingPlayerIds: external_exports.array(external_exports.string()),
-  freeRoadsRemaining: external_exports.number().int().nonnegative(),
-  cranePlayed: external_exports.boolean(),
-  medicinePlayed: external_exports.boolean(),
-  domesticTradeProposalsThisTurn: external_exports.number().int().nonnegative(),
-  standingWant: StandingWantSerializedSchema.nullable().optional()
-});
-var TradeOutcomeSerializedSchema = external_exports.object({
-  auctionId: external_exports.string(),
-  proposerId: external_exports.string(),
-  ending: external_exports.enum(["taken", "cancelled", "expired"]),
-  accepterId: external_exports.string().optional(),
-  targetPlayerId: external_exports.string().optional(),
-  proposerGives: external_exports.array(TradeLineSerializedSchema),
-  proposerReceives: external_exports.array(TradeLineSerializedSchema),
-  responders: external_exports.array(
-    external_exports.object({
-      playerId: external_exports.string(),
-      status: external_exports.enum(["accepted", "declined", "countered", "unanswered"])
-    })
-  )
-});
-var TemporaryStorageSerializedSchema = external_exports.object({
-  alchemyDice: external_exports.object({
-    die1: external_exports.number().int().min(1).max(6),
-    die2: external_exports.number().int().min(1).max(6)
-  }).optional(),
-  displacedKnight: external_exports.object({
-    id: external_exports.string(),
-    ownerPlayerId: external_exports.string(),
-    level: KnightLevelSchema,
-    state: KnightStateSchema
-  }).optional()
-});
-var boundedNonNegInt = nonNegInt;
-var berserkerAttackRecordSchema = external_exports.object({
-  result: external_exports.enum(["repelled", "victory"]),
-  berserkerStrength: boundedNonNegInt(),
-  defenderStrength: boundedNonNegInt(),
-  attackedAtVersion: boundedNonNegInt(),
-  defenderPlayerId: external_exports.string().nullable().optional(),
-  tiedDefenderIds: external_exports.array(external_exports.string()).optional(),
-  autoPillagedPlayerIds: external_exports.array(external_exports.string()).optional(),
-  choicePillagedPlayerIds: external_exports.array(external_exports.string()).optional(),
-  defenderContributions: prototypeSafeRecordSchema(boundedNonNegInt()).optional()
-});
-var SerializedGameStateSchema = external_exports.object({
-  id: external_exports.string(),
-  version: boundedNonNegInt(),
-  seed: external_exports.string(),
-  // Required: this is an input to an RNG key. An absent value would inflate
-  // to 0 and silently restart the steal stream inside key space the game has
-  // already spent, re-deriving draws it already made. Failing at the boundary
-  // is the whole point of having one.
-  stealOrdinal: boundedNonNegInt(),
-  // Optional for forward-safety: payloads written before this field existed
-  // deserialize to the default target (13). New saves always write it.
-  victoryPointsTarget: external_exports.number().int().min(MIN_VICTORY_POINTS_TARGET).max(MAX_VICTORY_POINTS_TARGET).optional(),
-  // Optional only at the persistence boundary so pre-feature snapshots load
-  // with the rule disabled. New saves always write the field.
-  standingWantsEnabled: external_exports.boolean().optional(),
-  phase: PhaseSchema,
-  currentPlayerId: external_exports.string(),
-  // 0 through setup; the engine increments to 1 with the first Roll-phase
-  // decision. A turn always costs at least one apply, so turnNumber <= version
-  // and sharing `version`'s ceiling cannot reject a state the engine produced.
-  turnNumber: boundedNonNegInt(),
-  players: prototypeSafeRecordSchema(PlayerSerializedSchema),
-  board: BoardSerializedSchema,
-  dice: DiceSerializedSchema,
-  // The rulebook track is 7 spaces (game-engine.ts bootstraps
-  // `berserkerTrackMax: 7`) and position sits AT max between the trigger and its
-  // resolution, so no cross-field refine here — the rule-derived 0..7 bound is
-  // enforced on the wire schema and by roll-dice. These two only need the
-  // magnitude floor/ceiling: a negative track is not a state the engine can
-  // reach, and a forged one has the same `::int` blast radius as the fields above.
-  berserkerTrackPosition: boundedNonNegInt(),
-  berserkerTrackMax: boundedNonNegInt(),
-  firstBerserkerAttackResolved: external_exports.boolean(),
-  robberActive: external_exports.boolean(),
-  merchantHexId: external_exports.string().nullable(),
-  merchantOwnerPlayerId: external_exports.string().nullable(),
-  longestRoadHolderPlayerId: external_exports.string().nullable(),
-  pendingDecision: PendingDecisionSerializedSchema.nullable(),
-  winnerPlayerId: external_exports.string().nullable(),
-  scienceDeck: external_exports.array(ProgressCardSchema),
-  tradeDeck: external_exports.array(ProgressCardSchema),
-  politicsDeck: external_exports.array(ProgressCardSchema),
-  // Nonnegative like player hands: the bank is a card pool, never overdrawn
-  // (grantFromBank clamps to availability). A negative here would be granted
-  // straight into a player's hand as a subtraction — reject at the boundary.
-  bankResources: external_exports.partialRecord(ResourceTypeSchema, external_exports.number().int().nonnegative()),
-  bankCommodities: external_exports.partialRecord(CommodityTypeSchema, external_exports.number().int().nonnegative()),
-  temporaryStorage: TemporaryStorageSerializedSchema,
-  firstPlayerId: external_exports.string().nullable(),
-  // Strengths are sums of city counts / knight strengths and the `*AtVersion`
-  // fields are copies of `state.version` — all nonnegative by construction, and
-  // bounded here so a forged history record can't smuggle a magnitude in behind
-  // the top-level scalars.
-  lastBerserkerAttack: berserkerAttackRecordSchema.nullable(),
-  lastVpAwards: external_exports.array(
-    external_exports.object({
-      playerId: external_exports.string(),
-      deck: CommodityTrackSchema,
-      cardId: external_exports.string(),
-      awardedAtVersion: boundedNonNegInt()
-    })
-  ),
-  domesticTradeDeclinesThisTurn: external_exports.array(
-    external_exports.object({
-      proposerId: external_exports.string(),
-      targetPlayerId: external_exports.string().optional(),
-      offer: external_exports.array(TradeLineSerializedSchema),
-      want: external_exports.array(TradeLineSerializedSchema)
-    })
-  ),
-  domesticTradeCountersThisTurn: external_exports.array(
-    external_exports.object({ responderId: external_exports.string(), proposerId: external_exports.string() })
-  ),
-  lastDomesticTradeOutcome: TradeOutcomeSerializedSchema.nullable(),
-  domesticTradeOutcomesThisTurn: external_exports.array(TradeOutcomeSerializedSchema),
-  domesticTradeProposalBundlesThisTurn: external_exports.array(
-    external_exports.object({
-      proposerId: external_exports.string(),
-      targetPlayerId: external_exports.string().optional(),
-      offer: external_exports.array(TradeLineSerializedSchema),
-      want: external_exports.array(TradeLineSerializedSchema)
-    })
-  )
-}).superRefine((state, ctx) => {
-  for (const [key, player] of Object.entries(state.players)) {
-    if (player.id !== key) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["players", key, "id"],
-        message: `player map key ${key} does not match embedded id ${player.id}`
-      });
-    }
-    const standingWant = player.standingWant;
-    if (standingWant === null || standingWant === void 0) continue;
-    const path = ["players", key, "standingWant"];
-    if (state.standingWantsEnabled !== true || state.phase === Phase.GameOver) {
-      ctx.addIssue({
-        code: "custom",
-        path,
-        message: "standing want is unavailable when the rule is disabled or the game is over"
-      });
-      continue;
-    }
-    const unbacked = standingWant.offer.some((line) => {
-      const available = isResourceType(line.type) ? player.resources[line.type] ?? 0 : player.commodities[line.type] ?? 0;
-      return available < line.count;
-    });
-    if (unbacked) {
-      ctx.addIssue({
-        code: "custom",
-        path,
-        message: "standing want offer is not backed by the poster hand"
-      });
-    }
-  }
-});
-
-// packages/core/src/dice/seeded-rng.ts
-var UTF8_ENCODER = new TextEncoder();
-
-// packages/core/src/services/player-cards.ts
-var MATERIAL_INDEX = new Map(
-  MATERIAL_TYPES.map((type, index) => [type, index])
-);
-
-// packages/core/src/state/resource-conservation.ts
-var CONSERVING_RESOLVE_PENDINGS = /* @__PURE__ */ new Set([
-  PendingDecisionType.WeddingGiveCards,
-  PendingDecisionType.GuildDuesChooseCards,
-  PendingDecisionType.CommercialHarborGive
-]);
-
-// packages/core/src/wire/inflate-client-state.ts
-var InflateClientStateError = class extends Error {
-  code;
-  constructor(code, message) {
-    super(message);
-    this.name = "InflateClientStateError";
-    this.code = code;
-  }
-};
-function fail(code, message) {
-  throw new InflateClientStateError(code, message);
-}
-function findSelfEntry(client) {
-  let found = null;
-  for (const [playerId, player] of Object.entries(client.players)) {
-    if (!isSelf(player)) continue;
-    if (found !== null) {
-      fail("missingSelfPlayer", `client has multiple self players (${found.selfId}, ${playerId})`);
-    }
-    found = { selfId: playerId, self: player };
-  }
-  if (found === null) fail("missingSelfPlayer", "client has no self player entry");
-  return found;
-}
-function deckCountsFromWire(client) {
-  return {
-    science: client.scienceDeckCount,
-    trade: client.tradeDeckCount,
-    politics: client.politicsDeckCount
-  };
-}
-var PRINTED_PROGRESS_COPIES = (() => {
-  const byDeck = {
-    science: [],
-    trade: [],
-    politics: []
-  };
-  for (const card2 of ALL_CARDS) byDeck[card2.deck].push([card2.id, card2.copies]);
-  return byDeck;
-})();
-function countVisibleCard(visibleCopies, card2) {
-  const def = ALL_CARDS_BY_ID.get(card2.cardId);
-  if (def === void 0) {
-    fail("progressPoolInconsistent", `visible card "${card2.cardId}" is not in the card manifest`);
-  }
-  const seen = (visibleCopies.get(card2.cardId) ?? 0) + 1;
-  if (seen > def.copies) {
-    fail(
-      "progressPoolInconsistent",
-      `card "${card2.cardId}" is visible more often than its ${def.copies} printed copies`
-    );
-  }
-  visibleCopies.set(card2.cardId, seen);
-}
-function deriveHiddenAggregates(client) {
-  const { self: self2 } = findSelfEntry(client);
-  const opponentResourceAggregates = {};
-  for (const t of RESOURCE_TYPES) {
-    const agg = RESOURCE_BANK_STOCK - (client.bankResources[t] ?? 0) - (self2.resources[t] ?? 0);
-    if (agg < 0) {
-      fail(
-        "materialAggregateNegative",
-        `resource ${t}: bank ${client.bankResources[t] ?? 0} + self ${self2.resources[t] ?? 0} exceeds stock ${RESOURCE_BANK_STOCK}`
-      );
-    }
-    opponentResourceAggregates[t] = agg;
-  }
-  const opponentCommodityAggregates = {};
-  for (const t of COMMODITY_TYPES) {
-    const agg = COMMODITY_BANK_STOCK - (client.bankCommodities[t] ?? 0) - (self2.commodities[t] ?? 0);
-    if (agg < 0) {
-      fail(
-        "materialAggregateNegative",
-        `commodity ${t}: bank ${client.bankCommodities[t] ?? 0} + self ${self2.commodities[t] ?? 0} exceeds stock ${COMMODITY_BANK_STOCK}`
-      );
-    }
-    opponentCommodityAggregates[t] = agg;
-  }
-  const opponentTotals = [];
-  for (const [playerId, player] of Object.entries(client.players)) {
-    if (isSelf(player)) continue;
-    const opponent = player;
-    opponentTotals.push({
-      playerId,
-      materialCount: opponent.materialCount,
-      progressHandByDeck: { ...opponent.progressHandByDeck }
-    });
-  }
-  const visibleCopies = /* @__PURE__ */ new Map();
-  for (const card2 of self2.progressHand) countVisibleCard(visibleCopies, card2);
-  for (const player of Object.values(client.players)) {
-    for (const card2 of player.revealedVpCards) countVisibleCard(visibleCopies, card2);
-  }
-  const unseenProgressPool = {
-    science: {},
-    trade: {},
-    politics: {}
-  };
-  for (const deck of COMMODITY_TRACKS) {
-    const pool = unseenProgressPool[deck];
-    for (const [cardId, copies] of PRINTED_PROGRESS_COPIES[deck]) {
-      const unseen = copies - (visibleCopies.get(cardId) ?? 0);
-      if (unseen !== 0) pool[cardId] = unseen;
-    }
-  }
-  const deckCounts = deckCountsFromWire(client);
-  const opponentProgressHeldByDeck = {};
-  for (const deck of COMMODITY_TRACKS) {
-    const poolSize = sumMaterialCounts(unseenProgressPool[deck]);
-    const held = poolSize - deckCounts[deck];
-    if (held < 0) {
-      fail(
-        "progressPoolInconsistent",
-        `${deck} deck count ${deckCounts[deck]} exceeds unseen pool size ${poolSize}`
-      );
-    }
-    opponentProgressHeldByDeck[deck] = held;
-    const rowTotal = opponentTotals.reduce((sum, o) => sum + o.progressHandByDeck[deck], 0);
-    if (held !== rowTotal) {
-      fail(
-        "progressPoolInconsistent",
-        `unseen-pool math implies opponents hold ${held} ${deck} progress cards but row totals sum to ${rowTotal}`
-      );
-    }
-  }
-  return {
-    opponentResourceAggregates,
-    opponentCommodityAggregates,
-    opponentTotals,
-    unseenProgressPool,
-    opponentProgressHeldByDeck
-  };
-}
+// packages/core/src/game-constants.ts
+var RESOURCE_BANK_STOCK = 19;
+var COMMODITY_BANK_STOCK = 12;
+var VICTORY_POINTS_TO_WIN = 13;
+var SETUP_GRANTED_VICTORY_POINTS = 3;
+var MIN_VICTORY_POINTS_TARGET = SETUP_GRANTED_VICTORY_POINTS + 1;
+var MAX_VICTORY_POINTS_TARGET = VICTORY_POINTS_TO_WIN * 100;
+var ROADS_PER_PLAYER = 15;
+var SETTLEMENTS_PER_PLAYER = 5;
+var CITIES_PER_PLAYER = 4;
+var WEDDING_CARDS_PER_GIVER = 2;
 
 // packages/core/src/analysis/timeline-types.ts
 var TIMELINE_VERSION = 1;
@@ -22255,6 +21620,23 @@ function longestRoadClaimTargetFromClient(board, playerId, playerIds) {
   return Math.max(LONGEST_ROAD_MIN, longestOpponentRoad + 1);
 }
 
+// packages/core/src/state/payload-accessors.ts
+function parsePositiveInt(value) {
+  if (typeof value === "number") {
+    return Number.isInteger(value) && value > 0 && value <= INT_SAFE_MAX ? value : null;
+  }
+  if (typeof value !== "string" || !/^[1-9]\d*$/.test(value)) return null;
+  const parsed = Number.parseInt(value, 10);
+  return parsed <= INT_SAFE_MAX ? parsed : null;
+}
+
+// packages/core/src/state/resource-conservation.ts
+var CONSERVING_RESOLVE_PENDINGS = /* @__PURE__ */ new Set([
+  PendingDecisionType.WeddingGiveCards,
+  PendingDecisionType.GuildDuesChooseCards,
+  PendingDecisionType.CommercialHarborGive
+]);
+
 // packages/core/src/rules/undo-safety.ts
 var SAFE_ACTION_TYPES = /* @__PURE__ */ new Set([
   ActionType.PlaceSetupBuilding,
@@ -22485,6 +21867,39 @@ function longestRoadHolderFromLengths(playerIds, lengthOf, currentHolder) {
   return currentHolder !== null && contenders.includes(currentHolder) ? currentHolder : null;
 }
 
+// packages/core/src/state/pending-decision.ts
+var PAYLOAD_CLONERS = {
+  // `required` is keyed by player id — arbitrary strings, so it is built
+  // prototype-free. structuredClone would hand back an Object.prototype copy
+  // and reintroduce `__proto__` as a live setter.
+  // The rest is structuredCloned with `required` stubbed to null, so the map is
+  // copied once, prototype-free, in its original key position, and retained
+  // extension keys stay deep copies.
+  [PendingDecisionType.DiscardResources]: (payload) => ({
+    ...structuredClone({ ...payload, required: null }),
+    required: cloneStringRecord(payload.required)
+  }),
+  [PendingDecisionType.ChooseRobberHex]: structuredClone,
+  [PendingDecisionType.ChooseStealTarget]: structuredClone,
+  [PendingDecisionType.ScienceLevel3Bonus]: structuredClone,
+  [PendingDecisionType.ChooseMetropolisCity]: structuredClone,
+  [PendingDecisionType.ChoosePillageCity]: structuredClone,
+  [PendingDecisionType.ChooseProgressDeck]: structuredClone,
+  [PendingDecisionType.DiscardProgress]: structuredClone,
+  [PendingDecisionType.ChooseKnightRetreat]: structuredClone,
+  [PendingDecisionType.ChooseRobberDestination]: structuredClone,
+  [PendingDecisionType.PlaceSetupRoad]: structuredClone,
+  [PendingDecisionType.WeddingGiveCards]: structuredClone,
+  [PendingDecisionType.CommercialHarborGive]: structuredClone,
+  [PendingDecisionType.GuildDuesChooseCards]: structuredClone,
+  [PendingDecisionType.SmithingPromote]: structuredClone,
+  [PendingDecisionType.TreasonChooseKnight]: structuredClone,
+  [PendingDecisionType.TreasonPlaceKnight]: structuredClone,
+  [PendingDecisionType.RoadBuildingPlace]: structuredClone,
+  [PendingDecisionType.DomesticTradeResponse]: structuredClone,
+  [PendingDecisionType.EspionageChooseCard]: structuredClone
+};
+
 // packages/core/src/services/roll-resolution.ts
 var DISCARD_BASE_THRESHOLD = 7;
 var CITY_WALL_DISCARD_BONUS = 2;
@@ -22543,6 +21958,65 @@ function previewProduction(board, bankResources, bankCommodities, sum) {
   }
   return production;
 }
+
+// packages/core/src/state/material-multiset.ts
+function termCounts(items) {
+  const counts = /* @__PURE__ */ new Map();
+  for (const item of items) {
+    if (item.count <= 0) continue;
+    counts.set(item.type, (counts.get(item.type) ?? 0) + item.count);
+  }
+  return counts;
+}
+function sameTradeMultiset(a, b) {
+  const countsA = termCounts(a);
+  const countsB = termCounts(b);
+  if (countsA.size !== countsB.size) return false;
+  for (const [type, count] of countsA) {
+    if (countsB.get(type) !== count) return false;
+  }
+  return true;
+}
+
+// packages/core/src/services/trade.ts
+function parseTradeLine(entry) {
+  if (entry === null || typeof entry !== "object" || Array.isArray(entry)) return null;
+  const e = entry;
+  const type = e["type"];
+  if (typeof type !== "string") return null;
+  const count = parsePositiveInt(e["count"]);
+  if (count === null) return null;
+  return { type, count };
+}
+function isMaterialLine(line) {
+  return isMaterialType(line.type);
+}
+function isAtTermsBid(bid, offer, want) {
+  return sameTradeMultiset(bid.offer, offer) && sameTradeMultiset(bid.want, want);
+}
+function strictTradeSuperset(a, b) {
+  const countsA = termCounts(a);
+  const countsB = termCounts(b);
+  let totalB = 0;
+  for (const [type, count] of countsB) {
+    totalB += count;
+    if ((countsA.get(type) ?? 0) < count) return false;
+  }
+  let totalA = 0;
+  for (const count of countsA.values()) totalA += count;
+  return totalA > totalB;
+}
+function bidDominates(a, b) {
+  return sameTradeMultiset(a.offer, b.offer) && strictTradeSuperset(a.want, b.want);
+}
+
+// packages/core/src/dice/seeded-rng.ts
+var UTF8_ENCODER = new TextEncoder();
+
+// packages/core/src/services/player-cards.ts
+var MATERIAL_INDEX = new Map(
+  MATERIAL_TYPES.map((type, index) => [type, index])
+);
 
 // bot/src/bot/hand-size.ts
 function bundleCount(bundle) {
@@ -27804,6 +27278,534 @@ function computeEffectiveWeights(diceHistogram, recentEvents, diagnostics2) {
     );
   }
   return Object.freeze(weights);
+}
+
+// packages/core/src/state/player-state.ts
+var DEFAULT_KNIGHT_SUPPLY = {
+  [KnightLevel.Basic]: 2,
+  [KnightLevel.Strong]: 2,
+  [KnightLevel.Mighty]: 2
+};
+
+// packages/core/src/game-state-serializer.ts
+var ProgressCardSchema = external_exports.object({
+  instanceId: external_exports.string(),
+  cardId: external_exports.string().refine((cardId) => ALL_CARDS_BY_ID.has(cardId), { message: "unknown progress card id" })
+});
+var BuildingSchema = external_exports.object({
+  ownerPlayerId: external_exports.string(),
+  type: BuildingTypeSchema,
+  cityWallPresent: external_exports.boolean(),
+  metropolisType: CommodityTrackSchema.nullable(),
+  cityPieceAsSettlement: external_exports.boolean().optional()
+});
+var KnightSerializedSchema = external_exports.object({
+  id: external_exports.string(),
+  ownerPlayerId: external_exports.string(),
+  level: KnightLevelSchema,
+  state: KnightStateSchema,
+  locationIntersectionId: external_exports.string()
+});
+var HexSerializedSchema = external_exports.object({
+  type: HexTypeSchema,
+  numberToken: external_exports.number().int().min(2).max(12).nullable(),
+  robberPresent: external_exports.boolean(),
+  merchantPresent: external_exports.boolean()
+});
+var IntersectionSerializedSchema = external_exports.object({
+  adjacentHexIds: external_exports.array(external_exports.string()),
+  adjacentEdgeIds: external_exports.array(external_exports.string()),
+  building: BuildingSchema.nullable(),
+  knight: KnightSerializedSchema.nullable()
+});
+var EdgeSerializedSchema = external_exports.object({
+  intersectionA: external_exports.string(),
+  intersectionB: external_exports.string(),
+  roadOwnerPlayerId: external_exports.string().nullable()
+});
+var HarborSerializedSchema = external_exports.object({
+  id: external_exports.string(),
+  type: HarborTypeSchema,
+  intersectionIds: external_exports.array(external_exports.string())
+});
+var BoardSerializedSchema = external_exports.object({
+  hexes: prototypeSafeRecordSchema(HexSerializedSchema),
+  intersections: prototypeSafeRecordSchema(IntersectionSerializedSchema),
+  edges: prototypeSafeRecordSchema(EdgeSerializedSchema),
+  harbors: external_exports.array(HarborSerializedSchema)
+});
+var DiceSerializedSchema = external_exports.object({
+  die1: external_exports.number().int().min(1).max(6).nullable(),
+  die2: external_exports.number().int().min(1).max(6).nullable(),
+  sum: external_exports.number().int().min(2).max(12).nullable(),
+  redDie: external_exports.number().int().min(1).max(6).nullable(),
+  eventDieResult: external_exports.string().nullable(),
+  alchemyPreset: external_exports.boolean().optional(),
+  // Required: `rollNumber` is the dice roll ordinal and therefore an input to
+  // an RNG key. See the stealOrdinal note on SerializedGameStateSchema.
+  rollNumber: external_exports.number().int().nonnegative()
+});
+var ResumeAfterRollResolutionSchema = external_exports.object({
+  type: external_exports.literal(ResumeAfterType.RollResolution),
+  sum: external_exports.number().int()
+});
+var ResumeAfterSchema = external_exports.discriminatedUnion("type", [
+  external_exports.object({ type: external_exports.literal(ResumeAfterType.EndTurn) }),
+  ResumeAfterRollResolutionSchema,
+  external_exports.object({
+    type: external_exports.literal(ResumeAfterType.ProgressDiscardQueue),
+    remainingPlayerIds: external_exports.array(external_exports.string()),
+    rollResolution: ResumeAfterRollResolutionSchema.nullable()
+  }),
+  external_exports.object({
+    type: external_exports.literal(ResumeAfterType.ScienceBonusQueue),
+    remainingPlayerIds: external_exports.array(external_exports.string())
+  }),
+  external_exports.object({
+    type: external_exports.literal(ResumeAfterType.DefenderDrawQueue),
+    remainingPlayerIds: external_exports.array(external_exports.string()),
+    rollResolution: ResumeAfterRollResolutionSchema.nullable()
+  })
+]);
+var EmptyPayloadSchema = external_exports.object({});
+var PENDING_PAYLOAD_SCHEMA_BY_TYPE = {
+  [PendingDecisionType.DiscardResources]: external_exports.object({
+    discardId: external_exports.string().min(1),
+    required: prototypeSafeRecordSchema(nonNegInt()),
+    source: external_exports.enum(["robber", "sabotage"]).optional(),
+    chainRobber: external_exports.boolean().optional()
+  }),
+  [PendingDecisionType.ChooseRobberHex]: EmptyPayloadSchema,
+  [PendingDecisionType.ChooseStealTarget]: external_exports.object({
+    eligiblePlayerIds: external_exports.array(external_exports.string())
+  }),
+  [PendingDecisionType.ScienceLevel3Bonus]: external_exports.object({
+    eligibleResources: external_exports.array(ResourceTypeSchema),
+    resumeAfter: ResumeAfterSchema.optional()
+  }),
+  [PendingDecisionType.ChooseMetropolisCity]: external_exports.object({
+    eligibleIntersectionIds: external_exports.array(external_exports.string()),
+    track: CommodityTrackSchema,
+    previousHolderId: external_exports.string().nullable()
+  }),
+  [PendingDecisionType.ChoosePillageCity]: external_exports.object({
+    eligibleIntersectionIds: external_exports.array(external_exports.string()),
+    playerId: external_exports.string(),
+    remainingQueue: external_exports.array(
+      external_exports.object({ playerId: external_exports.string(), eligibleIntersectionIds: external_exports.array(external_exports.string()) })
+    ),
+    resumeAfter: ResumeAfterSchema.nullable()
+  }),
+  [PendingDecisionType.ChooseProgressDeck]: external_exports.object({
+    eligibleDecks: external_exports.array(CommodityTrackSchema),
+    remainingPlayerIds: external_exports.array(external_exports.string()),
+    resumeAfter: ResumeAfterSchema.nullable()
+  }),
+  [PendingDecisionType.DiscardProgress]: external_exports.object({
+    // A zero-count discard never creates a pending in the engine. Requiring a
+    // positive value also matches the public wire contract and prevents a
+    // malformed snapshot from stranding the game with no meaningful choice.
+    requiredCount: nonNegInt().min(1),
+    resumeAfter: ResumeAfterSchema.nullable()
+  }),
+  [PendingDecisionType.ChooseKnightRetreat]: external_exports.object({
+    eligibleIntersectionIds: external_exports.array(external_exports.string())
+  }),
+  [PendingDecisionType.ChooseRobberDestination]: EmptyPayloadSchema,
+  [PendingDecisionType.PlaceSetupRoad]: external_exports.object({ buildingIntersectionId: external_exports.string() }),
+  [PendingDecisionType.WeddingGiveCards]: external_exports.object({
+    requiredCount: nonNegInt(),
+    recipient: external_exports.string(),
+    remainingGivers: external_exports.array(external_exports.string())
+  }),
+  [PendingDecisionType.CommercialHarborGive]: external_exports.object({
+    targetPlayerId: external_exports.string().optional(),
+    initiator: external_exports.string(),
+    offeredResource: ResourceTypeSchema.optional()
+  }),
+  [PendingDecisionType.GuildDuesChooseCards]: external_exports.object({
+    targetPlayerId: external_exports.string().optional(),
+    available: external_exports.array(
+      external_exports.object({
+        type: MaterialTypeSchema,
+        pool: external_exports.enum(["resource", "commodity"]),
+        available: nonNegInt()
+      })
+    ),
+    maxCards: nonNegInt()
+  }),
+  [PendingDecisionType.SmithingPromote]: external_exports.object({
+    promotionsRemaining: nonNegInt().optional()
+  }),
+  [PendingDecisionType.TreasonChooseKnight]: external_exports.object({
+    eligibleKnightIds: external_exports.array(external_exports.string()),
+    actingPlayerId: external_exports.string()
+  }),
+  [PendingDecisionType.TreasonPlaceKnight]: external_exports.object({
+    maxLevel: nonNegInt().optional(),
+    status: KnightStateSchema
+  }),
+  [PendingDecisionType.RoadBuildingPlace]: external_exports.object({ maySkip: external_exports.boolean().optional() }),
+  // Storage, engine state, and the Bot API share this one strict shape.
+  [PendingDecisionType.DomesticTradeResponse]: DomesticTradeAuctionPayloadSchema,
+  [PendingDecisionType.EspionageChooseCard]: external_exports.object({
+    eligibleCards: external_exports.array(external_exports.object({ instanceId: external_exports.string(), cardId: external_exports.string() })),
+    targetPlayerId: external_exports.string()
+  })
+};
+var PendingDecisionSerializedSchema = external_exports.object({
+  type: PendingDecisionTypeSchema,
+  actingPlayerId: external_exports.string().nullable(),
+  // P8 requires every active pending to name at least one resolver. Enforce
+  // that at the storage boundary as well, before an unresolvable snapshot is
+  // admitted into the engine.
+  allowedPlayerIds: external_exports.array(external_exports.string()).min(1),
+  payload: external_exports.record(external_exports.string(), external_exports.unknown())
+}).superRefine((pd, ctx) => {
+  const payloadSchema = PENDING_PAYLOAD_SCHEMA_BY_TYPE[pd.type];
+  const result = payloadSchema.safeParse(pd.payload);
+  if (!result.success) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["payload"],
+      message: `invalid ${pd.type} payload: ${result.error.issues.map((i) => `${i.path.join(".")} ${i.message}`).join("; ")}`
+    });
+  }
+});
+var TradeLineSerializedSchema = external_exports.object({
+  type: external_exports.union([ResourceTypeSchema, CommodityTypeSchema]),
+  count: external_exports.number().int().min(1)
+});
+var StandingWantSerializedSchema = external_exports.object({
+  offer: external_exports.array(TradeLineSerializedSchema).min(1),
+  want: external_exports.array(TradeLineSerializedSchema).min(1),
+  hasBeenExecutableByOpponent: external_exports.boolean()
+}).strict().superRefine((standingWant, ctx) => {
+  if (hasTradeShapeViolation(standingWant.offer, standingWant.want)) {
+    ctx.addIssue({ code: "custom", message: "Invalid standing-want trade shape" });
+  }
+});
+var PlayerSerializedSchema = external_exports.object({
+  id: external_exports.string(),
+  seatIndex: external_exports.number().int().min(0).max(3),
+  color: external_exports.string(),
+  resources: external_exports.partialRecord(ResourceTypeSchema, external_exports.number().int().nonnegative()),
+  commodities: external_exports.partialRecord(CommodityTypeSchema, external_exports.number().int().nonnegative()),
+  vpTokens: external_exports.number().int().nonnegative(),
+  progressHand: external_exports.array(ProgressCardSchema),
+  revealedVpCards: external_exports.array(ProgressCardSchema),
+  roadsInSupply: external_exports.number().int().nonnegative(),
+  settlementsInSupply: external_exports.number().int().nonnegative(),
+  citiesInSupply: external_exports.number().int().nonnegative(),
+  cityWallsInSupply: external_exports.number().int().nonnegative(),
+  knightsInSupply: external_exports.object({
+    basic: external_exports.number().int().nonnegative(),
+    strong: external_exports.number().int().nonnegative(),
+    mighty: external_exports.number().int().nonnegative()
+  }),
+  scienceLevel: external_exports.number().int().min(0).max(MAX_TRACK_LEVEL),
+  tradeLevel: external_exports.number().int().min(0).max(MAX_TRACK_LEVEL),
+  politicsLevel: external_exports.number().int().min(0).max(MAX_TRACK_LEVEL),
+  progressCardsPlayedThisTurn: external_exports.array(external_exports.string()),
+  knightActionsUsedThisTurn: external_exports.array(external_exports.string()),
+  knightPromotionsUsedThisTurn: external_exports.array(external_exports.string()),
+  knightsActivatedThisTurn: external_exports.array(external_exports.string()),
+  merchantFleetTypes: external_exports.array(MaterialTypeSchema),
+  commercialHarborRemainingPlayerIds: external_exports.array(external_exports.string()),
+  freeRoadsRemaining: external_exports.number().int().nonnegative(),
+  cranePlayed: external_exports.boolean(),
+  medicinePlayed: external_exports.boolean(),
+  domesticTradeProposalsThisTurn: external_exports.number().int().nonnegative(),
+  standingWant: StandingWantSerializedSchema.nullable().optional()
+});
+var TradeOutcomeSerializedSchema = external_exports.object({
+  auctionId: external_exports.string(),
+  proposerId: external_exports.string(),
+  ending: external_exports.enum(["taken", "cancelled", "expired"]),
+  accepterId: external_exports.string().optional(),
+  targetPlayerId: external_exports.string().optional(),
+  proposerGives: external_exports.array(TradeLineSerializedSchema),
+  proposerReceives: external_exports.array(TradeLineSerializedSchema),
+  responders: external_exports.array(
+    external_exports.object({
+      playerId: external_exports.string(),
+      status: external_exports.enum(["accepted", "declined", "countered", "unanswered"])
+    })
+  )
+});
+var TemporaryStorageSerializedSchema = external_exports.object({
+  alchemyDice: external_exports.object({
+    die1: external_exports.number().int().min(1).max(6),
+    die2: external_exports.number().int().min(1).max(6)
+  }).optional(),
+  displacedKnight: external_exports.object({
+    id: external_exports.string(),
+    ownerPlayerId: external_exports.string(),
+    level: KnightLevelSchema,
+    state: KnightStateSchema
+  }).optional()
+});
+var boundedNonNegInt = nonNegInt;
+var berserkerAttackRecordSchema = external_exports.object({
+  result: external_exports.enum(["repelled", "victory"]),
+  berserkerStrength: boundedNonNegInt(),
+  defenderStrength: boundedNonNegInt(),
+  attackedAtVersion: boundedNonNegInt(),
+  defenderPlayerId: external_exports.string().nullable().optional(),
+  tiedDefenderIds: external_exports.array(external_exports.string()).optional(),
+  autoPillagedPlayerIds: external_exports.array(external_exports.string()).optional(),
+  choicePillagedPlayerIds: external_exports.array(external_exports.string()).optional(),
+  defenderContributions: prototypeSafeRecordSchema(boundedNonNegInt()).optional()
+});
+var SerializedGameStateSchema = external_exports.object({
+  id: external_exports.string(),
+  version: boundedNonNegInt(),
+  seed: external_exports.string(),
+  // Required: this is an input to an RNG key. An absent value would inflate
+  // to 0 and silently restart the steal stream inside key space the game has
+  // already spent, re-deriving draws it already made. Failing at the boundary
+  // is the whole point of having one.
+  stealOrdinal: boundedNonNegInt(),
+  // Optional for forward-safety: payloads written before this field existed
+  // deserialize to the default target (13). New saves always write it.
+  victoryPointsTarget: external_exports.number().int().min(MIN_VICTORY_POINTS_TARGET).max(MAX_VICTORY_POINTS_TARGET).optional(),
+  // Optional only at the persistence boundary so pre-feature snapshots load
+  // with the rule disabled. New saves always write the field.
+  standingWantsEnabled: external_exports.boolean().optional(),
+  phase: PhaseSchema,
+  currentPlayerId: external_exports.string(),
+  // 0 through setup; the engine increments to 1 with the first Roll-phase
+  // decision. A turn always costs at least one apply, so turnNumber <= version
+  // and sharing `version`'s ceiling cannot reject a state the engine produced.
+  turnNumber: boundedNonNegInt(),
+  players: prototypeSafeRecordSchema(PlayerSerializedSchema),
+  board: BoardSerializedSchema,
+  dice: DiceSerializedSchema,
+  // The rulebook track is 7 spaces (game-engine.ts bootstraps
+  // `berserkerTrackMax: 7`) and position sits AT max between the trigger and its
+  // resolution, so no cross-field refine here — the rule-derived 0..7 bound is
+  // enforced on the wire schema and by roll-dice. These two only need the
+  // magnitude floor/ceiling: a negative track is not a state the engine can
+  // reach, and a forged one has the same `::int` blast radius as the fields above.
+  berserkerTrackPosition: boundedNonNegInt(),
+  berserkerTrackMax: boundedNonNegInt(),
+  firstBerserkerAttackResolved: external_exports.boolean(),
+  robberActive: external_exports.boolean(),
+  merchantHexId: external_exports.string().nullable(),
+  merchantOwnerPlayerId: external_exports.string().nullable(),
+  longestRoadHolderPlayerId: external_exports.string().nullable(),
+  pendingDecision: PendingDecisionSerializedSchema.nullable(),
+  winnerPlayerId: external_exports.string().nullable(),
+  scienceDeck: external_exports.array(ProgressCardSchema),
+  tradeDeck: external_exports.array(ProgressCardSchema),
+  politicsDeck: external_exports.array(ProgressCardSchema),
+  // Nonnegative like player hands: the bank is a card pool, never overdrawn
+  // (grantFromBank clamps to availability). A negative here would be granted
+  // straight into a player's hand as a subtraction — reject at the boundary.
+  bankResources: external_exports.partialRecord(ResourceTypeSchema, external_exports.number().int().nonnegative()),
+  bankCommodities: external_exports.partialRecord(CommodityTypeSchema, external_exports.number().int().nonnegative()),
+  temporaryStorage: TemporaryStorageSerializedSchema,
+  firstPlayerId: external_exports.string().nullable(),
+  // Strengths are sums of city counts / knight strengths and the `*AtVersion`
+  // fields are copies of `state.version` — all nonnegative by construction, and
+  // bounded here so a forged history record can't smuggle a magnitude in behind
+  // the top-level scalars.
+  lastBerserkerAttack: berserkerAttackRecordSchema.nullable(),
+  lastVpAwards: external_exports.array(
+    external_exports.object({
+      playerId: external_exports.string(),
+      deck: CommodityTrackSchema,
+      cardId: external_exports.string(),
+      awardedAtVersion: boundedNonNegInt()
+    })
+  ),
+  domesticTradeDeclinesThisTurn: external_exports.array(
+    external_exports.object({
+      proposerId: external_exports.string(),
+      targetPlayerId: external_exports.string().optional(),
+      offer: external_exports.array(TradeLineSerializedSchema),
+      want: external_exports.array(TradeLineSerializedSchema)
+    })
+  ),
+  domesticTradeCountersThisTurn: external_exports.array(
+    external_exports.object({ responderId: external_exports.string(), proposerId: external_exports.string() })
+  ),
+  lastDomesticTradeOutcome: TradeOutcomeSerializedSchema.nullable(),
+  domesticTradeOutcomesThisTurn: external_exports.array(TradeOutcomeSerializedSchema),
+  domesticTradeProposalBundlesThisTurn: external_exports.array(
+    external_exports.object({
+      proposerId: external_exports.string(),
+      targetPlayerId: external_exports.string().optional(),
+      offer: external_exports.array(TradeLineSerializedSchema),
+      want: external_exports.array(TradeLineSerializedSchema)
+    })
+  )
+}).superRefine((state, ctx) => {
+  for (const [key, player] of Object.entries(state.players)) {
+    if (player.id !== key) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["players", key, "id"],
+        message: `player map key ${key} does not match embedded id ${player.id}`
+      });
+    }
+    const standingWant = player.standingWant;
+    if (standingWant === null || standingWant === void 0) continue;
+    const path = ["players", key, "standingWant"];
+    if (state.standingWantsEnabled !== true || state.phase === Phase.GameOver) {
+      ctx.addIssue({
+        code: "custom",
+        path,
+        message: "standing want is unavailable when the rule is disabled or the game is over"
+      });
+      continue;
+    }
+    const unbacked = standingWant.offer.some((line) => {
+      const available = isResourceType(line.type) ? player.resources[line.type] ?? 0 : player.commodities[line.type] ?? 0;
+      return available < line.count;
+    });
+    if (unbacked) {
+      ctx.addIssue({
+        code: "custom",
+        path,
+        message: "standing want offer is not backed by the poster hand"
+      });
+    }
+  }
+});
+
+// packages/core/src/wire/inflate-client-state.ts
+var InflateClientStateError = class extends Error {
+  code;
+  constructor(code, message) {
+    super(message);
+    this.name = "InflateClientStateError";
+    this.code = code;
+  }
+};
+function fail(code, message) {
+  throw new InflateClientStateError(code, message);
+}
+function findSelfEntry(client) {
+  let found = null;
+  for (const [playerId, player] of Object.entries(client.players)) {
+    if (!isSelf(player)) continue;
+    if (found !== null) {
+      fail("missingSelfPlayer", `client has multiple self players (${found.selfId}, ${playerId})`);
+    }
+    found = { selfId: playerId, self: player };
+  }
+  if (found === null) fail("missingSelfPlayer", "client has no self player entry");
+  return found;
+}
+function deckCountsFromWire(client) {
+  return {
+    science: client.scienceDeckCount,
+    trade: client.tradeDeckCount,
+    politics: client.politicsDeckCount
+  };
+}
+var PRINTED_PROGRESS_COPIES = (() => {
+  const byDeck = {
+    science: [],
+    trade: [],
+    politics: []
+  };
+  for (const card2 of ALL_CARDS) byDeck[card2.deck].push([card2.id, card2.copies]);
+  return byDeck;
+})();
+function countVisibleCard(visibleCopies, card2) {
+  const def = ALL_CARDS_BY_ID.get(card2.cardId);
+  if (def === void 0) {
+    fail("progressPoolInconsistent", `visible card "${card2.cardId}" is not in the card manifest`);
+  }
+  const seen = (visibleCopies.get(card2.cardId) ?? 0) + 1;
+  if (seen > def.copies) {
+    fail(
+      "progressPoolInconsistent",
+      `card "${card2.cardId}" is visible more often than its ${def.copies} printed copies`
+    );
+  }
+  visibleCopies.set(card2.cardId, seen);
+}
+function deriveHiddenAggregates(client) {
+  const { self: self2 } = findSelfEntry(client);
+  const opponentResourceAggregates = {};
+  for (const t of RESOURCE_TYPES) {
+    const agg = RESOURCE_BANK_STOCK - (client.bankResources[t] ?? 0) - (self2.resources[t] ?? 0);
+    if (agg < 0) {
+      fail(
+        "materialAggregateNegative",
+        `resource ${t}: bank ${client.bankResources[t] ?? 0} + self ${self2.resources[t] ?? 0} exceeds stock ${RESOURCE_BANK_STOCK}`
+      );
+    }
+    opponentResourceAggregates[t] = agg;
+  }
+  const opponentCommodityAggregates = {};
+  for (const t of COMMODITY_TYPES) {
+    const agg = COMMODITY_BANK_STOCK - (client.bankCommodities[t] ?? 0) - (self2.commodities[t] ?? 0);
+    if (agg < 0) {
+      fail(
+        "materialAggregateNegative",
+        `commodity ${t}: bank ${client.bankCommodities[t] ?? 0} + self ${self2.commodities[t] ?? 0} exceeds stock ${COMMODITY_BANK_STOCK}`
+      );
+    }
+    opponentCommodityAggregates[t] = agg;
+  }
+  const opponentTotals = [];
+  for (const [playerId, player] of Object.entries(client.players)) {
+    if (isSelf(player)) continue;
+    const opponent = player;
+    opponentTotals.push({
+      playerId,
+      materialCount: opponent.materialCount,
+      progressHandByDeck: { ...opponent.progressHandByDeck }
+    });
+  }
+  const visibleCopies = /* @__PURE__ */ new Map();
+  for (const card2 of self2.progressHand) countVisibleCard(visibleCopies, card2);
+  for (const player of Object.values(client.players)) {
+    for (const card2 of player.revealedVpCards) countVisibleCard(visibleCopies, card2);
+  }
+  const unseenProgressPool = {
+    science: {},
+    trade: {},
+    politics: {}
+  };
+  for (const deck of COMMODITY_TRACKS) {
+    const pool = unseenProgressPool[deck];
+    for (const [cardId, copies] of PRINTED_PROGRESS_COPIES[deck]) {
+      const unseen = copies - (visibleCopies.get(cardId) ?? 0);
+      if (unseen !== 0) pool[cardId] = unseen;
+    }
+  }
+  const deckCounts = deckCountsFromWire(client);
+  const opponentProgressHeldByDeck = {};
+  for (const deck of COMMODITY_TRACKS) {
+    const poolSize = sumMaterialCounts(unseenProgressPool[deck]);
+    const held = poolSize - deckCounts[deck];
+    if (held < 0) {
+      fail(
+        "progressPoolInconsistent",
+        `${deck} deck count ${deckCounts[deck]} exceeds unseen pool size ${poolSize}`
+      );
+    }
+    opponentProgressHeldByDeck[deck] = held;
+    const rowTotal = opponentTotals.reduce((sum, o) => sum + o.progressHandByDeck[deck], 0);
+    if (held !== rowTotal) {
+      fail(
+        "progressPoolInconsistent",
+        `unseen-pool math implies opponents hold ${held} ${deck} progress cards but row totals sum to ${rowTotal}`
+      );
+    }
+  }
+  return {
+    opponentResourceAggregates,
+    opponentCommodityAggregates,
+    opponentTotals,
+    unseenProgressPool,
+    opponentProgressHeldByDeck
+  };
 }
 
 // bot/src/determinize/constraints.ts
