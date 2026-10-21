@@ -27140,6 +27140,7 @@ function isDistanceBlockedByOpponentBuilding(ctx, intersection2) {
 }
 function isHoardingForSettlement(player) {
   if (player === void 0 || !isSelf(player) || player.settlementsInSupply <= 0) return false;
+  if (player.freeRoadsRemaining > 0) return false;
   const brick = player.resources[ResourceType.Brick] ?? 0;
   const lumber = player.resources[ResourceType.Lumber] ?? 0;
   if (brick < 1 || lumber < 1 || brick >= 2 && lumber >= 2) return false;
@@ -33210,6 +33211,7 @@ function scoreRoadAction(ctx, edgeId) {
   const player = state.players[actingPlayerId];
   const canStillSettle = (player?.settlementsInSupply ?? 0) > 0;
   const feasibilityFactor = ctx.roadFeasibilityFactor;
+  const escapeMultiplier = ctx.isTrapped ? tuning.trappedRoadEscapeMultiplier : 1;
   const { longestRoadClaimTarget } = ctx;
   const currentRoadLength = selfRoadLength(ctx);
   const projectedRoadLength = projectedLongestRoadWithEdgeOverride(
@@ -33234,7 +33236,7 @@ function scoreRoadAction(ctx, edgeId) {
       const settlementCredit = Math.floor(scoreSettlementAction(ctx, intersectionId, false) / 2);
       const weightedCredit = Math.round(settlementCredit * feasibilityFactor);
       expansionPathScore += weightedCredit;
-      score2 += weightedCredit;
+      score2 += weightedCredit * escapeMultiplier;
     }
     for (const adjEdgeId of intersection2.adjacentEdgeIds) {
       if (adjEdgeId === edgeId) continue;
@@ -33242,7 +33244,6 @@ function scoreRoadAction(ctx, edgeId) {
     }
   }
   if (canStillSettle) {
-    const escapeMultiplier = ctx.isTrapped ? tuning.trappedRoadEscapeMultiplier : 1;
     const extensionScore = roadPathExtensionBonus(ctx, edgeId, feasibilityFactor, dedupScratch) + roadPathExtensionDepth2Bonus(ctx, edgeId, feasibilityFactor, dedupScratch);
     expansionPathScore += extensionScore;
     score2 += extensionScore * escapeMultiplier;
@@ -34671,7 +34672,7 @@ function makeUtilityLookup(state, playerId) {
 }
 
 // bot/src/pending/score-candidates.ts
-function findBestOfType(ctx, actionType, scorer, dir, isSkip) {
+function findBestOfType(ctx, actionType, scorer, dir, isSkip, tiePosition) {
   let skipAction = null;
   let best = null;
   const traced = ctx.pendingScanSink === void 0 ? null : [];
@@ -34686,7 +34687,7 @@ function findBestOfType(ctx, actionType, scorer, dir, isSkip) {
     const s = scorer(action);
     if (s === null) continue;
     if (!Number.isFinite(s)) continue;
-    const entry = { action, score: s, poolIndex: i };
+    const entry = { action, score: s, poolIndex: tiePosition?.(action, i) ?? i };
     traced?.push(entry);
     if (best === null || ranksAbove(entry, best, dir)) best = entry;
   }
@@ -34695,7 +34696,14 @@ function findBestOfType(ctx, actionType, scorer, dir, isSkip) {
   return { best, skipAction };
 }
 function pickArgmaxByType(ctx, actionType, scorer, opts = {}) {
-  const { best } = findBestOfType(ctx, actionType, scorer, opts.dir ?? "max");
+  const { best } = findBestOfType(
+    ctx,
+    actionType,
+    scorer,
+    opts.dir ?? "max",
+    void 0,
+    opts.tiePosition
+  );
   return pickFallback(ctx, best?.action ?? null);
 }
 function pickArgmaxOptionalEffectWithSkip(ctx, scorer, opts = {}) {
@@ -34757,20 +34765,53 @@ function pickBestRobberHex(ctx, actionType, extractHexId) {
   if (bestHexId === null) return pickFallback(ctx, null);
   return actionByHexId.get(bestHexId) ?? pickFallback(ctx, null);
 }
-function topRankedForTrace(entries, limit = 3, dir = "max") {
-  return [...entries].sort((a, b) => ranksAbove(a, b, dir) ? -1 : ranksAbove(b, a, dir) ? 1 : 0).slice(0, limit).map(({ action, score: s }) => ({ action, score: s }));
+function topRankedForTrace(entries, limit = 3, dir = "max", firstActionId) {
+  const above = (a, b) => {
+    if (firstActionId !== void 0) {
+      const aFirst = a.action.id === firstActionId;
+      const bFirst = b.action.id === firstActionId;
+      if (aFirst !== bFirst) return aFirst;
+    }
+    return ranksAbove(a, b, dir);
+  };
+  if (limit > 8 || limit < 0 || !Number.isInteger(limit) || entries.some((entry) => !Number.isFinite(entry.score))) {
+    return [...entries].sort((a, b) => above(a, b) ? -1 : above(b, a) ? 1 : 0).slice(0, limit).map(({ action, score: score2 }) => ({ action, score: score2 }));
+  }
+  if (limit === 0) return [];
+  const best = [];
+  for (const entry of entries) {
+    let index = 0;
+    while (index < best.length) {
+      const other = best[index];
+      if (other !== void 0 && above(entry, other)) break;
+      index++;
+    }
+    if (index >= limit) continue;
+    if (best.length === limit) best.pop();
+    best.splice(index, 0, entry);
+  }
+  return best.map(({ action, score: score2 }) => ({ action, score: score2 }));
 }
-function pickBestScoredByType(ctx, actionType) {
+function pickBestScoredByType(ctx, actionType, tiePosition) {
   let base = null;
   const scored = [];
-  const action = pickArgmaxByType(ctx, actionType, (candidate) => {
-    base ??= buildPendingScoringBase(ctx);
-    const s = score(buildScoreContext(ctx, candidate, base));
-    if (Number.isFinite(s)) {
-      scored.push({ action: candidate, score: s, poolIndex: scored.length });
-    }
-    return s;
-  });
+  const action = pickArgmaxByType(
+    ctx,
+    actionType,
+    (candidate) => {
+      base ??= buildPendingScoringBase(ctx);
+      const s = score(buildScoreContext(ctx, candidate, base));
+      if (Number.isFinite(s)) {
+        scored.push({
+          action: candidate,
+          score: s,
+          poolIndex: tiePosition?.(candidate, scored.length) ?? scored.length
+        });
+      }
+      return s;
+    },
+    tiePosition === void 0 ? {} : { tiePosition }
+  );
   return { action, traceContext: {}, scoredCandidates: topRankedForTrace(scored) };
 }
 
@@ -36648,7 +36689,7 @@ var roadBuildingPlace = (ctx) => {
     };
   }
   const pair = bestRoadPair(ctx);
-  if (pair === null) return pickBestScoredByType(ctx, ActionType.BuildRoad);
+  if (pair === null) return pickBestScoredByType(ctx, ActionType.BuildRoad, escapeTiePosition(ctx));
   return {
     action: pair.first,
     traceContext: {
@@ -36658,6 +36699,19 @@ var roadBuildingPlace = (ctx) => {
     scoredCandidates: topRankedForTrace(pair.scored)
   };
 };
+function escapeTiePosition(ctx) {
+  const self2 = selfPlayer(ctx.state, ctx.playerId);
+  const trapped = self2 !== null && self2.freeRoadsRemaining > 0 && self2.settlementsInSupply > 0 && self2.victoryPoints < ctx.state.victoryPointsTarget - TWO_FROM_WIN && (ctx.boardIndex.buildableSettlementSiteIdsByPlayer[ctx.playerId]?.size ?? 0) === 0;
+  const reach = ctx.boardIndex.roadConnectedIntersections[ctx.playerId];
+  return (action, index) => {
+    if (!trapped || action.type !== ActionType.BuildRoad) return index;
+    const edge = ctx.state.board.edges[action.edgeId];
+    const opensSite = edge !== void 0 && [edge.intersectionA, edge.intersectionB].some(
+      (id) => ctx.boardIndex.isBuildableByIntersection[id] === true && !(reach?.has(id) ?? false)
+    );
+    return opensSite ? index : index + ctx.request.validActions.length;
+  };
+}
 function bestRoadPair(ctx) {
   const self2 = selfPlayer(ctx.state, ctx.playerId);
   if (!ctx.tuning.roadBuildingPairLookaheadEnabled || self2 === null || self2.freeRoadsRemaining < 2 || self2.roadsInSupply < 2)
@@ -36738,9 +36792,14 @@ function bestSecondRoad(ctx, self2, firstEdgeId) {
     } : {}
   };
   const base = buildPendingScoringBase(next);
+  const tiePosition = escapeTiePosition(next);
   let best = null;
   for (const [poolIndex, action] of candidates.entries()) {
-    const entry = { action, score: score(buildScoreContext(next, action, base)), poolIndex };
+    const entry = {
+      action,
+      score: score(buildScoreContext(next, action, base)),
+      poolIndex: tiePosition(action, poolIndex)
+    };
     if (!Number.isFinite(entry.score)) continue;
     if (best === null || ranksAbove(entry, best)) best = entry;
   }
@@ -36832,10 +36891,10 @@ function resolvePendingDetailed(ctx, decision2) {
   }
   const scan = [...sink.scans].reverse().find((s) => s.entries.some((entry) => entry.action.id === resolved.action.id));
   if (scan !== void 0) {
-    const ordered = topRankedForTrace(scan.entries, scan.entries.length, scan.dir);
-    const chosen = ordered.filter((c) => c.action.id === resolved.action.id);
-    const others = ordered.filter((c) => c.action.id !== resolved.action.id);
-    return { ...resolved, rankedCandidates: [...chosen, ...others].slice(0, 3) };
+    return {
+      ...resolved,
+      rankedCandidates: topRankedForTrace(scan.entries, 3, scan.dir, resolved.action.id)
+    };
   }
   if (!RANKED_PENDING_TYPES.has(decision2.type)) return resolved;
   const ranked = [{ action: resolved.action, score: 0 }];
@@ -39472,9 +39531,24 @@ function finite(score2) {
   if (!Number.isFinite(score2)) throw new Error("Non-finite setup pair forecast score");
   return score2;
 }
+var forecastByEvaluation = /* @__PURE__ */ new WeakMap();
+function forecastCache(ctx) {
+  return getOrCreate(forecastByEvaluation, scoringEvaluationKey(ctx), () => ({
+    features: /* @__PURE__ */ new Map(),
+    neighborhoods: /* @__PURE__ */ new Map()
+  }));
+}
 function remainingExpansionPips(ctx, candidateId2, remaining) {
   const board = ctx.state.board;
   if (board.intersections[candidateId2] === void 0) throw new Error("Missing forecast candidate");
+  const cache3 = forecastCache(ctx);
+  const cached2 = cache3.neighborhoods.get(candidateId2);
+  if (cached2 !== void 0) {
+    let sum2 = 0;
+    for (const [id, pips] of cached2) if (remaining.has(id)) sum2 += pips;
+    return sum2;
+  }
+  const neighborhood = [];
   const distance = /* @__PURE__ */ new Map([[candidateId2, 0]]);
   const queue = [candidateId2];
   let sum = 0;
@@ -39482,8 +39556,11 @@ function remainingExpansionPips(ctx, candidateId2, remaining) {
     const id = queue[head];
     const depth = id === void 0 ? void 0 : distance.get(id);
     if (id === void 0 || depth === void 0) throw new Error("Missing forecast queue entry");
-    if (depth >= 2 && remaining.has(id))
-      sum += (ctx.boardIndex.pipsByIntersection[id] ?? 0) * (depth === 2 ? 1 : 0.5);
+    if (depth >= 2) {
+      const pips = (ctx.boardIndex.pipsByIntersection[id] ?? 0) * (depth === 2 ? 1 : 0.5);
+      neighborhood.push([id, pips]);
+      if (remaining.has(id)) sum += pips;
+    }
     if (depth === 3) continue;
     const intersection2 = board.intersections[id];
     if (intersection2 === void 0) throw new Error("Missing forecast intersection");
@@ -39496,10 +39573,12 @@ function remainingExpansionPips(ctx, candidateId2, remaining) {
       queue.push(next);
     }
   }
+  cache3.neighborhoods.set(candidateId2, neighborhood);
   return sum;
 }
 function scoreFirstSettlement(ctx, id, remaining) {
-  const features = [...extractFeatures(ctx, id)];
+  const cache3 = forecastCache(ctx);
+  const features = [...getOrCreate(cache3.features, id, () => extractFeatures(ctx, id))];
   const expansionIndex = FEATURE_NAMES.indexOf("expansionPipCoef");
   if (expansionIndex < 0 || features.length !== FEATURE_NAMES.length)
     throw new Error("Setup forecast feature population mismatch");

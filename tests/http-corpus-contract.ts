@@ -24,7 +24,7 @@ const EXPECTED = {
     count: 71,
     actor: 'p1',
     turn: 4,
-    chosenId: 'action-71',
+    chosenId: 'action-67',
     chosenType: 'buildRoad',
     bytes: [49_000, 51_000],
   },

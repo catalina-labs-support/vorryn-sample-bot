@@ -1,9 +1,9 @@
 import type { BotActionCandidate, BotRequest } from './schemas.js';
 
 export type JsonObject = Record<string, unknown>;
-export type MaterialInventory = Readonly<Record<string, number>>;
+type MaterialInventory = Readonly<Record<string, number>>;
 
-export type PublicPlayer = {
+type PublicPlayer = {
   id: string;
   victoryPoints: number;
   inventory: MaterialInventory;
@@ -60,14 +60,6 @@ export function buildPublicStateModel(request: BotRequest): PublicStateModel {
     edges: objectField(board, 'edges') ?? {},
     victoryTarget: numberField(request.state, 'victoryPointsTarget') ?? 13,
   };
-}
-
-export function publicLeader(model: PublicStateModel): PublicPlayer | undefined {
-  return [...model.players.values()]
-    .filter((player) => player.id !== model.ownPlayer.id)
-    .sort(
-      (left, right) => right.victoryPoints - left.victoryPoints || left.id.localeCompare(right.id)
-    )[0];
 }
 
 /** Total order for equally valued actions. Wire IDs often follow lobby order,
@@ -127,7 +119,7 @@ export function asObject(value: unknown): JsonObject | undefined {
     : undefined;
 }
 
-export function objectField(value: JsonObject | undefined, field: string): JsonObject | undefined {
+function objectField(value: JsonObject | undefined, field: string): JsonObject | undefined {
   return asObject(value?.[field]);
 }
 
@@ -141,7 +133,7 @@ export function numberField(value: JsonObject | undefined, field: string): numbe
   return typeof item === 'number' ? item : undefined;
 }
 
-export function stringArray(value: unknown): string[] {
+function stringArray(value: unknown): string[] {
   return Array.isArray(value)
     ? value.filter((item): item is string => typeof item === 'string')
     : [];
