@@ -207,8 +207,8 @@ it. The shared secret is stored encrypted and never shown to anyone but you.
 `src/strategy.ts` exports `pickAction(req: BotRequest): BotResponse`.
 Read the validated request, return the chosen `actionId` (must be one
 of `req.validActions[i].id`). The checked-in `champion.js` is generated from
-Vorryn's validated decision graph plus its machine-readable competitive
-fair-ceiling policy; do not edit that bundle by hand. Put experiments in the
+Vorryn's Rust/WASM chooser plus its machine-readable competitive
+fair-ceiling policy. The compressed engine is embedded, with no runtime download; do not edit that bundle by hand. Put experiments in the
 readable simulator/search modules, measure them against a fixed corpus, and
 only override the champion when the evidence supports it.
 

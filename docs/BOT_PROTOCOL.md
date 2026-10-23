@@ -224,8 +224,13 @@ the server does not rank them for you.
 
 ### Standing-want actions
 
-When the host enabled the channel (`state.standingWantsEnabled`), three
-further action types are in the vocabulary:
+Normal new games and rematches set `state.standingWantsEnabled` to `false`,
+including games with bots. Posting and execution tuning cannot override this
+game rule. Existing active games retain their serialized flag, and dedicated
+standing-wants evaluations enable it explicitly.
+
+For a game created with the channel enabled, three further action types are in
+the vocabulary:
 
 | Action type           | When it can reach your `validActions[]`                  | Effect                                                              |
 | --------------------- | -------------------------------------------------------- | ------------------------------------------------------------------- |
@@ -236,8 +241,9 @@ further action types are in the vocabulary:
 The engine itself is more permissive than that first column for the two
 posting actions: `setStandingWant` and `clearStandingWant` are table-meta and
 are accepted from **any** seated player throughout the roll and action phases,
-off-turn and with a pending decision outstanding. Human clients use that
-latitude. Bots cannot: enumeration returns nothing at all for a player who is
+off-turn and with a pending decision outstanding. Application human-action
+paths reject all standing-want actions; humans have no controls for this channel.
+Selection-only bots cannot use that off-turn latitude: enumeration returns nothing at all for a player who is
 neither the current player nor an allowed answerer on a live pending decision,
 and the pending-decision candidate set contains no standing-want actions. A
 selection-only bot is therefore never asked to decide off-turn, and there is no
@@ -264,12 +270,12 @@ nothing about any opponent's hidden holdings.
 
 Two independent switches decide whether you see any of this at all:
 
-1. **The host's per-game opt-in.** `state.standingWantsEnabled` is
+1. **The per-game rules flag.** `state.standingWantsEnabled` is
    stamped at game creation and never changes. When it is false there
    are no candidates and the engine rejects all three action types.
 2. **The enumerator's standing-want options.** Every bot runtime —
    first-party and external (friend-owned) alike — is enumerated with
-   both posting and execution enabled, so a channel the host enabled is
+   both posting and execution enabled, so an explicitly enabled channel is
    fully in your vocabulary. Do not treat a missing standing-want
    candidate as a protocol error: check `state.standingWantsEnabled`
    first, then affordability (posting needs a hand that covers the

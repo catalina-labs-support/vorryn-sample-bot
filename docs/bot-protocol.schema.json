@@ -5527,6 +5527,14 @@
             }
           ]
         },
+        "difficulty": {
+          "type": "string",
+          "enum": [
+            "easy",
+            "medium",
+            "hard"
+          ]
+        },
         "personality": {
           "type": "string",
           "description": "Seat style axis. Known values: aggressive | builder. Tolerant reader: an unrecognized value is served the default fair ceiling, never rejected."

@@ -17,6 +17,8 @@ allowBuilds:
 # consumers; an unqualified override would collapse both onto one version.
 # Same pattern the root pnpm-workspace.yaml uses for cookie/GHSA-pxg6-pf52-xh8x.
 # Remove each once fastify's own ranges floor fast-uri past these versions.
+# 2026-10-22: retain the newer root-resolved 3.1.9 / 4.2.3 when sharing
+# the floors; pnpm range overrides must not force a downgrade to the old floor.
 overrides:
-  'fast-uri@>=3.0.0 <3.1.8': 3.1.8
-  'fast-uri@>=4.0.0 <4.2.1': 4.2.1
+  'fast-uri@>=3.0.0 <3.1.9': 3.1.9
+  'fast-uri@>=4.0.0 <4.2.3': 4.2.3

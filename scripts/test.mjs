@@ -12,8 +12,8 @@ const files = readdirSync(directory, { withFileTypes: true })
   .sort()
   .map((file) => join(directory, file));
 // Node accepts an unmatched test glob as a successful zero-test run.
-if (files.length < 6)
-  throw new Error(`Expected at least 6 sample-bot test files; found ${files.length}`);
+if (files.length < 7)
+  throw new Error(`Expected at least 7 sample-bot test files; found ${files.length}`);
 const result = spawnSync(
   process.execPath,
   ['--import', 'tsx', '--test', '--test-concurrency=1', ...files],
