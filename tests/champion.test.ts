@@ -29,12 +29,32 @@ const requests = gunzipSync(corpus)
   .map((line) => z.object({ request: BotRequestSchema }).parse(JSON.parse(line)).request);
 assert.equal(requests.length, 250);
 assert.equal(reference.cases.length, 250);
+// Parent fbda2f5a2 reproduced all 250 historical decisions exactly. The
+// independent TypeScript chooser at 6a0083b5e (never Rust or this bundle)
+// changes exactly these four requests after funded city defense. Preserve the
+// historical oracle and assert each old value before applying its correction.
+const fundedDefenseCorrections = new Map([
+  [74, { before: 'action-2', after: 'action-5' }],
+  [137, { before: 'action-22', after: 'action-3' }],
+  [138, { before: 'action-22', after: 'action-3' }],
+  [213, { before: 'action-90', after: 'action-4' }],
+]);
+assert.equal(fundedDefenseCorrections.size, 4);
+for (const [index, correction] of fundedDefenseCorrections) {
+  assert.equal(reference.cases[index]?.actionId, correction.before);
+}
 for (const [index, entry] of reference.cases.entries()) {
   assert.equal(entry.index, index);
   const request = requests[index];
   assert.ok(request);
   const response = championPickAction(request);
-  assert.equal(response.actionId, entry.actionId, `independent champion case ${index}`);
+  assert.equal(
+    response.actionId,
+    fundedDefenseCorrections.get(index)?.after ?? entry.actionId,
+    `independent champion case ${index}`
+  );
   assert.ok(request.validActions.some((action) => action.id === response.actionId));
 }
-console.log('PASS — Rust champion preserves all 250 frozen TypeScript decisions');
+console.log(
+  'PASS — Rust champion matches 250 independent TypeScript decisions with four funded-defense corrections'
+);
