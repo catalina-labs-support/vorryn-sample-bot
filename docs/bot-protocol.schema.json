@@ -2200,6 +2200,9 @@
                                 ],
                                 "additionalProperties": false
                               }
+                            },
+                            "targetPlayerId": {
+                              "type": "string"
                             }
                           },
                           "required": [
