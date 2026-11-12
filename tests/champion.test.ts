@@ -43,6 +43,19 @@ assert.equal(fundedDefenseCorrections.size, 4);
 for (const [index, correction] of fundedDefenseCorrections) {
   assert.equal(reference.cases[index]?.actionId, correction.before);
 }
+// The independent pre-retirement TS graph with the city-recovery correction
+// changes exactly case 96. Both 250-request captures and their source receipts
+// are retained in docs/bot-evals/artifacts/2026-11-08-champion-recovery-reference.
+// Never derive this correction from the Rust champion's selected action.
+const cityRecoveryCorrections = new Map([[96, { before: 'action-3', after: 'action-40' }]]);
+assert.equal(cityRecoveryCorrections.size, 1);
+for (const [index, correction] of cityRecoveryCorrections) {
+  assert.equal(
+    fundedDefenseCorrections.get(index)?.after ?? reference.cases[index]?.actionId,
+    correction.before
+  );
+}
+let checked = 0;
 for (const [index, entry] of reference.cases.entries()) {
   assert.equal(entry.index, index);
   const request = requests[index];
@@ -50,11 +63,15 @@ for (const [index, entry] of reference.cases.entries()) {
   const response = championPickAction(request);
   assert.equal(
     response.actionId,
-    fundedDefenseCorrections.get(index)?.after ?? entry.actionId,
+    cityRecoveryCorrections.get(index)?.after ??
+      fundedDefenseCorrections.get(index)?.after ??
+      entry.actionId,
     `independent champion case ${index}`
   );
   assert.ok(request.validActions.some((action) => action.id === response.actionId));
+  checked++;
 }
+assert.equal(checked, 250);
 console.log(
-  'PASS — Rust champion matches 250 independent TypeScript decisions with four funded-defense corrections'
+  'PASS — Rust champion matches 250 independent TypeScript decisions with four funded-defense corrections and one city-recovery correction'
 );

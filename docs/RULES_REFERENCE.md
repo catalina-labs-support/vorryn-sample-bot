@@ -537,7 +537,7 @@ A knight may move if:
 
 **Concrete example:** If your knight is at intersection A, and B and C (adjacent to A along your roads) are opponent-occupied, and D (reachable via an alternate path through empty neighbors) is empty, then `moveKnight` to D is legal. Moving to B or C is illegal — the BFS reaches them but the destination check rejects any occupied intersection, even one that the BFS can reach.
 
-After moving: the knight deactivates (`state = inactive`), its position updates, and the knight id is recorded in `knightActionsUsedThisTurn`. Longest road is recomputed if either the source or destination intersection is adjacent to any opponent road edge (`intersectionAffectsLongestRoad`; §11).
+After moving: the knight deactivates (`state = inactive`), its position updates, and the knight id is recorded in `knightActionsUsedThisTurn`. Longest road is recomputed if either the source or destination intersection is adjacent to any opponent road edge (`intersection_affects_longest_road`; §11).
 
 ### 10.6 Displacing (`displaceKnight`)
 
@@ -602,13 +602,13 @@ The holder cannot fall below 5 and keep the bonus — once the maximum drops bel
 
 The longest-road holder is recomputed after:
 
-| Action            | Notes                                                                                                                                                                                               |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `buildRoad`       | Always — new road may extend the builder's chain or create a new maximum                                                                                                                            |
-| `buildSettlement` | Only when an opponent road is incident to the intersection (`intersectionAffectsLongestRoad`) — a settlement can only sever a path that runs through it, and never changes the builder's own length |
-| `recruitKnight`   | Only if the placed knight's intersection is adjacent to any opponent road (`intersectionAffectsLongestRoad`)                                                                                        |
-| `moveKnight`      | If source or destination is adjacent to any opponent road                                                                                                                                           |
-| `displaceKnight`  | If the source or target intersection is adjacent to a relevant opponent road; a retreat resolved through the `chooseKnightRetreat` pending checks its destination the same way                      |
+| Action            | Notes                                                                                                                                                                                                  |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `buildRoad`       | Always — new road may extend the builder's chain or create a new maximum                                                                                                                               |
+| `buildSettlement` | Only when an opponent road is incident to the intersection (`intersection_affects_longest_road`) — a settlement can only sever a path that runs through it, and never changes the builder's own length |
+| `recruitKnight`   | Only if the placed knight's intersection is adjacent to any opponent road (`intersection_affects_longest_road`)                                                                                        |
+| `moveKnight`      | If source or destination is adjacent to any opponent road                                                                                                                                              |
+| `displaceKnight`  | If the source or target intersection is adjacent to a relevant opponent road; a retreat resolved through the `chooseKnightRetreat` pending checks its destination the same way                         |
 
 Progress-card plays that change road or knight topology also recompute: Diplomacy (`politicsDiplomacy`) road removal — deferred to the free rebuild (`buildRoad`) or its abandonment (`skipRoadBuilding`) when the actor relocates their own road — plus Conspiracy (`politicsIntrigue`) and Treason (`politicsTreason`) resolutions.
 
